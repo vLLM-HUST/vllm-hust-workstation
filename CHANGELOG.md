@@ -4,6 +4,9 @@ All notable changes to sagellm-workstation will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Workstation `/config.json` now returns `modelsDir` and `hfEndpoint`, so the frontend model hub shows the configured download directory and mirror endpoint instead of falling back to hardcoded defaults.
+
 ### Added
 - **Left inference panel** — collapsible 🔭 side panel (left of chat) shows ⚙️ 处理流程, 🌐 搜索来源, 💭 思考过程 in dedicated sections; auto-opens on each request, closeable via tab or ✕ button; keeps chat area clean
 - **Pipeline status steps** — real-time animated steps in left panel showing "正在检索 → 找到N条 → 正在生成 → ✅ 完成" regardless of model CoT support

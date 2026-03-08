@@ -49,6 +49,8 @@ BACKEND_TYPE = cfg("sagellm", "backend_type", "Ascend NPU")
 BRAND_NAME   = cfg("brand", "name", "SageLLM 私有工作站")
 ACCENT_COLOR = cfg("brand", "accent_color", "#6366f1")
 LOGO_PATH    = cfg("brand", "logo", "")
+MODELS_DIR   = cfg("hub", "models_dir", "~/Downloads/sagellm-models")
+HF_ENDPOINT  = cfg("hub", "hf_endpoint", "https://hf-mirror.com")
 
 # ── Web search config ────────────────────────────────────────────────────────
 SEARCH_ENABLED  = cfg("search", "enabled",  "true").lower() in ("true", "1", "yes")
@@ -85,6 +87,8 @@ async def app_config():
         "hasLogo":     bool(LOGO_PATH and Path(LOGO_PATH).is_file()),
         "defaultModel": DEFAULT_MODEL,
         "backendType": BACKEND_TYPE,
+        "modelsDir": MODELS_DIR,
+        "hfEndpoint": HF_ENDPOINT,
     }
 
 
