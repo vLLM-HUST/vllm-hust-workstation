@@ -12,6 +12,7 @@ import asyncio
 import configparser
 import json
 import os
+import random
 import re
 import socket
 import subprocess
@@ -19,8 +20,10 @@ import sys
 import threading
 import time
 import webbrowser
+import html as html_mod
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
 import httpx
 import uvicorn
@@ -46,6 +49,15 @@ BACKEND_TYPE = cfg("sagellm", "backend_type", "Ascend NPU")
 BRAND_NAME   = cfg("brand", "name", "SageLLM 私有工作站")
 ACCENT_COLOR = cfg("brand", "accent_color", "#6366f1")
 LOGO_PATH    = cfg("brand", "logo", "")
+MODELS_DIR   = cfg("hub", "models_dir", "~/Downloads/sagellm-models")
+HF_ENDPOINT  = cfg("hub", "hf_endpoint", "https://hf-mirror.com")
+
+# ── Web search config ────────────────────────────────────────────────────────
+SEARCH_ENABLED  = cfg("search", "enabled",  "true").lower() in ("true", "1", "yes")
+SEARCH_ENGINE   = cfg("search", "engine",   "duckduckgo")   # duckduckgo | bing
+SEARCH_MAX      = int(cfg("search", "max_results", "5"))
+SEARCH_TIMEOUT  = float(cfg("search", "timeout_sec", "5"))
+SEARCH_REGION   = cfg("search", "region",   "cn-zh")        # e.g. us-en, cn-zh
 
 COMMON_HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
@@ -75,7 +87,465 @@ async def app_config():
         "hasLogo":     bool(LOGO_PATH and Path(LOGO_PATH).is_file()),
         "defaultModel": DEFAULT_MODEL,
         "backendType": BACKEND_TYPE,
+        "modelsDir": MODELS_DIR,
+        "hfEndpoint": HF_ENDPOINT,
     }
+
+
+# ── Web search ───────────────────────────────────────────────────────────────
+# Persistent search client — reuses cookies so Bing doesn't flag each request
+# as a fresh bot visit.  Initialised in _init_search_client() at startup.
+_SEARCH_CLIENT: httpx.AsyncClient | None = None
+
+
+async def _get_search_client() -> httpx.AsyncClient:
+    """Return (and lazily warm-up) the shared search session."""
+    global _SEARCH_CLIENT
+    if _SEARCH_CLIENT is None or _SEARCH_CLIENT.is_closed:
+        _SEARCH_CLIENT = httpx.AsyncClient(
+            timeout=SEARCH_TIMEOUT,
+            follow_redirects=True,
+            headers={
+                # Will be overridden per-request; kept here as fallback
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "DNT": "1",
+            },
+        )
+        # Warm-up: visit homepage once to receive session cookies
+        try:
+            await _SEARCH_CLIENT.get(
+                "https://cn.bing.com/",
+                headers={"User-Agent": random.choice(_BING_UA_POOL)},
+                timeout=3.0,
+            )
+        except Exception:
+            pass
+    return _SEARCH_CLIENT
+
+
+_TAG_RE   = re.compile(r"<[^>]+>")
+_MULTI_SP = re.compile(r"\s{2,}")
+# Strip leading "2024年1月1日 · " style date preambles from Zhihu/Baidu snippets
+_DATE_PRE = re.compile(r"^\d{4}年\d{1,2}月\d{1,2}日\s*[··\-–—]\s*")
+# Detect weather / current-conditions queries so we route to a dedicated data source
+_WEATHER_RE = re.compile(r'天气|气温|温度|下雨|下雪|晴|阴天|forecast|weather', re.I)
+# Simple tokeniser to pull the city name out of a weather query
+_CITY_FROM_WEATHER = re.compile(r'^([\u4e00-\u9fa5]{2,4}?)(?=今天|明天|后天|最近|实时|当前|天气|[？ 的]|$)')
+
+def _strip_tags(s: str) -> str:
+    """Remove HTML tags and decode entities."""
+    return _MULTI_SP.sub(" ", _TAG_RE.sub(" ", html_mod.unescape(s))).strip()
+
+
+# Mapping of common Chinese city names to weather.com.cn city codes (also used by sojson)
+_CITY_CODES: dict[str, str] = {
+    "北京": "101010100", "上海": "101020100", "天津": "101030100", "重庆": "101040100",
+    "哈尔滨": "101050101", "长春": "101060101", "沈阳": "101070101", "大连": "101070201",
+    "呼和浩特": "101080101", "石家庄": "101090101", "太原": "101100101", "西安": "101110101",
+    "济南": "101120101", "青岛": "101120201", "郑州": "101180101", "合肥": "101220101",
+    "武汉": "101200101", "南京": "101190101", "苏州": "101190401", "杭州": "101210101",
+    "宁波": "101210401", "南昌": "101240101", "长沙": "101250101", "成都": "101270101",
+    "贵阳": "101260101", "昆明": "101290101", "广州": "101280101", "深圳": "101280601",
+    "珠海": "101280701", "南宁": "101300101", "海口": "101310101", "福州": "101230101",
+    "厦门": "101230201", "兰州": "101160101", "西宁": "101150101", "银川": "101170101",
+    "乌鲁木齐": "101130101",
+}
+
+
+async def _fetch_weather_sojson(city: str, timeout: float = 8.0) -> dict | None:
+    """Fetch weather from sojson free API using weather.com.cn city codes."""
+    import datetime
+    code = _CITY_CODES.get(city)
+    if not code:
+        return None
+    url = f"http://t.weather.sojson.com/api/weather/city/{code}"
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as cli:
+            resp = await cli.get(url)
+        d = resp.json()
+        if d.get("status") != 200:
+            return None
+        forecast = d.get("data", {}).get("forecast", [])
+        if not forecast:
+            return None
+        # The API sometimes lags by a day — find today's entry by date
+        today_str = datetime.date.today().strftime("%Y-%m-%d")
+        start_idx = 0
+        for i, day in enumerate(forecast):
+            if day.get("ymd") == today_str:
+                start_idx = i
+                break
+        forecast = forecast[start_idx:]  # align to today
+
+        def _fmt_day(day: dict) -> tuple[str, str, str, str]:
+            """Return (ymd, type, high, low) with units stripped."""
+            high = day.get("high", "").replace("高温", "").replace("℃", "").strip()
+            low  = day.get("low",  "").replace("低温", "").replace("℃", "").strip()
+            return day.get("ymd", ""), day.get("type", ""), high, low
+
+        today = forecast[0]
+        _, wtype, high, low = _fmt_day(today)
+        notice = today.get("notice", "")
+        wind   = f"{today.get('fx', '')} {today.get('fl', '')}".strip()
+        aqi    = today.get("aqi", "")
+
+        parts = [f"{city}天气（来源：中国天气网）"]
+        if wtype:
+            parts.append(f"今天：{wtype}")
+        if high and low:
+            parts.append(f"最高{high}℃ / 最低{low}℃")
+        if wind:
+            parts.append(f"风力：{wind}")
+        if aqi:
+            parts.append(f"AQI：{aqi}")
+        if notice:
+            parts.append(f"温馨提示：{notice}")
+
+        # Include next 2 days for context
+        day_labels = ["明天", "后天"]
+        for j, label in enumerate(day_labels):
+            if j + 1 >= len(forecast):
+                break
+            _, t2, h2, l2 = _fmt_day(forecast[j + 1])
+            day_parts = [f"{label}：{t2}"]
+            if h2 and l2:
+                day_parts.append(f"{h2}℃/{l2}℃")
+            wind2 = f"{forecast[j+1].get('fx','')} {forecast[j+1].get('fl','')}".strip()
+            if wind2:
+                day_parts.append(wind2)
+            parts.append("  ".join(day_parts))
+
+        return {
+            "title": f"{city}天气预报 - {today_str}",
+            "url": f"https://www.weather.com.cn/weather/{code}.shtml",
+            "snippet": "  ".join(parts),
+        }
+    except Exception:
+        return None
+
+
+async def _enrich_weather_cn(url: str, city: str, timeout: float = 8.0) -> dict | None:
+    """Fetch and parse weather.com.cn to get actual temperature & forecast data."""
+    if "weather.com.cn" not in url:
+        return None
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 "
+            "Chrome/120 Mobile Safari/537.36"
+        ),
+        "Accept-Language": "zh-CN,zh;q=0.9",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as cli:
+            resp = await cli.get(url, headers=headers)
+        html = resp.text
+        # Each day is a <li class="sky ..."> block
+        li_blocks = re.findall(r'<li[^>]*class="sky[^"]*"[^>]*>(.*?)</li>', html, re.S)
+        if not li_blocks:
+            return None
+
+        def _parse_day(li_html: str) -> dict:
+            day_m = re.search(r'<h1>(.*?)</h1>', li_html)
+            day   = _strip_tags(day_m.group(1)).strip() if day_m else ""
+            wea_m = re.search(r'<p[^>]*class="wea"[^>]*>(.*?)</p>', li_html)
+            wea   = _strip_tags(wea_m.group(1)).strip() if wea_m else ""
+            # <span>HIGH</span>/<i>LOW℃</i>  OR  just <i>TEMP℃</i>
+            span_m = re.search(r'<span[^>]*>(-?\d+)℃?</span>', li_html)
+            itag_m = re.search(r'<i>(-?\d+)℃?</i>', li_html)
+            high = span_m.group(1) if span_m else ""
+            low  = itag_m.group(1) if itag_m else ""
+            return {"day": day, "wea": wea, "high": high, "low": low}
+
+        today    = _parse_day(li_blocks[0])
+        tomorrow = _parse_day(li_blocks[1]) if len(li_blocks) > 1 else {}
+
+        parts: list[str] = []
+        # Today line
+        if today["wea"]:
+            parts.append(f"今天{today['day']}：{today['wea']}")
+        if today["high"] and today["low"]:
+            parts.append(f"最高{today['high']}℃ / 最低{today['low']}℃")
+        elif today["low"]:
+            parts.append(f"夜间低温{today['low']}℃")
+        elif today["high"]:
+            parts.append(f"气温{today['high']}℃")
+        # Tomorrow brief
+        if tomorrow.get("wea") or tomorrow.get("high"):
+            t = tomorrow
+            t_str = f"明天{t.get('day', '')}：{t.get('wea', '')}"
+            if t.get("high") and t.get("low"):
+                t_str += f" {t['high']}℃/{t['low']}℃"
+            parts.append(t_str)
+
+        if not parts:
+            return None
+        snippet = "  ".join(parts)
+        return {"title": f"{city}天气预报（中国天气网）", "url": url, "snippet": snippet}
+    except Exception:
+        return None
+
+
+# Rotating User-Agent pool to avoid Bing bot-detection after repeated requests
+_BING_UA_POOL = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+]
+
+
+async def _search_bing(query: str, max_results: int, timeout: float) -> list[dict]:
+    """Scrape Bing search results using a persistent session.
+
+    Tries cn.bing.com first; if it returns a bot-check page, retries with
+    www.bing.com (different rate-limit bucket) before giving up.
+    """
+    encoded = quote_plus(query)
+    ua = random.choice(_BING_UA_POOL)
+    # Small jitter so rapid successive requests do not look robotic
+    await asyncio.sleep(random.uniform(0.1, 0.5))
+
+    for i_host, host in enumerate(("cn.bing.com", "www.bing.com")):
+        client = await _get_search_client()          # re-fetch each iteration (may be reset)
+        url = f"https://{host}/search?q={encoded}&setlang=zh-CN&cc=CN"
+        try:
+            resp = await client.get(
+                url,
+                headers={
+                    "User-Agent": ua,
+                    "Referer": f"https://{host}/",
+                    "sec-fetch-dest": "document",
+                    "sec-fetch-mode": "navigate",
+                    "sec-fetch-site": "same-origin",
+                },
+            )
+        except Exception:
+            continue  # network error → try next host
+
+        if resp.status_code != 200:
+            continue  # non-200 → try next host
+
+        text = resp.text
+        # Detect bot-check / CAPTCHA page
+        if 'class="b_algo"' not in text and '<h2>' not in text:
+            # Reset session so the next search gets a fresh warm-up
+            global _SEARCH_CLIENT
+            try:
+                await _SEARCH_CLIENT.aclose()
+            except Exception:
+                pass
+            _SEARCH_CLIENT = None
+            continue  # try the other host
+
+        # Parse results
+        title_matches = re.findall(
+            r'<h2[^>]*><a[^>]+href="([^"]+)"[^>]*>(.*?)</a></h2>', text
+        )
+        snippet_matches = re.findall(
+            r'class="b_caption"[^>]*>.*?<p[^>]*>(.*?)</p>', text, re.S
+        )
+        results: list[dict] = []
+        for j, (url_r, title_r) in enumerate(title_matches):
+            if url_r.startswith("http") and len(results) < max_results:
+                snippet = _strip_tags(snippet_matches[j]) if j < len(snippet_matches) else ""
+                results.append({
+                    "title":   _strip_tags(title_r),
+                    "url":     url_r,
+                    "snippet": snippet[:300],
+                })
+        if results:
+            return results  # success — don't try the second host
+
+    raise RuntimeError("All Bing endpoints returned bot-check pages")
+
+
+async def _search_baidu(query: str, max_results: int, timeout: float) -> list[dict]:
+    """Scrape www.baidu.com as fallback."""
+    url = f"https://www.baidu.com/s?wd={quote_plus(query)}&rn={max_results}"
+    ua = random.choice(_BING_UA_POOL)
+    headers = {
+        "User-Agent": ua,
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Referer": "https://www.baidu.com/",
+    }
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        resp = await client.get(url, headers=headers)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Baidu returned HTTP {resp.status_code}")
+    text = resp.text
+    # Baidu bot-check pages are very short; real SERPs are >20KB
+    if len(text) < 5000:
+        raise RuntimeError("Baidu returned a bot-check / consent page")
+    # Baidu: <h3 class="t"><a href="...">TITLE</a></h3>
+    #        <span class="content-right_8Zs40">SNIPPET</span>  (or various snippet classes)
+    title_matches = re.findall(
+        r'<h3[^>]*class="[^"]*\bt\b[^"]*"[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+        text, re.S
+    )
+    snippet_matches = re.findall(
+        r'class="[^"]*c-abstract[^"]*"[^>]*>(.*?)</(?:span|div)>', text, re.S
+    )
+    results: list[dict] = []
+    for i, (url_r, title_r) in enumerate(title_matches):
+        if url_r.startswith("http") and len(results) < max_results:
+            snippet = _strip_tags(snippet_matches[i]) if i < len(snippet_matches) else ""
+            results.append({
+                "title":   _strip_tags(title_r),
+                "url":     url_r,
+                "snippet": snippet[:300],
+            })
+    return results
+
+
+async def _search_sogou(query: str, max_results: int, timeout: float) -> list[dict]:
+    """Scrape www.sogou.com as tertiary fallback when Bing and Baidu are rate-limited."""
+    url = f"https://www.sogou.com/web?query={quote_plus(query)}&num={max_results}"
+    ua = random.choice(_BING_UA_POOL)
+    headers = {
+        "User-Agent": ua,
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Referer": "https://www.sogou.com/",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        resp = await client.get(url, headers=headers)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Sogou returned HTTP {resp.status_code}")
+    text = resp.text
+    # Anti-spider page is ~5KB and contains "antispider" src or "安全验证" title
+    if len(text) < 10_000 or "antispider" in text or "安全验证" in text[:800]:
+        raise RuntimeError("Sogou returned a bot-check / verification page")
+    # Find the results container (class="results")
+    results_start = text.find('class="results"')
+    if results_start == -1:
+        results_start = text.find('id="main"')
+    if results_start == -1:
+        raise RuntimeError("Sogou: could not locate results container in page")
+    search_area = text[results_start: results_start + 300_000]
+    # Collect external title links (skip sogou.com and CDN sub-domains)
+    title_links = re.findall(
+        r'<a\s+href="(https?://(?!(?:www\.)?sogou\.com|[a-z0-9-]+\.sogoucdn\.com|cdnjs\.)[^"]+)"[^>]*>(.*?)</a>',
+        search_area, re.S,
+    )
+    seen_urls: set[str] = set()
+    results: list[dict] = []
+    for url_r, title_r in title_links:
+        clean_title = _strip_tags(title_r).strip()
+        if len(clean_title) < 5 or url_r in seen_urls or len(results) >= max_results:
+            continue
+        seen_urls.add(url_r)
+        results.append({"title": clean_title[:200], "url": url_r, "snippet": ""})
+    return results
+
+
+# Minimum seconds between consecutive web searches to avoid IP throttling
+_MIN_SEARCH_INTERVAL: float = 1.0
+_last_web_search_time: float = 0.0
+
+
+async def _web_search(query: str, max_results: int = 5) -> list[dict]:
+    """Search the web. For weather queries of known cities, uses sojson API for real-time data."""
+    global _last_web_search_time
+    # Enforce minimum inter-search delay to avoid IP rate-limiting
+    import time as _time
+    elapsed = _time.monotonic() - _last_web_search_time
+    if elapsed < _MIN_SEARCH_INTERVAL:
+        await asyncio.sleep(_MIN_SEARCH_INTERVAL - elapsed)
+    _last_web_search_time = _time.monotonic()
+
+    results: list[dict] = []
+    is_weather = bool(_WEATHER_RE.search(query))
+
+    # ── Weather fast-path: sojson structured API (city code map) ─────────────
+    if is_weather:
+        m = _CITY_FROM_WEATHER.match(query.strip())
+        city = m.group(1) if m else query.split("天气")[0].strip()[:6] or ""
+        if city:
+            sojson_result = await _fetch_weather_sojson(city)
+            if sojson_result:
+                results.append(sojson_result)
+                # Add Bing context for the query (general info without weather filter)
+                extra: list[dict] = []
+                try:
+                    extra = await _search_bing(query, max(1, max_results - 1), SEARCH_TIMEOUT)
+                    # Filter out non-weather results when we already have real data
+                    extra = [r for r in extra if "weather.com.cn" in r.get("url", "")
+                             or any(kw in r.get("title","") for kw in ["天气","气象","预报"])]
+                except Exception:
+                    pass
+                return results + extra
+
+    # ── General search via Bing ────────────────────────────────────────────────
+    try:
+        results = await _search_bing(query, max_results, SEARCH_TIMEOUT)
+        if results:
+            # For weather queries: try to enrich with weather.com.cn data if in results
+            if is_weather:
+                m2 = _CITY_FROM_WEATHER.match(query.strip())
+                city2 = m2.group(1) if m2 else query.split("天气")[0].strip()[:6] or ""
+                for r in results:
+                    if "weather.com.cn" in r.get("url", "") and city2:
+                        enriched = await _enrich_weather_cn(r["url"], city2)
+                        if enriched:
+                            results.insert(0, enriched)
+                        break
+            return results
+    except Exception:
+        pass
+    # ── Fallback to Baidu ───────────────────────────────────────────────────
+    try:
+        return await _search_baidu(query, max_results, SEARCH_TIMEOUT)
+    except Exception:
+        pass
+    # ── Fallback to Sogou ──────────────────────────────────────────────────
+    try:
+        return await _search_sogou(query, max_results, SEARCH_TIMEOUT)
+    except Exception:
+        return []
+
+
+
+@app.get("/api/search")
+async def search_api(q: str = "", n: int = 5):
+    """Explicit search endpoint: GET /api/search?q=...&n=5"""
+    if not q.strip():
+        return {"results": [], "error": "empty query"}
+    if not SEARCH_ENABLED:
+        return {"results": [], "error": "search disabled in config"}
+    results = await _web_search(q.strip(), max_results=min(n, 10))
+    return {"query": q, "results": results}
+
+
+def _build_search_context(results: list[dict]) -> str:
+    """Format search results as a context block for the LLM."""
+    if not results:
+        return ""
+    # Keep snippets short and strip anything that looks like a conversation
+    lines = [
+        "【联网搜索结果】以下是刚刚实时搜索到的内容，你必须直接基于这些信息回答用户问题。",
+        "不要说'我无法实时获取信息'——搜索已经完成，请直接利用下列内容作答。",
+        "若搜索结果不完整，请先给出已有信息，再说明不足之处：",
+        "",
+    ]
+    for i, r in enumerate(results, 1):
+        title = r.get("title", "").strip()
+        url   = r.get("url",   "").strip()
+        snip  = r.get("snippet", "").strip()
+        # Truncate at first newline and strip date preambles
+        snip = snip.split("\n")[0]
+        snip = _DATE_PRE.sub("", snip)[:200]
+        lines.append(f"[{i}] {title}")
+        if snip:
+            lines.append(f"    {snip}")
+        if url:
+            lines.append(f"    来源: {url}")
+    lines.append("")
+    lines.append("请根据以上搜索结果直接作答，引用时用 [编号] 标注来源，不要重复用户问题。")
+    return "\n".join(lines)
 
 
 # ── Chat proxy (streaming SSE) ────────────────────────────────────────────────
@@ -85,7 +555,45 @@ async def chat(request: Request):
     body = await request.json()
     body.setdefault("stream", True)
 
+    # ── Optional web search injection ────────────────────────────────────────
+    do_search: bool = bool(body.pop("web_search", False)) and SEARCH_ENABLED
+    search_results: list[dict] = []
+    search_query: str = ""
+
+    if do_search:
+        msgs = body.get("messages", [])
+        # Use the last user message as the search query
+        user_msgs = [m for m in msgs if m.get("role") == "user"]
+        if user_msgs:
+            search_query = user_msgs[-1].get("content", "")[:200].strip()
+        if search_query:
+            try:
+                # Hard cap: give up after 10 s total so the UI never appears frozen
+                search_results = await asyncio.wait_for(
+                    _web_search(search_query, max_results=SEARCH_MAX), timeout=10.0
+                )
+            except asyncio.TimeoutError:
+                search_results = []
+            if search_results:
+                ctx = _build_search_context(search_results)
+                # Append context directly to the last user message instead of
+                # injecting a separate system message — more compatible with
+                # small models that get confused by extra system turns.
+                new_msgs = [dict(m) for m in msgs]
+                for m in reversed(new_msgs):
+                    if m.get("role") == "user":
+                        m["content"] = ctx + "\n\n用户问题：" + m["content"]
+                        break
+                body["messages"] = new_msgs
+
     async def stream_generator():
+        # Emit search results metadata FIRST so the frontend can render citations
+        if search_results:
+            meta = json.dumps({"type": "search_results",
+                               "query": search_query,
+                               "results": search_results}, ensure_ascii=False)
+            yield f"data: {meta}\n\n".encode()
+
         buf = b""
         async with httpx.AsyncClient(timeout=120.0) as client:
             try:
@@ -95,6 +603,22 @@ async def chat(request: Request):
                     json=body,
                     headers=COMMON_HEADERS,
                 ) as resp:
+                    # Non-200: gateway returned an error (e.g. "No healthy engine")
+                    # The body is plain JSON, not SSE — wrap it so the frontend can show it
+                    if resp.status_code != 200:
+                        err_body = await resp.aread()
+                        try:
+                            detail = json.loads(err_body).get("detail", err_body.decode()[:200])
+                        except Exception:
+                            detail = err_body.decode()[:200]
+                        if "No healthy" in detail or "not initialized" in detail or "Control Plane" in detail:
+                            msg = "⚠️ 推理引擎未就绪，正在尝试自动恢复，请稍后重试。"
+                        else:
+                            msg = f"⚠️ Gateway 错误：{detail[:120]}"
+                        safe = msg.replace('"', "'").replace('\n', ' ')
+                        yield f'data: {{"choices":[{{"delta":{{"content":"{safe}"}},"finish_reason":"stop"}}]}}\n\n'.encode()
+                        yield b"data: [DONE]\n\n"
+                        return
                     async for chunk in resp.aiter_bytes():
                         yield chunk
                         # Count tokens for TPS tracking
@@ -421,9 +945,12 @@ _download_stop: dict[str, bool] = {}
 
 
 def _dir_size(path: Path) -> int:
+    # Include .incomplete files — huggingface_hub writes partial content to
+    # <filename>.incomplete during snapshot_download. Excluding them would
+    # always report 0 bytes downloaded and make the progress bar appear stuck.
     try:
         return sum(f.stat().st_size for f in path.rglob("*")
-                   if f.is_file() and not f.name.endswith((".lock", ".incomplete")))
+                   if f.is_file() and not f.name.endswith(".lock"))
     except Exception:
         return 0
 
@@ -453,8 +980,21 @@ def _download_worker(model_id: str, repo_id: str, save_path: Path, total_bytes: 
             now = time.time()
             speed = max((downloaded - last_bytes) / max(now - last_t, 0.001) / 1e6, 0.0)
             pct = min(int(downloaded / max(total_bytes, 1) * 100), 99) if total_bytes > 0 else 0
+            # Show the currently-downloading file name (strip .incomplete suffix)
+            try:
+                in_progress = [
+                    f.name.removesuffix(".incomplete")
+                    for f in save_path.rglob("*.incomplete")
+                    if f.is_file()
+                ]
+                current_file = in_progress[0] if in_progress else (
+                    "正在下载…" if downloaded > 0 else "正在连接…"
+                )
+            except Exception:
+                current_file = "正在下载…"
             _downloads[model_id].update({
-                "downloaded_bytes": downloaded, "speed_mbps": round(speed, 1), "pct": pct,
+                "downloaded_bytes": downloaded, "speed_mbps": round(speed, 1),
+                "pct": pct, "current_file": current_file,
             })
             last_bytes, last_t = downloaded, now
 
@@ -477,12 +1017,17 @@ def _download_worker(model_id: str, repo_id: str, save_path: Path, total_bytes: 
             os.environ[k] = v
 
         try:
-            snapshot_download(
-                repo_id=repo_id,
-                local_dir=str(save_path),
-                local_dir_use_symlinks=False,
-                token=HF_TOKEN or None,
-            )
+            # local_dir_use_symlinks was removed in huggingface_hub >= 0.23;
+            # fall back gracefully if the kwarg is rejected.
+            _sd_kwargs: dict[str, Any] = {
+                "repo_id": repo_id,
+                "local_dir": str(save_path),
+                "token": HF_TOKEN or None,
+            }
+            try:
+                snapshot_download(local_dir_use_symlinks=False, **_sd_kwargs)
+            except TypeError:
+                snapshot_download(**_sd_kwargs)
         finally:
             for k, v in env_backup.items():
                 if v is None:

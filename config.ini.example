@@ -17,3 +17,15 @@ port = 3000
 name = SageLLM 私有工作站
 accent_color = #6366f1
 logo =
+
+[search]
+# 是否启用联网搜索功能 (true/false)
+enabled = true
+# 搜索引擎 (当前仅支持 duckduckgo)
+engine = duckduckgo
+# 每次搜索最多返回几条结果 (1-10)
+max_results = 5
+# 搜索请求超时秒数
+timeout_sec = 8
+# 搜索区域/语言 (us-en 英文, cn-zh 中文)
+region = cn-zh

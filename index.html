@@ -18,148 +18,215 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* ── Layout ── */
-#app{display:flex;flex-direction:column;height:100vh}
-
-/* ── Header ── */
+/* Header */
 header{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 20px;
-  border-bottom:1px solid var(--border);
+  padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
   background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 15%,transparent) 0%,var(--bg) 100%);
-  gap:12px;flex-shrink:0;
+  gap:10px;
 }
-.brand{display:flex;align-items:center;gap:10px}
-#brand-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;background:var(--accent);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+#brand-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;background:var(--accent);flex-shrink:0}
 #brand-icon img{width:100%;height:100%;object-fit:contain;border-radius:8px}
-#brand-name{font-weight:600;font-size:16px;letter-spacing:-0.3px;white-space:nowrap}
-
-.badges{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
-.badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid;white-space:nowrap}
-.badge-green{color:#4ade80;background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.2)}
-.badge-blue {color:#38bdf8;background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.2)}
+#brand-name{font-weight:600;font-size:15px;letter-spacing:-.3px;white-space:nowrap}
+.header-center{display:flex;align-items:center;gap:6px;flex:1;justify-content:center}
+.header-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.badge{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid;white-space:nowrap}
 .badge-status{color:#4ade80;background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.2)}
 .badge-status.offline{color:#f87171;background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.2)}
-.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
 .dot.pulse{animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-btn{display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;transition:all .18s;white-space:nowrap;font-weight:500}
+.hdr-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15)}
+.hdr-btn.active{background:color-mix(in srgb,var(--accent) 15%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent)}
+select.hdr-sel{appearance:none;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 22px 4px 8px;border-radius:8px;cursor:pointer;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;transition:all .18s;max-width:160px}
+select.hdr-sel:hover{background-color:rgba(255,255,255,.1)}
+select.hdr-sel option{background:#1e293b}
 
-.header-right{display:flex;align-items:center;gap:8px}
-select{
-  appearance:none;background:rgba(255,255,255,.06);border:1px solid var(--border);
-  color:var(--text);font-size:12px;padding:5px 28px 5px 10px;border-radius:8px;
-  cursor:pointer;outline:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 8px center;
-}
-select:hover{background-color:rgba(255,255,255,.1)}
-select option{background:#1e293b}
+/* System Prompt bar */
+#sysprompt-bar{display:flex;align-items:center;gap:8px;padding:6px 16px;background:color-mix(in srgb,var(--accent) 8%,transparent);border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,transparent);font-size:12px;flex-shrink:0}
+.sp-bar-icon{font-size:13px}
+#sysprompt-preview{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:600px}
+#sysprompt-preview strong{color:var(--text)}
+.sp-bar-btn{padding:2px 8px;font-size:11px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;transition:all .15s}
+.sp-bar-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.sp-bar-clear{border-color:transparent;background:transparent;font-size:14px}
 
-/* ── Main ── */
-main{display:flex;flex:1;overflow:hidden}
+/* Main layout */
+main{display:flex;flex:1;overflow:hidden;min-height:0}
 
-/* ── Chat ── */
-#chat-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
-
-#messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+/* Chat */
+#chat-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
 #messages::-webkit-scrollbar{width:4px}
 #messages::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
 
 /* Empty state */
-#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;text-align:center;opacity:0;transition:opacity .4s}
+#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;text-align:center;opacity:0;transition:opacity .4s}
 #empty.show{opacity:1}
-.empty-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--accent) 20%,transparent);margin-bottom:4px}
-.empty-icon svg{color:var(--accent)}
+.empty-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--accent) 18%,transparent);margin-bottom:4px}
 #empty p{color:var(--muted);font-size:13px}
 #empty .sub{color:var(--dim);font-size:12px;margin-top:2px}
-.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px;max-width:480px}
-.sug{padding:6px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:12px;cursor:pointer;transition:all .2s}
-.sug:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.suggestions{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:8px;max-width:460px}
+.sug{padding:5px 13px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:12px;cursor:pointer;transition:all .18s}
+.sug:hover{background:rgba(255,255,255,.1);color:var(--text);border-color:rgba(255,255,255,.15)}
 
 /* Bubbles */
-.msg{display:flex;gap:10px;animation:slideUp .25s ease-out}
+.msg{display:flex;gap:10px;animation:slideUp .22s ease-out}
 .msg.user{flex-direction:row-reverse}
-@keyframes slideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-.avatar{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
-.avatar-ai{background:color-mix(in srgb,var(--accent) 25%,transparent)}
-.avatar-user{background:rgba(255,255,255,.08)}
-
-.bubble{max-width:75%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.65;word-break:break-word}
-.bubble-ai{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px 16px 16px 4px}
-.bubble-user{background:rgba(255,255,255,.09);border-radius:16px 16px 4px 16px}
-
-.bubble-meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;color:var(--dim)}
+@keyframes slideUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.avatar{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.avatar-ai{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.avatar-user{background:rgba(255,255,255,.07)}
+.bubble{max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.7;word-break:break-word}
+.bubble-ai{background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:14px 14px 14px 4px}
+.bubble-user{background:rgba(255,255,255,.08);border-radius:14px 14px 4px 14px}
+.bubble-meta{display:flex;align-items:center;gap:7px;margin-top:7px;font-size:11px;color:var(--dim);flex-wrap:wrap}
 .msg.user .bubble-meta{justify-content:flex-end}
-.copy-btn{cursor:pointer;opacity:0;transition:opacity .2s;background:none;border:none;color:var(--dim);padding:0;line-height:1}
-.bubble:hover .copy-btn{opacity:1}
-.copy-btn:hover{color:var(--muted)}
+.icon-copy{cursor:pointer;opacity:0;transition:opacity .18s;background:none;border:none;color:var(--dim);padding:0;line-height:1;display:inline-flex}
+.bubble:hover .icon-copy{opacity:1}
+.icon-copy:hover{color:var(--muted)}
 
-/* Code */
-.bubble pre{background:rgba(0,0,0,.35);border-radius:8px;padding:10px 12px;margin:8px 0;overflow-x:auto;font-size:12px;font-family:'Fira Code','Cascadia Code','Consolas',monospace;color:#86efac}
-.bubble code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace;color:#fbbf24}
+/* Markdown */
+.bubble-content p{margin-bottom:6px}
+.bubble-content p:last-child{margin-bottom:0}
+.bubble-content h1,.bubble-content h2,.bubble-content h3{margin:10px 0 5px;font-weight:600;letter-spacing:-.2px;line-height:1.3}
+.bubble-content h1{font-size:17px}
+.bubble-content h2{font-size:15px}
+.bubble-content h3{font-size:13px;color:var(--muted)}
+.bubble-content ul,.bubble-content ol{padding-left:18px;margin:5px 0;display:flex;flex-direction:column;gap:2px}
+.bubble-content li{line-height:1.6}
+.bubble-content blockquote{border-left:3px solid var(--accent);margin:6px 0;padding:4px 10px;color:var(--muted);font-style:italic;background:rgba(255,255,255,.03);border-radius:0 6px 6px 0}
+.bubble-content hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+.bubble-content strong{color:var(--text);font-weight:600}
+.bubble-content em{color:color-mix(in srgb,var(--text) 70%,var(--accent));font-style:italic}
+.bubble-content del{text-decoration:line-through;color:var(--muted)}
+.bubble-content code{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);padding:1px 5px;border-radius:4px;font-family:'Fira Code','Cascadia Code','Consolas',monospace;font-size:12px;color:#86efac}
+.bubble-content table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+.bubble-content th{background:rgba(255,255,255,.07);padding:6px 10px;text-align:left;border:1px solid var(--border);font-weight:600;color:var(--muted)}
+.bubble-content td{padding:6px 10px;border:1px solid var(--border)}
+.bubble-content tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.codeblock{margin:8px 0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.09)}
+.codeblock-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(255,255,255,.06);font-size:11px;color:var(--muted);font-family:monospace}
+.codeblock-lang{color:var(--accent);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+.codeblock-copy{background:none;border:1px solid var(--border);color:var(--dim);padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;transition:all .15s}
+.codeblock-copy:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.codeblock pre{background:rgba(0,0,0,.4);padding:12px 14px;overflow-x:auto;font-size:12px;font-family:'Fira Code','Cascadia Code','Consolas',monospace;line-height:1.6;color:#d4fce8;margin:0}
 
-/* Typing dots */
-#typing{display:none;flex-direction:row;gap:10px;animation:slideUp .2s ease-out}
-.typing-dots{display:flex;gap:5px;align-items:center;padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px 16px 16px 4px}
-.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce .9s ease-in-out infinite}
-.typing-dots span:nth-child(2){animation-delay:.15s}
-.typing-dots span:nth-child(3){animation-delay:.3s}
-@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+/* Attach bar */
+#attach-bar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;margin:0 12px 6px;font-size:12px}
+.attach-icon{font-size:14px}
+#attach-name{color:var(--text);font-weight:500}
+#attach-size{color:var(--dim)}
+.attach-clear{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;transition:color .15s}
+.attach-clear:hover{color:#f87171}
 
-/* Input area */
-#input-area{padding:12px 20px 16px;border-top:1px solid var(--border)}
-#input-box{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:14px;padding:10px 12px;transition:border-color .2s}
+/* Input */
+#input-area{padding:10px 12px 12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+#input-box{display:flex;align-items:flex-end;gap:8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:8px 10px;transition:border-color .2s}
 #input-box:focus-within{border-color:rgba(255,255,255,.2)}
-#input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;resize:none;line-height:1.55;min-height:22px;max-height:160px;font-family:inherit}
+#input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;line-height:1.6;resize:none;min-height:22px;max-height:160px;font-family:inherit;padding:0}
 #input::placeholder{color:var(--dim)}
-.input-btns{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.input-btns{display:flex;align-items:flex-end;gap:4px;flex-shrink:0}
+.icon-btn2{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-size:13px}
+.icon-btn2:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.icon-btn2.active{background:rgba(99,102,241,.18);border-color:var(--accent);color:var(--accent)}
+/* Citations card */
+.citations-card{margin:12px 0 16px 0;border:1px solid rgba(99,102,241,.35);border-radius:16px;background:rgba(99,102,241,.07);overflow:hidden;font-size:17px}
+.citations-header{display:flex;align-items:center;gap:12px;padding:16px 24px;cursor:pointer;user-select:none;color:var(--accent);font-weight:700;letter-spacing:.3px;font-size:17px}
+.citations-header:hover{background:rgba(99,102,241,.1)}
+.citations-header .chevron{transition:transform .2s;display:inline-block}
+.citations-header.open .chevron{transform:rotate(90deg)}
+.citations-body{padding:14px 24px 22px}
+.citation-item{padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.citation-item:last-child{border-bottom:none}
+.citation-num{display:inline-block;min-width:30px;font-weight:700;color:var(--accent);font-size:17px}
+.citation-title{font-weight:600;color:var(--text);margin-bottom:6px;font-size:17px;line-height:1.5}
+.citation-snippet{color:var(--muted);line-height:1.8;font-size:15px}
+.citation-link{color:var(--accent);word-break:break-all;font-size:14px;text-decoration:none}
+.citation-link:hover{text-decoration:underline}
+#send-btn{width:32px;height:32px;border-radius:9px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
+#send-btn:hover{filter:brightness(1.1)}
+#input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--dim)}
+.footer-hint{display:flex;gap:10px}
+.footer-hint kbd{font-family:monospace;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:3px;padding:0 4px;font-size:10px;color:var(--muted)}
+#chat-wrap{position:relative}
+#chat-wrap.dragover::after{content:'松开鼠标以注入文件内容';position:absolute;inset:0;background:rgba(99,102,241,.12);border:2px dashed var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent);pointer-events:none;z-index:10}
 
-.icon-btn{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;background:transparent;color:var(--dim)}
-.icon-btn:hover{background:rgba(255,255,255,.08);color:var(--muted)}
-#send-btn{background:var(--accent);color:#fff;width:32px;height:32px;border-radius:9px}
-#send-btn:hover:not(:disabled){filter:brightness(1.15)}
-#send-btn:disabled{opacity:.35;cursor:not-allowed}
-#send-btn.stop{background:#ef4444}
+/* Left inference panel */
+#left-panel{position:relative;display:flex;flex-direction:row;flex-shrink:0;transition:width .22s;width:270px;border-right:1px solid var(--border);background:color-mix(in srgb,var(--bg2) 50%,transparent)}
+#left-panel.lp-collapsed{width:34px}
+.lp-tab{width:34px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:6px;cursor:pointer}
+.lp-tab:hover{background:rgba(255,255,255,.05)}
+.lp-tab-lbl{font-size:9px;color:var(--dim);writing-mode:vertical-rl;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+#left-panel.lp-collapsed .lp-inner{display:none}
+.lp-inner{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.lp-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px 9px;font-size:13px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);flex-shrink:0}
+.lp-close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 7px;border-radius:6px;line-height:1}
+.lp-close-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.lp-scroll{flex:1;overflow-y:auto;padding:12px 14px 20px}
+.lp-scroll::-webkit-scrollbar{width:3px}
+.lp-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+.lp-section{margin-bottom:18px}
+.lp-section[hidden]{display:none !important}
+.lp-sec-title{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.lp-empty-msg{padding:60px 10px;text-align:center;color:var(--dim);font-size:13px;line-height:2}
+.lp-proc-list .process-steps{display:flex;flex-direction:column;gap:4px}
+.lp-query{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.lp-think-content .think-body{padding:0;border:none;font-size:13px;line-height:1.85;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+/* Sidebar */
+#sidebar{width:240px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--bg2) 50%,transparent)}
+#sidebar::-webkit-scrollbar{width:3px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+.sidebar-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);padding-bottom:4px}
+.sidebar-section-title{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);padding:6px 0 2px;border-top:1px solid var(--border);margin-top:2px}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.stat-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+.stat-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.stat-unit{font-size:11px;color:var(--dim);margin-left:2px}
+.stat-sub{font-size:10px;color:var(--dim)}
+.gpu-bar-wrap{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:2px}
+.gpu-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .6s ease}
+.spark-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:8px 12px 6px}
+.spark-label{font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:500}
+.spark-svg{width:100%;height:48px;display:block;overflow:visible}
+.info-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:grid;gap:6px}
+.info-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px}
+.info-row span:first-child{color:var(--dim);flex-shrink:0}
+.info-row span:last-child{color:var(--text);font-weight:500;text-align:right;word-break:break-all}
+.chip-badge{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
 
-#input-footer{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
+/* Generation params */
+.param-row{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:9px 11px;display:flex;flex-direction:column;gap:6px}
+.param-header{display:flex;align-items:center;justify-content:space-between}
+.param-label{font-size:11px;color:var(--dim);font-weight:500}
+.param-value{font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px}
+.param-hint{font-size:10px;color:var(--dim);margin-top:-2px}
+input[type=range].param-slider{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.12);outline:none;cursor:pointer}
+input[type=range].param-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg2);transition:transform .15s}
+input[type=range].param-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.param-reset{width:100%;padding:5px;font-size:11px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:all .15s;margin-top:2px}
+.param-reset:hover{background:rgba(255,255,255,.08);color:var(--text)}
 
-/* ── Sidebar / Metrics ── */
-#sidebar{
-  width:270px;min-width:250px;border-left:1px solid var(--border);
-  background:rgba(15,23,42,.6);display:flex;flex-direction:column;
-  overflow-y:auto;flex-shrink:0;
-}
-#sidebar::-webkit-scrollbar{width:4px}
-#sidebar::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
+/* Sessions */
+.new-session-btn{font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);cursor:pointer;transition:all .15s}
+.new-session-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+#sessions-list{display:flex;flex-direction:column;gap:4px}
+.sess-item{padding:7px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.sess-item:hover{background:rgba(255,255,255,.05);border-color:var(--border)}
+.sess-item.active{background:color-mix(in srgb,var(--accent) 10%,transparent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.sess-title{font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sess-item.active .sess-title{color:var(--accent)}
+.sess-meta{font-size:10px;color:var(--dim);margin-top:2px}
+.sess-del{opacity:0;font-size:14px;color:var(--dim);background:none;border:none;cursor:pointer;padding:0 2px;line-height:1;transition:all .15s;flex-shrink:0}
+.sess-item:hover .sess-del{opacity:1}
+.sess-del:hover{color:#f87171}
 
-.sidebar-title{padding:14px 16px 6px;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
-
-.stat-card{margin:0 10px 8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
-.stat-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.stat-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center}
-.stat-val{font-size:22px;font-weight:700;line-height:1;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.stat-unit{font-size:12px;color:var(--dim);font-weight:400;margin-left:3px}
-.stat-sub{font-size:11px;color:var(--dim);margin-top:4px}
-
-/* GPU bar */
-.gpu-bar-wrap{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:8px}
-.gpu-bar{height:100%;border-radius:4px;transition:width .8s ease;background:var(--accent)}
-
-/* Sparkline */
-.spark-card{margin:0 10px 8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
-.spark-label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.spark-svg{width:100%;height:52px;display:block}
-
-/* Info card */
-.info-card{margin:0 10px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:grid;gap:8px}
-.info-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
-.info-row span:first-child{color:var(--dim)}
-.info-row span:last-child{color:var(--text);font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
-.chip-badge{color:#4ade80;font-size:11px;font-weight:600}
-
-/* ── Hub Modal ── */
+/* Hub modal */
 #hub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 #hub-overlay.open{display:flex}
 #hub-panel{background:var(--bg2);width:100%;max-width:960px;border-radius:20px;display:flex;flex-direction:column;max-height:92vh;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);border:1px solid var(--border)}
@@ -174,21 +241,19 @@ main{display:flex;flex:1;overflow:hidden}
 .hub-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
 .hub-card:hover{border-color:rgba(255,255,255,.15)}
 .hub-card.active-model{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
-.hc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.hc-name{font-size:14px;font-weight:650;line-height:1.2}
-.hc-meta{font-size:11px;color:var(--muted);margin-top:2px}
-.hc-vram{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;background:rgba(99,102,241,.15);color:#a78bfa;white-space:nowrap;flex-shrink:0;align-self:flex-start}
-.hc-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.hc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.hc-name{font-weight:600;font-size:14px}
+.hc-params{font-size:11px;color:var(--dim);background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px}
+.hc-desc{font-size:12px;color:var(--muted);line-height:1.5}
 .hc-tags{display:flex;flex-wrap:wrap;gap:5px}
-.hc-tag{font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--dim)}
-/* progress */
+.hc-tag{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);color:var(--dim)}
+.hc-meta{display:flex;gap:8px;font-size:11px;color:var(--dim)}
 .hc-progress{display:none;padding-top:4px}
 .hc-progress.show{display:block}
-.hc-pbar-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-bottom:7px}
-.hc-pbar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .6s cubic-bezier(.4,0,.2,1)}
-.hc-prow{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
-.hc-pfile{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:4px}
-/* buttons */
+.hc-pbar-track{height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.hc-pbar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .5s}
+.hc-pstats{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+.hc-pfile{font-size:10px;color:var(--dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btn-hub{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .2s;width:100%;justify-content:center}
 .btn-hub.primary{background:var(--accent);color:#fff}
 .btn-hub.primary:hover{filter:brightness(1.12)}
@@ -198,38 +263,128 @@ main{display:flex;flex:1;overflow:hidden}
 .btn-hub.danger{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
 .btn-hub:disabled{opacity:.38;cursor:default;pointer-events:none}
 .btn-hub.active-label{cursor:default;pointer-events:none}
-/* toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,41,59,.95);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:9px 20px;border-radius:12px;font-size:13px;z-index:9999;pointer-events:none;transition:opacity .3s}
+
+/* System Prompt modal */
+#sysprompt-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+#sysprompt-modal.open{display:flex}
+#sysprompt-panel{background:var(--bg2);border-radius:18px;width:100%;max-width:560px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden}
+.sp-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border)}
+.sp-head h2{font-size:16px;font-weight:700}
+.sp-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.sp-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.sp-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--dim)}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.preset-card{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:3px}
+.preset-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15)}
+.preset-card.selected{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.preset-title{font-size:13px;font-weight:600}
+.preset-desc{font-size:11px;color:var(--dim);line-height:1.4}
+#sysprompt-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:100px;outline:none;transition:border-color .18s}
+#sysprompt-input:focus{border-color:rgba(255,255,255,.2)}
+.sp-footer{display:flex;gap:8px;justify-content:flex-end;padding-top:4px}
+.sp-btn{padding:7px 18px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;border:none}
+.sp-btn-ghost{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border)}
+.sp-btn-ghost:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.sp-btn-primary{background:var(--accent);color:#fff}
+.sp-btn-primary:hover{filter:brightness(1.1)}
+
+/* Typing indicator */
+#typing{display:none;gap:10px;align-items:center}
+.typing-dots{display:flex;gap:4px;padding:10px 14px;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:14px 14px 14px 4px}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.4;animation:typing 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+#typing-label{color:var(--muted);font-size:12px;font-style:italic;opacity:.85}
+/* Think block */
+.think-block{margin:0 0 12px;border:1px solid rgba(168,85,247,.32);border-radius:16px;background:rgba(168,85,247,.06);overflow:hidden;font-size:17px}
+.think-header{display:flex;align-items:center;gap:12px;padding:16px 24px;cursor:pointer;color:#c084fc;font-weight:700;user-select:none;letter-spacing:.2px;font-size:17px}
+.think-header:hover{background:rgba(168,85,247,.1)}
+.think-header .chevron{transition:transform .2s;display:inline-block}
+.think-header.open .chevron{transform:rotate(90deg)}
+.think-body{padding:14px 24px 22px;color:var(--muted);line-height:1.85;white-space:pre-wrap;word-break:break-word;font-size:15px;border-top:1px solid rgba(168,85,247,.15)}
+/* Process card */
+.process-card{margin:0 0 12px;border:1px solid rgba(99,102,241,.28);border-radius:16px;background:rgba(99,102,241,.05);overflow:hidden;font-size:17px}
+.process-card .process-header{display:flex;align-items:center;gap:12px;padding:16px 24px;cursor:pointer;color:var(--accent);font-weight:700;user-select:none;font-size:17px}
+.process-card .process-header:hover{background:rgba(99,102,241,.1)}
+.process-card .p-chevron{transition:transform .2s;display:inline-block;transform:rotate(90deg)}
+.process-card.collapsed .p-chevron{transform:rotate(0deg)}
+.process-card .p-summary{margin-left:auto;font-size:14px;font-weight:400;color:var(--muted)}
+.process-card .process-body{padding:12px 24px 20px;border-top:1px solid rgba(99,102,241,.15)}
+.process-card.collapsed .process-body{display:none}
+.process-step{display:flex;align-items:center;gap:14px;padding:6px 0;color:var(--muted);font-size:15px;line-height:1.85}
+.process-step.active{color:var(--text)}
+.process-step .step-icon{width:24px;flex-shrink:0;font-size:19px}
+.process-step.active .step-icon{display:inline-block;animation:proc-pulse 1.2s ease-in-out infinite}
+@keyframes proc-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,41,59,.96);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:8px 18px;border-radius:12px;font-size:13px;z-index:9999;pointer-events:none;transition:opacity .3s}
+.toast.err{border-color:rgba(248,113,113,.3);color:#f87171}
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- Header -->
   <header>
     <div class="brand">
       <div id="brand-icon">AI</div>
       <span id="brand-name">SageLLM 工作站</span>
     </div>
-
-    <div class="badges">
+    <div class="header-center">
+      <button class="hdr-btn" id="sysprompt-btn" onclick="openSysPrompt()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        人格
+      </button>
       <span id="status-badge" class="badge badge-status offline">
         <span class="dot" id="status-dot"></span>
         <span id="status-text">连接中</span>
       </span>
     </div>
-
     <div class="header-right">
-      <select id="model-select"></select>
-      <button id="hub-btn" onclick="openHub()" style="display:flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;transition:all .2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
+      <select id="backend-select" class="hdr-sel" title="推理后端（重启 Gateway 生效）" onchange="switchBackend(this.value)"></select>
+      <select id="model-select" class="hdr-sel"></select>
+      <button class="hdr-btn" id="hub-btn" onclick="openHub()">
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><path d="M14 18h8M18 14v8"/></svg>
         模型库
       </button>
     </div>
   </header>
 
-  <!-- Main -->
+  <div id="sysprompt-bar" hidden>
+    <span class="sp-bar-icon">⚙</span>
+    <span id="sysprompt-preview"></span>
+    <button class="sp-bar-btn" onclick="openSysPrompt()">编辑</button>
+    <button class="sp-bar-btn sp-bar-clear" onclick="clearSysPrompt()" title="清除">×</button>
+  </div>
+
   <main>
-    <!-- Chat -->
+    <div id="left-panel" class="lp-collapsed">
+      <div class="lp-tab" onclick="toggleLeftPanel()" title="推理过程面板">
+        <span style="font-size:16px">🔭</span>
+        <span class="lp-tab-lbl">推理</span>
+      </div>
+      <div class="lp-inner">
+        <div class="lp-head">
+          <span>🔭 推理过程</span>
+          <button class="lp-close-btn" onclick="toggleLeftPanel()" title="收起">✕</button>
+        </div>
+        <div class="lp-scroll">
+          <div id="lp-empty" class="lp-empty-msg">发送消息后<br>这里显示推理过程</div>
+          <div id="lp-process-wrap" class="lp-section" hidden>
+            <div class="lp-sec-title">⚙️ 处理流程</div>
+            <div id="lp-process"></div>
+          </div>
+          <div id="lp-citations-wrap" class="lp-section" hidden>
+            <div class="lp-sec-title">🌐 搜索来源</div>
+            <div id="lp-citations"></div>
+          </div>
+          <div id="lp-think-wrap" class="lp-section" hidden>
+            <div class="lp-sec-title">💭 思考过程</div>
+            <div id="lp-think"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="chat-wrap">
       <div id="messages">
         <div id="empty" class="show">
@@ -240,150 +395,147 @@ main{display:flex;flex:1;overflow:hidden}
           <p class="sub">选择推理后端，开始本地对话</p>
           <div class="suggestions" id="suggestions">
             <span class="sug">帮我写一份工作周报</span>
-            <span class="sug">用 Python 写一个快速排序</span>
-            <span class="sug">解释一下量子计算的原理</span>
-            <span class="sug">翻译这段英文</span>
+            <span class="sug">用 Python 写快速排序</span>
+            <span class="sug">解释量子计算的原理</span>
+            <span class="sug">把这段英文翻译成中文</span>
           </div>
         </div>
         <div id="typing">
           <div class="avatar avatar-ai">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/></svg>
           </div>
           <div class="typing-dots"><span></span><span></span><span></span></div>
+          <span id="typing-label"></span>
         </div>
       </div>
 
       <div id="input-area">
+        <div id="attach-bar" hidden>
+          <span class="attach-icon">📎</span>
+          <span id="attach-name"></span>
+          <span id="attach-size"></span>
+          <button class="attach-clear" onclick="clearAttachment()" title="移除文件">×</button>
+        </div>
         <div id="input-box">
-          <textarea id="input" placeholder="输入消息… (Enter 发送，Shift+Enter 换行)" rows="1"></textarea>
+          <textarea id="input" placeholder="输入消息…（Enter 发送，Shift+Enter 换行，可拖入文件）" rows="1"></textarea>
           <div class="input-btns">
-            <button class="icon-btn" id="clear-btn" title="清空对话" style="display:none">
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            <button class="icon-btn2" title="附加文件" onclick="triggerFileAttach()">📎</button>
+            <button class="icon-btn2" id="export-btn" title="导出对话 (Ctrl+E)" onclick="exportChat()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v13M5 14l7 7 7-7"/><path d="M3 21h18"/></svg>
             </button>
+            <button class="icon-btn2" id="clear-btn" title="清空对话 (Ctrl+K)" style="display:none" onclick="clearChat()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+            <button class="icon-btn2" id="web-search-btn" title="联网搜索（点击开关）" onclick="toggleWebSearch()">🌐</button>
             <button id="send-btn" title="发送">
-              <svg id="send-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+              <svg id="send-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
             </button>
           </div>
         </div>
-        <div id="input-footer"></div>
+        <div id="input-footer">
+          <div class="footer-hint">
+            <span><kbd>Enter</kbd> 发送</span>
+            <span><kbd>Shift+Enter</kbd> 换行</span>
+            <span><kbd>Ctrl+K</kbd> 清空</span>
+            <span><kbd>Ctrl+E</kbd> 导出</span>
+          </div>
+          <span id="token-counter" style="color:var(--dim);font-size:11px"></span>
+          <span id="search-indicator" style="color:var(--accent);font-size:11px;font-weight:600"></span>
+        </div>
       </div>
     </div>
 
-    <!-- Sidebar -->
     <div id="sidebar">
       <div class="sidebar-title">实时监控</div>
-
-      <!-- TPS -->
       <div class="stat-card">
-        <div class="stat-label">
-          <div class="stat-icon" style="background:rgba(167,139,250,.15)">
-            <svg width="12" height="12" fill="none" stroke="#a78bfa" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          </div>
-          吞吐率
-        </div>
+        <div class="stat-label"><div class="stat-icon" style="background:rgba(167,139,250,.15)"><svg width="12" height="12" fill="none" stroke="#a78bfa" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>吞吐率</div>
         <div><span class="stat-val" id="m-tps">—</span><span class="stat-unit">tok/s</span></div>
       </div>
-
-      <!-- Latency -->
       <div class="stat-card">
-        <div class="stat-label">
-          <div class="stat-icon" style="background:rgba(56,189,248,.15)">
-            <svg width="12" height="12" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          </div>
-          首 Token 延迟
-        </div>
+        <div class="stat-label"><div class="stat-icon" style="background:rgba(56,189,248,.15)"><svg width="12" height="12" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>首 Token 延迟</div>
         <div><span class="stat-val" id="m-lat">—</span><span class="stat-unit">ms</span></div>
-        <div class="stat-sub">P50 响应时间</div>
       </div>
-
-      <!-- GPU Util -->
       <div class="stat-card">
-        <div class="stat-label">
-          <div class="stat-icon" style="background:rgba(52,211,153,.15)">
-            <svg width="12" height="12" fill="none" stroke="#34d399" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          </div>
-          算力利用率
-        </div>
+        <div class="stat-label"><div class="stat-icon" style="background:rgba(52,211,153,.15)"><svg width="12" height="12" fill="none" stroke="#34d399" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>算力利用率</div>
         <div><span class="stat-val" id="m-gpu">—</span><span class="stat-unit">%</span></div>
       </div>
-
-      <!-- GPU Mem -->
       <div class="stat-card">
-        <div class="stat-label">
-          <div class="stat-icon" style="background:rgba(99,102,241,.15)">
-            <svg width="12" height="12" fill="none" stroke="#818cf8" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 7V5M10 7V5M14 7V5M18 7V5M6 17v2M10 17v2M14 17v2M18 17v2"/></svg>
-          </div>
-          显存占用
-        </div>
+        <div class="stat-label"><div class="stat-icon" style="background:rgba(99,102,241,.15)"><svg width="12" height="12" fill="none" stroke="#818cf8" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 7V5M10 7V5M14 7V5M18 7V5M6 17v2M10 17v2M14 17v2M18 17v2"/></svg></div>显存占用</div>
         <div><span class="stat-val" id="m-mem">—</span><span class="stat-unit">GB</span></div>
         <div class="gpu-bar-wrap"><div class="gpu-bar" id="m-mem-bar" style="width:0%"></div></div>
-        <div class="stat-sub" id="m-mem-sub">— / — GB</div>
+        <div class="stat-sub" id="m-mem-sub">—</div>
       </div>
-
-      <!-- TPS Sparkline -->
-      <div class="spark-card">
-        <div class="spark-label">吞吐率趋势</div>
-        <svg class="spark-svg" id="spark-tps"></svg>
-      </div>
-
-      <!-- Latency Sparkline -->
-      <div class="spark-card">
-        <div class="spark-label">延迟趋势</div>
-        <svg class="spark-svg" id="spark-lat"></svg>
-      </div>
-
-      <!-- Stats row -->
+      <div class="spark-card"><div class="spark-label">吞吐率趋势</div><svg class="spark-svg" id="spark-tps"></svg></div>
+      <div class="spark-card"><div class="spark-label">延迟趋势</div><svg class="spark-svg" id="spark-lat"></svg></div>
       <div class="info-card" style="grid-template-columns:1fr 1fr">
-        <div class="stat-card" style="margin:0">
-          <div class="stat-label" style="margin-bottom:6px">
-            <svg width="11" height="11" fill="none" stroke="#fb923c" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-            <span style="color:var(--dim)">已服务</span>
-          </div>
-          <div><span class="stat-val" id="m-total" style="font-size:18px">—</span></div>
-        </div>
-        <div class="stat-card" style="margin:0">
-          <div class="stat-label" style="margin-bottom:6px">
-            <svg width="11" height="11" fill="none" stroke="#f472b6" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <span style="color:var(--dim)">排队</span>
-          </div>
-          <div><span class="stat-val" id="m-queue" style="font-size:18px">—</span></div>
-        </div>
+        <div class="stat-card" style="margin:0"><div class="stat-label" style="margin-bottom:6px"><svg width="11" height="11" fill="none" stroke="#fb923c" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span style="color:var(--dim)">已服务</span></div><div><span class="stat-val" id="m-total" style="font-size:18px">—</span></div></div>
+        <div class="stat-card" style="margin:0"><div class="stat-label" style="margin-bottom:6px"><svg width="11" height="11" fill="none" stroke="#f472b6" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:var(--dim)">排队</span></div><div><span class="stat-val" id="m-queue" style="font-size:18px">—</span></div></div>
+      </div>
+      <div class="info-card">
+        <div class="info-row"><span>模型</span><span id="info-model">—</span></div>
+        <div class="info-row"><span>后端</span><span id="info-backend" class="chip-badge">—</span></div>
+        <div class="info-row"><span>运行时长</span><span id="info-uptime">—</span></div>
       </div>
 
-      <!-- Model info -->
-      <div class="info-card">
-        <div class="info-row">
-          <span>模型</span>
-          <span id="info-model">—</span>
-        </div>
-        <div class="info-row">
-          <span>后端</span>
-          <span id="info-backend" class="chip-badge">—</span>
-        </div>
-        <div class="info-row">
-          <span>运行时长</span>
-          <span id="info-uptime">—</span>
+      <div class="sidebar-section-title">生成参数</div>
+      <div class="param-row">
+        <div class="param-header"><span class="param-label">🌡 温度</span><span class="param-value" id="pv-temp">0.7</span></div>
+        <input type="range" class="param-slider" id="p-temp" min="0" max="2" step="0.1" value="0.7" oninput="updateParam('temperature',+this.value)">
+        <div class="param-hint">低=精准 · 高=创意</div>
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span class="param-label">📏 最大长度</span><span class="param-value" id="pv-maxtok">2048</span></div>
+        <input type="range" class="param-slider" id="p-maxtok" min="256" max="8192" step="256" value="2048" oninput="updateParam('max_tokens',+this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span class="param-label">🎲 Top-P</span><span class="param-value" id="pv-topp">0.90</span></div>
+        <input type="range" class="param-slider" id="p-topp" min="0.1" max="1" step="0.05" value="0.9" oninput="updateParam('top_p',+this.value)">
+      </div>
+      <button class="param-reset" onclick="resetParams()">↺ 重置默认</button>
+
+      <div class="sidebar-section-title">
+        会话历史
+        <button class="new-session-btn" onclick="newSession()">+ 新建</button>
+      </div>
+      <div id="sessions-list"></div>
+    </div>
+  </main>
+
+  <!-- System Prompt Modal -->
+  <div id="sysprompt-modal">
+    <div id="sysprompt-panel">
+      <div class="sp-head">
+        <h2>⚙ 人格设定</h2>
+        <button class="sp-close" onclick="closeSysPrompt()">×</button>
+      </div>
+      <div class="sp-body">
+        <div class="sp-section-label">预设人格</div>
+        <div class="preset-grid" id="preset-grid"></div>
+        <div class="sp-section-label">自定义 Prompt</div>
+        <textarea id="sysprompt-input" placeholder="例如：你是一位专业的 Python 工程师，回复时使用中文，代码需附注释…"></textarea>
+        <div class="sp-footer">
+          <button class="sp-btn sp-btn-ghost" onclick="clearSysPrompt();closeSysPrompt()">清除</button>
+          <button class="sp-btn sp-btn-primary" onclick="saveSysPrompt()">应用</button>
         </div>
       </div>
     </div>
-  </main>
+  </div>
+
   <!-- Hub Modal -->
   <div id="hub-overlay">
     <div id="hub-panel">
       <div class="hub-head">
         <div style="flex:1">
           <h2>📦 模型库</h2>
-          <p>选择并下载模型到本地，下载完成后可一键切换使用</p>
+          <p>下载模型到本地，下载完成后一键切换</p>
           <div class="hub-subhead">
-            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             保存目录：<span id="hub-models-dir" style="color:var(--text)"></span>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:flex-start;flex-shrink:0">
-          <div style="text-align:right;font-size:11px;color:var(--dim)">
-            <div>镜像：<span id="hub-mirror-label"></span></div>
-          </div>
-          <button onclick="closeHub()" style="width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.06);cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center">&#x2715;</button>
+          <div style="text-align:right;font-size:11px;color:var(--dim)">镜像：<span id="hub-mirror-label"></span></div>
+          <button onclick="closeHub()" style="width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.06);cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center">×</button>
         </div>
       </div>
       <div class="hub-body">
@@ -393,53 +545,91 @@ main{display:flex;flex:1;overflow:hidden}
   </div>
 </div>
 
+<input type="file" id="file-input" accept=".txt,.py,.js,.ts,.jsx,.tsx,.json,.yaml,.yml,.md,.csv,.sh,.go,.rs,.cpp,.c,.h,.java,.rb,.php,.sql,.xml,.html,.css,.toml,.ini,.conf" hidden onchange="handleFileSelect(this)">
+
 <script>
-// ── Config & State ────────────────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────
 let CFG = { brandName:'SageLLM 工作站', accentColor:'#6366f1', hasLogo:false, defaultModel:'default', backendType:'Ascend NPU' };
 let messages = [];
 let _msgSeq = 0;
-function nextMsgId() { return 'msg-' + (++_msgSeq); }
+const nextMsgId = () => 'msg-' + (++_msgSeq);
 let loading = false;
 let stopFlag = false;
 const tpsHistory = [], latHistory = [];
 const HISTORY_MAX = 50;
+let sysPrompt = '';
+let genParams = { temperature: 0.7, max_tokens: 2048, top_p: 0.9 };
+let attachedFile = null;
+let webSearch = false;
+let sessions = [];
+let currentSessionId = null;
+let backends = [];
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+const PRESETS = [
+  { id:'assistant', icon:'🤝', title:'工作助手', desc:'严谨、简洁、务实',
+    prompt:'你是一位专业的工作助手，擅长处理日常办公事务。请用简洁准确的中文回答，重点突出，避免废话。' },
+  { id:'coder', icon:'💻', title:'代码专家', desc:'精通多语言，善于调试',
+    prompt:'你是一位资深软件工程师，精通 Python、JavaScript、Go 等语言。回答代码问题时请给出能直接运行的示例，附上简明注释，说明关键逻辑。' },
+  { id:'translator', icon:'🌐', title:'翻译助手', desc:'中英日多语精准互译',
+    prompt:'你是一位专业翻译，精通中文、英文、日文。翻译时保持原文语义和语气，必要时标注文化背景差异。默认将输入内容翻译为中文，收到中文时翻译为英文。' },
+  { id:'analyst', icon:'📊', title:'数据分析师', desc:'数据驱动，洞察业务',
+    prompt:'你是一位数据分析专家，擅长统计分析、数据可视化和业务洞察。回答时优先使用结构化格式（表格/列表），并给出可落地的行动建议。' },
+  { id:'writer', icon:'✍️', title:'创意写作', desc:'文采飞扬，富有想象',
+    prompt:'你是一位有才华的创意写作者，擅长各种文体：小说、诗歌、文案、脚本。语言生动有画面感，善于运用比喻和意象，带给读者沉浸式体验。' },
+  { id:'academic', icon:'🎓', title:'学术研究', desc:'严谨引用，深度分析',
+    prompt:'你是一位严谨的学术研究助手，熟悉各学科前沿动态。回答时注重逻辑推理，引用权威来源，区分事实与观点，用词精确学术。' },
+];
+
+// ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
-  try {
-    const r = await fetch('/config.json');
-    if (r.ok) CFG = await r.json();
-  } catch {}
-
-  // Apply branding
+  try { const r = await fetch('/config.json'); if (r.ok) CFG = await r.json(); } catch {}
   document.title = CFG.brandName;
   document.getElementById('brand-name').textContent = CFG.brandName;
   document.documentElement.style.setProperty('--accent', CFG.accentColor);
-  document.querySelector('#send-btn').style.background = CFG.accentColor;
-
+  document.getElementById('send-btn').style.background = CFG.accentColor;
   if (CFG.hasLogo) {
-    const img = document.createElement('img');
-    img.src = '/logo';
-    img.onerror = () => {};
-    document.getElementById('brand-icon').innerHTML = '';
-    document.getElementById('brand-icon').appendChild(img);
+    const img = document.createElement('img'); img.src = '/logo'; img.onerror = () => {};
+    const ic = document.getElementById('brand-icon'); ic.innerHTML = ''; ic.appendChild(img);
   }
-
-  // Load models
-  loadModels();
-
-  // Poll metrics every 3s
+  document.querySelectorAll('.sug').forEach(el => el.onclick = () => sendMessage(el.textContent));
+  await Promise.allSettled([loadModels(), loadBackends()]);
   pollMetrics();
   setInterval(pollMetrics, 3000);
-
-  // Suggestions
-  document.querySelectorAll('.sug').forEach(el => {
-    el.onclick = () => sendMessage(el.textContent);
-  });
+  renderPresetGrid();
+  loadSessions();
+  if (sessions.length === 0) newSession(false); else setActiveSession(sessions[0].id, false);
+  // Restore webSearch toggle state from last session
+  try { if (localStorage.getItem('webSearch') === '1') toggleWebSearch(true); } catch {}
 }
 
+// ── Backends (SageLLM /api/backends + PUT /api/backend) ───────────────────
+async function loadBackends() {
+  try {
+    const r = await fetch('/api/backends');
+    if (!r.ok) return;
+    backends = await r.json();
+    const sel = document.getElementById('backend-select');
+    sel.innerHTML = '';
+    backends.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = (b.tag ? b.tag + ': ' : '') + b.label.slice(0, 22);
+      if (b.active) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch { document.getElementById('backend-select').style.display = 'none'; }
+}
 
-// ── Models ────────────────────────────────────────────────────────────────────
+async function switchBackend(id) {
+  try {
+    const r = await fetch('/api/backend', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
+    const d = await r.json();
+    if (d.ok) showToast('后端已切换为 ' + d.backend_type + '，重启 Gateway 生效');
+    else showToast('切换失败: ' + d.error, true);
+  } catch { showToast('无法访问后端 API', true); }
+}
+
+// ── Models ─────────────────────────────────────────────────────────────────
 async function loadModels() {
   try {
     const r = await fetch('/api/models');
@@ -453,162 +643,435 @@ async function loadModels() {
       sel.appendChild(opt);
     });
     setOnline(true);
-  } catch {
-    const sel = document.getElementById('model-select');
-    sel.innerHTML = `<option>${CFG.defaultModel}</option>`;
-  }
+  } catch { document.getElementById('model-select').innerHTML = `<option>${CFG.defaultModel}</option>`; }
 }
 
-// ── Metrics ───────────────────────────────────────────────────────────────────
+// ── Metrics (SageLLM /api/metrics) ────────────────────────────────────────
 async function pollMetrics() {
   try {
     const r = await fetch('/api/metrics');
-    if (!r.ok) return;
+    if (!r.ok) { setOnline(false); return; }
     const m = await r.json();
     setOnline(true);
-
-    setText('m-tps', m.tokensPerSecond > 0 ? m.tokensPerSecond.toFixed(1) : '—');
-    setText('m-lat', m.avgLatencyMs > 0 ? m.avgLatencyMs.toFixed(0) : '—');
-    setText('m-gpu', m.gpuUtilPct > 0 ? m.gpuUtilPct.toFixed(0) : '—');
-    setText('m-mem', m.gpuMemUsedGb > 0 ? m.gpuMemUsedGb.toFixed(1) : '—');
-    setText('m-total', m.totalRequestsServed > 0 ? m.totalRequestsServed : '—');
-    setText('m-queue', m.pendingRequests !== undefined ? m.pendingRequests : '—');
-    setText('info-model', m.modelName || CFG.defaultModel);
+    setText('m-tps',   m.tokensPerSecond > 0    ? m.tokensPerSecond.toFixed(1) : '—');
+    setText('m-lat',   m.avgLatencyMs    > 0    ? m.avgLatencyMs.toFixed(0)   : '—');
+    setText('m-gpu',   m.gpuUtilPct      > 0    ? m.gpuUtilPct.toFixed(0)     : '—');
+    setText('m-mem',   m.gpuMemUsedGb    > 0    ? m.gpuMemUsedGb.toFixed(1)   : '—');
+    setText('m-total', m.totalRequestsServed != null ? m.totalRequestsServed  : '—');
+    setText('m-queue', m.pendingRequests  != null    ? m.pendingRequests       : '—');
+    setText('info-model',   m.modelName   || CFG.defaultModel);
     setText('info-backend', m.backendType || CFG.backendType);
-    setText('info-uptime', formatUptime(m.uptimeSeconds || 0));
-
-    const memPct = m.gpuMemTotalGb > 0 ? Math.min((m.gpuMemUsedGb / m.gpuMemTotalGb) * 100, 100) : 0;
-    document.getElementById('m-mem-bar').style.width = memPct + '%';
+    setText('info-uptime',  formatUptime(m.uptimeSeconds || 0));
+    const pct = m.gpuMemTotalGb > 0 ? Math.min(m.gpuMemUsedGb / m.gpuMemTotalGb * 100, 100) : 0;
+    document.getElementById('m-mem-bar').style.width = pct + '%';
     setText('m-mem-sub', m.gpuMemTotalGb > 0 ? `${m.gpuMemUsedGb.toFixed(1)} / ${m.gpuMemTotalGb.toFixed(0)} GB` : '— / — GB');
-
     tpsHistory.push(m.tokensPerSecond || 0);
-    latHistory.push(m.avgLatencyMs || 0);
+    latHistory.push(m.avgLatencyMs    || 0);
     if (tpsHistory.length > HISTORY_MAX) tpsHistory.shift();
     if (latHistory.length > HISTORY_MAX) latHistory.shift();
-
     drawSparkline('spark-tps', tpsHistory, '#a78bfa');
     drawSparkline('spark-lat', latHistory, '#38bdf8');
-  } catch {}
+  } catch { setOnline(false); }
 }
 
 function drawSparkline(id, data, color) {
   const svg = document.getElementById(id);
   if (!svg || data.length < 2) return;
-  const W = svg.clientWidth || 220, H = 52;
-  const min = Math.min(...data), max = Math.max(...data);
-  const range = max - min || 1;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * W;
-    const y = H - 4 - ((v - min) / range) * (H - 12);
-    return `${x},${y}`;
-  });
-  const lineD = `M${pts.join('L')}`;
-  const fillD = `M0,${H} L${pts.join('L')} L${W},${H} Z`;
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
-        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <path d="${fillD}" fill="url(#g${id})"/>
-    <path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.8"/>`;
+  const W = svg.clientWidth || 200, H = 48;
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+  const pts = data.map((v, i) => { const x=(i/(data.length-1))*W, y=H-4-((v-min)/range)*(H-10); return `${x},${y}`; });
+  const lineD = 'M' + pts.join('L'), fillD = `M0,${H} L${pts.join('L')} L${W},${H} Z`;
+  svg.innerHTML = `<defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${fillD}" fill="url(#g${id})"/><path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.8"/>`;
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── Generation Params ──────────────────────────────────────────────────────
+function updateParam(key, val) {
+  genParams[key] = val;
+  if (key === 'temperature') setText('pv-temp',   val.toFixed(1));
+  if (key === 'max_tokens')  setText('pv-maxtok', String(val));
+  if (key === 'top_p')       setText('pv-topp',   val.toFixed(2));
+  if (currentSessionId) { const s=sessions.find(x=>x.id===currentSessionId); if(s){s.params={...genParams};saveSessions();} }
+}
+
+function resetParams() {
+  genParams = { temperature:0.7, max_tokens:2048, top_p:0.9 };
+  document.getElementById('p-temp').value=0.7; document.getElementById('p-maxtok').value=2048; document.getElementById('p-topp').value=0.9;
+  setText('pv-temp','0.7'); setText('pv-maxtok','2048'); setText('pv-topp','0.90');
+  showToast('参数已重置为默认值');
+}
+
+// ── System Prompt ──────────────────────────────────────────────────────────
+function renderPresetGrid() {
+  const grid = document.getElementById('preset-grid');
+  grid.innerHTML = '';
+  PRESETS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'preset-card' + (sysPrompt === p.prompt ? ' selected' : '');
+    el.id = 'preset-' + p.id;
+    el.innerHTML = `<div class="preset-title">${p.icon} ${p.title}</div><div class="preset-desc">${p.desc}</div>`;
+    el.onclick = () => {
+      document.getElementById('sysprompt-input').value = p.prompt;
+      document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    };
+    grid.appendChild(el);
+  });
+}
+
+function openSysPrompt() {
+  document.getElementById('sysprompt-input').value = sysPrompt;
+  renderPresetGrid();
+  document.getElementById('sysprompt-modal').style.display = 'flex';
+}
+function closeSysPrompt() { document.getElementById('sysprompt-modal').style.display = ''; }
+
+function saveSysPrompt() {
+  sysPrompt = document.getElementById('sysprompt-input').value.trim();
+  updateSysPromptBar();
+  closeSysPrompt();
+  if (currentSessionId) { const s=sessions.find(x=>x.id===currentSessionId); if(s){s.sysPrompt=sysPrompt;saveSessions();} }
+  showToast(sysPrompt ? '人格已应用' : '人格已清除');
+}
+
+function clearSysPrompt() {
+  sysPrompt = '';
+  updateSysPromptBar();
+  if (currentSessionId) { const s=sessions.find(x=>x.id===currentSessionId); if(s){s.sysPrompt='';saveSessions();} }
+}
+
+function updateSysPromptBar() {
+  const bar = document.getElementById('sysprompt-bar');
+  if (sysPrompt) {
+    const preset = PRESETS.find(p => p.prompt === sysPrompt);
+    const label  = preset ? `${preset.icon} ${preset.title}` : '自定义';
+    document.getElementById('sysprompt-preview').innerHTML =
+      `<strong style="color:var(--accent)">${label}</strong>：${sysPrompt.slice(0,60)}${sysPrompt.length>60?'…':''}`;
+    bar.hidden = false;
+    document.getElementById('sysprompt-btn').classList.add('active');
+  } else {
+    bar.hidden = true;
+    document.getElementById('sysprompt-btn').classList.remove('active');
+  }
+}
+
+// ── Sessions ───────────────────────────────────────────────────────────────
+const SESS_KEY = 'sagellm_sessions';
+const SESS_MAX = 20;
+
+function loadSessions() {
+  try { sessions = JSON.parse(localStorage.getItem(SESS_KEY) || '[]'); } catch { sessions = []; }
+  renderSessionsList();
+}
+function saveSessions() { try { localStorage.setItem(SESS_KEY, JSON.stringify(sessions.slice(0,SESS_MAX))); } catch {} }
+
+function newSession(activate=true) {
+  const id = 'sess-' + Date.now();
+  const s = { id, title:'新会话', model:CFG.defaultModel, sysPrompt:'', params:{...genParams}, messages:[], timestamp:Date.now() };
+  sessions.unshift(s);
+  saveSessions();
+  if (activate) setActiveSession(id, true);
+  else { currentSessionId=id; renderSessionsList(); }
+}
+
+function setActiveSession(id, clearUI=true) {
+  const s = sessions.find(x=>x.id===id);
+  if (!s) return;
+  if (currentSessionId && currentSessionId !== id) saveCurrentToSession();
+  currentSessionId = id;
+  messages  = [...(s.messages||[])];
+  sysPrompt = s.sysPrompt || '';
+  genParams = {...(s.params||{temperature:0.7,max_tokens:2048,top_p:0.9})};
+  updateSysPromptBar();
+  document.getElementById('p-temp').value   = genParams.temperature;
+  document.getElementById('p-maxtok').value = genParams.max_tokens;
+  document.getElementById('p-topp').value   = genParams.top_p;
+  setText('pv-temp', genParams.temperature.toFixed(1));
+  setText('pv-maxtok', String(genParams.max_tokens));
+  setText('pv-topp', genParams.top_p.toFixed(2));
+  if (clearUI) {
+    document.getElementById('messages').querySelectorAll('.msg').forEach(el=>el.remove());
+    if (messages.length === 0) {
+      document.getElementById('empty').classList.add('show');
+      document.getElementById('clear-btn').style.display = 'none';
+    } else {
+      document.getElementById('empty').classList.remove('show');
+      document.getElementById('clear-btn').style.display = 'flex';
+      messages.forEach(m => { const el=createMessageEl(m.role,m.content,m.id||nextMsgId()); document.getElementById('messages').appendChild(el); });
+      setTimeout(scrollBottom, 50);
+    }
+  }
+  renderSessionsList();
+}
+
+function saveCurrentToSession() {
+  if (!currentSessionId) return;
+  const s = sessions.find(x=>x.id===currentSessionId);
+  if (!s) return;
+  s.messages  = messages.map(({role,content})=>({role,content}));
+  s.sysPrompt = sysPrompt;
+  s.params    = {...genParams};
+  s.timestamp = Date.now();
+  if (s.title === '新会话' && messages.length > 0) {
+    const fu = messages.find(m=>m.role==='user');
+    if (fu) s.title = fu.content.slice(0,28).replace(/\n/g,' ') + (fu.content.length>28?'…':'');
+  }
+  saveSessions();
+}
+
+function deleteSession(id, e) {
+  e.stopPropagation();
+  sessions = sessions.filter(s=>s.id!==id);
+  saveSessions();
+  if (currentSessionId === id) { if(sessions.length>0) setActiveSession(sessions[0].id,true); else newSession(true); }
+  else renderSessionsList();
+}
+
+function renderSessionsList() {
+  const list = document.getElementById('sessions-list');
+  list.innerHTML = '';
+  sessions.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'sess-item' + (s.id===currentSessionId?' active':'');
+    el.onclick = () => { if(s.id!==currentSessionId) setActiveSession(s.id,true); };
+    const cnt = s.messages ? s.messages.length : 0;
+    const dateStr = formatSessionDate(s.timestamp);
+    el.innerHTML = `<div style="flex:1;min-width:0"><div class="sess-title">${escHtml(s.title)}</div><div class="sess-meta">${dateStr} · ${cnt} 条</div></div><button class="sess-del" onclick="deleteSession('${s.id}',event)" title="删除">×</button>`;
+    list.appendChild(el);
+  });
+}
+
+function formatSessionDate(ts) {
+  const d=new Date(ts), now=new Date(), diffH=(now-d)/3600000;
+  if(diffH<1) return '刚才';
+  if(diffH<24) return `${Math.floor(diffH)}小时前`;
+  if(diffH<48) return '昨天';
+  return d.toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+}
+
+// ── File Attachment ────────────────────────────────────────────────────────
+function triggerFileAttach() { document.getElementById('file-input').click(); }
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 200*1024) { showToast('文件过大（最大 200 KB）', true); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    attachedFile = {name:file.name, content:e.target.result, size:file.size};
+    document.getElementById('attach-name').textContent = file.name;
+    document.getElementById('attach-size').textContent = `(${(file.size/1024).toFixed(1)} KB)`;
+    document.getElementById('attach-bar').hidden = false;
+    document.getElementById('input').placeholder = '描述你对这个文件的问题…';
+    document.getElementById('input').focus();
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function clearAttachment() {
+  attachedFile = null;
+  document.getElementById('attach-bar').hidden = true;
+  document.getElementById('input').placeholder = '输入消息…（Enter 发送，Shift+Enter 换行，可拖入文件）';
+}
+
+const chatWrap = document.getElementById('chat-wrap');
+chatWrap.addEventListener('dragover', e => { e.preventDefault(); chatWrap.classList.add('dragover'); });
+chatWrap.addEventListener('dragleave', () => chatWrap.classList.remove('dragover'));
+chatWrap.addEventListener('drop', e => {
+  e.preventDefault(); chatWrap.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (file.size > 200*1024) { showToast('文件过大（最大 200 KB）', true); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    attachedFile = {name:file.name, content:ev.target.result, size:file.size};
+    document.getElementById('attach-name').textContent = file.name;
+    document.getElementById('attach-size').textContent = `(${(file.size/1024).toFixed(1)} KB)`;
+    document.getElementById('attach-bar').hidden = false;
+    document.getElementById('input').placeholder = '描述你对这个文件的问题…';
+    showToast('已附加：' + file.name);
+  };
+  reader.readAsText(file);
+});
+
+// ── Chat & Streaming ───────────────────────────────────────────────────────
 function sendMessage(text) {
   text = (text || document.getElementById('input').value).trim();
   if (!text || loading) return;
-
   hideEmpty();
   document.getElementById('input').value = '';
   autoResize(document.getElementById('input'));
   document.getElementById('clear-btn').style.display = 'flex';
+  setText('token-counter', '');
+  let userContent = text;
+  if (attachedFile) {
+    userContent = `[附加文件: ${attachedFile.name}]\n\`\`\`\n${attachedFile.content}\n\`\`\`\n\n${text}`;
+    clearAttachment();
+  }
+  addMessage('user', userContent);
+  streamAssistant(userContent);
+}
 
-  addMessage('user', text);
-  streamAssistant(text);
+function toggleWebSearch(force) {
+  webSearch = (force !== undefined) ? force : !webSearch;
+  const btn = document.getElementById('web-search-btn');
+  if (btn) {
+    btn.classList.toggle('active', webSearch);
+    btn.title = webSearch ? '联网搜索：已开启（点击关闭）' : '联网搜索：已关闭（点击开启）';
+  }
+  const ind = document.getElementById('search-indicator');
+  if (ind) ind.textContent = webSearch ? '🌐 联网已开启' : '';
+  try { localStorage.setItem('webSearch', webSearch ? '1' : '0'); } catch {}
+}
+
+// ── Think-block helpers ──────────────────────────────────────────────────
+function parseThinkContent(raw) {
+  // Returns {think, main} — handles incomplete (streaming) <think> block
+  const open = raw.indexOf('<think>');
+  if (open === -1) return {think: '', main: raw};
+  const close = raw.indexOf('</think>', open);
+  if (close === -1) {
+    // Still inside think block — hide everything after <think> from main
+    return {think: raw.slice(open + 7), main: raw.slice(0, open)};
+  }
+  return {think: raw.slice(open + 7, close), main: raw.slice(0, open) + raw.slice(close + 8)};
+}
+
+function setTypingLabel(msg) {
+  const el = document.getElementById('typing-label');
+  if (el) el.textContent = msg || '';
 }
 
 async function streamAssistant(userText) {
   loading = true; stopFlag = false;
+  setTypingLabel(webSearch ? '🔍 正在检索...' : '💭 正在思考...');
   showTyping(true);
   setSendStop(true);
-
   const model = document.getElementById('model-select').value;
-  const history = messages.map(m => ({ role: m.role, content: m.content }));
-
+  const history = [];
+  if (sysPrompt) history.push({role:'system', content:sysPrompt});
+  history.push(...messages.filter(m=>m.role!=='__meta__').map(m=>({role:m.role,content:m.content})));
   const id = nextMsgId();
-  let content = '';
-  let firstTokenTime = 0;
+  let rawContent = '', content = '', firstTokenTime = 0, tokenCount = 0;
+  let thinkEl = null, thinkBodyEl = null, thinkDone = false;
   const startTime = Date.now();
-
+  const msgsEl = document.getElementById('messages');
+  // Route pipeline/citations/think to left panel
+  clearLeftPanel(); openLeftPanel();
+  showLpSection('lp-process-wrap');
+  const procCard = _createProcessCard(document.getElementById('lp-process'));
+  _procStep(procCard, webSearch ? '🔍' : '💭', webSearch ? '正在检索网络...' : '正在准备回答...', true);
   try {
     const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history, model, stream: true }),
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages:history, model, stream:true,
+        temperature:genParams.temperature, max_tokens:genParams.max_tokens, top_p:genParams.top_p,
+        web_search: webSearch }),
     });
-
+    // Hide typing spinner BEFORE inserting DOM nodes so citations/think blocks
+    // appear in the right position (not sandwiched under the spinner).
     showTyping(false);
     const msgEl = createMessageEl('assistant', '', id);
-    document.getElementById('messages').appendChild(msgEl);
+    msgsEl.appendChild(msgEl);
     scrollBottom();
-
     const reader = resp.body.getReader();
-    const dec = new TextDecoder();
-
+    const dec    = new TextDecoder();
+    let sseBuf = '';  // buffer for incomplete SSE lines split across chunks
     while (true) {
       if (stopFlag) { reader.cancel(); break; }
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = dec.decode(value, { stream: true });
-      for (const line of chunk.split('\n')) {
+      sseBuf += dec.decode(value, {stream:true});
+      // Split on newlines but keep incomplete trailing line in buffer
+      const lines = sseBuf.split('\n');
+      sseBuf = lines.pop();  // last element may be incomplete
+      for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
         const raw = line.slice(6).trim();
         if (raw === '[DONE]') continue;
         try {
-          const json = JSON.parse(raw);
+          const json  = JSON.parse(raw);
+          // ── search_results: show in left panel ────────────────────────
+          if (json.type === 'search_results') {
+            setTypingLabel('');
+            _procUpdateLast(procCard, '🔍', `找到 ${json.results?.length||0} 条结果 · "${(json.query||'').slice(0,20)}"`, false);
+            _procStep(procCard, '✍️', '正在生成回答...', true);
+            const lpCit = document.getElementById('lp-citations');
+            lpCit.innerHTML = '';
+            if (json.query) { const qd=document.createElement('div'); qd.className='lp-query'; qd.textContent=`"${(json.query||'').slice(0,60)}"`; lpCit.appendChild(qd); }
+            (json.results||[]).forEach((r,i) => {
+              const it = document.createElement('div'); it.className='citation-item';
+              it.innerHTML = `<div class="citation-title"><span class="citation-num">[${i+1}]</span> ${escHtml(r.title||'')}</div>${r.snippet?`<div class="citation-snippet">${escHtml(r.snippet)}</div>`:''}${r.url?`<a class="citation-link" href="${escHtml(r.url)}" target="_blank" rel="noopener">${escHtml(r.url)}</a>`:''}`;
+              lpCit.appendChild(it);
+            });
+            showLpSection('lp-citations-wrap');
+            continue;
+          }
+          // ── reasoning_content field (some models send separately) ──────
+          const reasonDelta = json.choices?.[0]?.delta?.reasoning_content ?? '';
+          if (reasonDelta && !thinkDone) {
+            if (!thinkEl) { const lpt=document.getElementById('lp-think'); lpt.innerHTML=''; thinkEl=_createThinkBlock(lpt); showLpSection('lp-think-wrap'); }
+            thinkBodyEl = thinkBodyEl || thinkEl.querySelector('.think-body');
+            thinkBodyEl.textContent += reasonDelta;
+            thinkBodyEl.scrollTop = thinkBodyEl.scrollHeight;
+          }
+          // ── regular content delta ──────────────────────────────────────
           const delta = json.choices?.[0]?.delta?.content ?? '';
           if (delta) {
-            if (!firstTokenTime) firstTokenTime = Date.now();
-            content += delta;
-            renderBubble(id, content);
+            if (!firstTokenTime) {
+              firstTokenTime = Date.now();
+              _procUpdateLast(procCard, '✍️', '正在生成回答...', true);
+            }
+            rawContent += delta;
+            const {think, main} = parseThinkContent(rawContent);
+            content = main.trimStart();
+            // inline <think> tag: route to left panel
+            if (think && !thinkEl) { const lpt=document.getElementById('lp-think'); lpt.innerHTML=''; thinkEl=_createThinkBlock(lpt); showLpSection('lp-think-wrap'); }
+            if (thinkEl && !thinkDone) {
+              thinkBodyEl = thinkBodyEl || thinkEl.querySelector('.think-body');
+              thinkBodyEl.textContent = think;
+              thinkBodyEl.scrollTop = thinkBodyEl.scrollHeight;
+              if (rawContent.includes('</think>')) thinkDone = true;
+            }
+            tokenCount += delta.split(/\s+/).filter(Boolean).length;
+            renderBubble(id, content || rawContent);
             scrollBottom();
+            setText('token-counter', `${tokenCount} tokens · ${Date.now()-startTime}ms`);
           }
         } catch {}
       }
     }
-  } catch (e) {
+  } catch {
     showTyping(false);
+    _procUpdateLast(procCard, '❌', '连接失败，请确认推理引擎已启动', false);
+    _procDone(procCard, '失败');
     content = '推理引擎未响应，请确认 sagellm-gateway 已启动，然后刷新页面重试。';
     const el = createMessageEl('assistant', content, id);
-    document.getElementById('messages').appendChild(el);
-  }
-
-  const ttft = firstTokenTime ? firstTokenTime - startTime : Date.now() - startTime;
-  const meta = msgEl => {
-    const m = document.getElementById(id);
-    if (!m) return;
-    const metaEl = m.querySelector('.bubble-meta');
-    if (metaEl) {
-      const words = content.split(/\s+/).filter(Boolean).length;
-      metaEl.innerHTML = `<span>${timeStr()}</span><span>${words} tokens</span><span>${ttft}ms</span>
-        <button class="copy-btn" onclick="copyText(this,'${id}')">
+    msgsEl.appendChild(el);
+  } finally {
+    showTyping(false);
+    const ttft = firstTokenTime ? firstTokenTime-startTime : Date.now()-startTime;
+    const words = (content||rawContent).split(/\s+/).filter(Boolean).length;
+    _procUpdateLast(procCard, '✅', '生成完成', false);
+    _procDone(procCard, `${words} tokens · TTFT ${ttft}ms`);
+    const msgEl = document.getElementById(id);
+    if (msgEl) {
+      const metaEl = msgEl.querySelector('.bubble-meta');
+      if (metaEl) metaEl.innerHTML = `
+        <span>${timeStr()}</span><span>${words} tokens</span><span>⚡ TTFT ${ttft}ms</span>
+        <button class="icon-copy" onclick="copyBubble(this,'${id}')" title="复制内容">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>`;
     }
-  };
-  meta();
-  messages.push({ role: 'assistant', content, id });
-
-  loading = false;
-  setSendStop(false);
+    messages.push({role:'assistant', content: content || rawContent, id});
+    saveCurrentToSession();
+    loading = false; setSendStop(false); setText('token-counter','');
+  }
 }
 
-// ── DOM helpers ───────────────────────────────────────────────────────────────
+// ── DOM Helpers ────────────────────────────────────────────────────────────
 function addMessage(role, content) {
-  const id = nextMsgId();
-  messages.push({ role, content, id });
+  const id = nextMsgId(); messages.push({role,content,id});
   const el = createMessageEl(role, content, id);
   document.getElementById('messages').appendChild(el);
   scrollBottom();
@@ -617,294 +1080,371 @@ function addMessage(role, content) {
 
 function createMessageEl(role, content, id) {
   const div = document.createElement('div');
-  div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  div.className = 'msg ' + (role==='user'?'user':'ai');
   div.id = id;
+  const aiSvg = `<svg width="13" height="13" fill="none" stroke="${CFG.accentColor}" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/></svg>`;
+  const userSvg = `<svg width="13" height="13" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  const copyBtn = `<button class="icon-copy" onclick="copyBubble(this,'${id}')" title="复制"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`;
   div.innerHTML = `
-    <div class="avatar ${role === 'user' ? 'avatar-user' : 'avatar-ai'}">
-      ${role === 'user'
-        ? '<svg width="13" height="13" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-        : `<svg width="13" height="13" fill="none" stroke="${CFG.accentColor}" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/></svg>`
-      }
-    </div>
-    <div class="bubble ${role === 'user' ? 'bubble-user' : 'bubble-ai'}">
-      <div class="bubble-content">${formatContent(content)}</div>
-      <div class="bubble-meta"><span>${timeStr()}</span></div>
+    <div class="avatar ${role==='user'?'avatar-user':'avatar-ai'}">${role==='user'?userSvg:aiSvg}</div>
+    <div class="bubble ${role==='user'?'bubble-user':'bubble-ai'}">
+      <div class="bubble-content">${formatMarkdown(content)}</div>
+      <div class="bubble-meta"><span>${timeStr()}</span>${role==='user'?copyBtn:''}</div>
     </div>`;
   return div;
 }
 
 function renderBubble(id, content) {
   const el = document.getElementById(id);
-  if (!el) return;
-  el.querySelector('.bubble-content').innerHTML = formatContent(content);
+  if (el) el.querySelector('.bubble-content').innerHTML = formatMarkdown(content);
 }
 
-function formatContent(text) {
-  // Code blocks
-  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
-    `<pre>${escHtml(code.trim())}</pre>`);
-  // Inline code
-  text = text.replace(/`([^`\n]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
-  // Newlines
-  text = text.replace(/\n/g, '<br>');
-  return text;
+function buildCitationsCard(query, results) {
+  const card = document.createElement('div');
+  card.className = 'citations-card';
+  const hdr = document.createElement('div');
+  hdr.className = 'citations-header open';
+  hdr.innerHTML = `<span class="chevron">▶</span>🌐 搜索引源: <em style="font-weight:normal;color:var(--muted)">${query||''}</em>`;
+  const body = document.createElement('div');
+  body.className = 'citations-body';
+  (results || []).forEach((r, i) => {
+    const item = document.createElement('div');
+    item.className = 'citation-item';
+    item.innerHTML = `
+      <div class="citation-title"><span class="citation-num">[${i+1}]</span> ${escHtml(r.title||'')}</div>
+      ${r.snippet ? `<div class="citation-snippet">${escHtml(r.snippet)}</div>` : ''}
+      ${r.url ? `<a class="citation-link" href="${escHtml(r.url)}" target="_blank" rel="noopener">${escHtml(r.url)}</a>` : ''}`;
+    body.appendChild(item);
+  });
+  hdr.onclick = () => {
+    const open = hdr.classList.toggle('open');
+    body.style.display = open ? '' : 'none';
+  };
+  card.appendChild(hdr);
+  card.appendChild(body);
+  return card;
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function copyText(btn, id) {
+function copyBubble(btn, id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const text = el.querySelector('.bubble-content').innerText;
-  navigator.clipboard.writeText(text).catch(() => {});
+  navigator.clipboard.writeText(el.querySelector('.bubble-content').innerText).catch(()=>{});
   btn.innerHTML = '<svg width="12" height="12" fill="none" stroke="#4ade80" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
-  setTimeout(() => {
-    btn.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-  }, 1500);
+  setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'; }, 1600);
 }
 
-function showTyping(v) { document.getElementById('typing').style.display = v ? 'flex' : 'none'; }
-function scrollBottom() {
-  const m = document.getElementById('messages');
-  m.scrollTop = m.scrollHeight;
+// ── Markdown Renderer ──────────────────────────────────────────────────────
+let _cbSeq = 0;
+function formatMarkdown(text) {
+  if (!text) return '';
+  // Strip any residual <think>...</think> blocks (already handled by think-block renderer)
+  text = text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '').trimStart();
+  const blocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = blocks.length, id = 'cb-'+(++_cbSeq);
+    blocks.push({lang: lang||'text', code: code.trim(), id});
+    return '\x00BLOCK'+idx+'\x00';
+  });
+  text = text.replace(/`([^`\n]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  text = text.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+  text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+  text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  text = text.replace(/^## (.+)$/gm,  '<h2>$1</h2>');
+  text = text.replace(/^# (.+)$/gm,   '<h1>$1</h1>');
+  text = text.replace(/^---+$/gm, '<hr>');
+  text = text.replace(/((?:^> .+\n?)+)/gm, m => `<blockquote>${m.replace(/^> /gm,'').trim()}</blockquote>`);
+  text = text.replace(/((?:^\|.+\|\n?)+)/gm, m => {
+    const rows = m.trim().split('\n');
+    if (rows.length < 2) return m;
+    const cells = r => r.split('|').slice(1,-1).map(c=>c.trim());
+    const isAlign = r => /^\|[\s:-]+\|$/.test(r.replace(/\|[\s:-]+/g,'|'));
+    let html = '<table>'; let hd = false;
+    rows.forEach((row,i) => {
+      if (isAlign(row)) return;
+      const cs = cells(row);
+      if (!hd && i<2) { html += '<tr>'+cs.map(c=>`<th>${c}</th>`).join('')+'</tr>'; hd=true; }
+      else html += '<tr>'+cs.map(c=>`<td>${c}</td>`).join('')+'</tr>';
+    });
+    return html+'</table>';
+  });
+  text = text.replace(/((?:^[-*+] .+\n?)+)/gm, m => '<ul>'+m.trim().split('\n').map(l=>`<li>${l.replace(/^[-*+] /,'').trim()}</li>`).join('')+'</ul>');
+  text = text.replace(/((?:^\d+\. .+\n?)+)/gm, m => '<ol>'+m.trim().split('\n').map(l=>`<li>${l.replace(/^\d+\. /,'').trim()}</li>`).join('')+'</ol>');
+  const parts = text.split('\n\n');
+  text = parts.map(p => {
+    const t = p.trim(); if (!t) return '';
+    if (/^<(h[1-3]|ul|ol|table|blockquote|hr)/.test(t)) return t;
+    if (t.startsWith('\x00BLOCK')) return t;
+    return `<p>${t.replace(/\n/g,'<br>')}</p>`;
+  }).join('');
+  text = text.replace(/\x00BLOCK(\d+)\x00/g, (_,idx) => {
+    const {lang, code, id} = blocks[parseInt(idx)];
+    return `<div class="codeblock"><div class="codeblock-header"><span class="codeblock-lang">${escHtml(lang)}</span><button class="codeblock-copy" onclick="copyCode(this,'${id}')">复制</button></div><pre id="${id}">${escHtml(code)}</pre></div>`;
+  });
+  return text;
 }
-function setText(id, val) { const el = document.getElementById(id); if(el) el.textContent = val; }
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function copyCode(btn, id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).catch(()=>{});
+  btn.textContent = '✓ 已复制';
+  setTimeout(() => btn.textContent = '复制', 1600);
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportChat() {
+  if (messages.length === 0) { showToast('没有可导出的对话', true); return; }
+  const model = document.getElementById('model-select').value;
+  let md = `# SageLLM 对话导出\n\n- **模型**: ${model}\n- **时间**: ${new Date().toLocaleString('zh-CN')}\n`;
+  if (sysPrompt) md += `- **System Prompt**: ${sysPrompt.slice(0,80)}…\n`;
+  md += `- **参数**: 温度=${genParams.temperature} · 最大长度=${genParams.max_tokens} · Top-P=${genParams.top_p}\n\n---\n\n`;
+  messages.forEach(m => {
+    if (m.role==='user')      md += `## 👤 用户\n\n${m.content}\n\n`;
+    else if (m.role==='assistant') md += `## 🤖 助手\n\n${m.content}\n\n`;
+  });
+  const blob = new Blob([md],{type:'text/markdown;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`sagellm-chat-${Date.now()}.md`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('对话已导出为 Markdown');
+}
+
+// ── UI Utilities ───────────────────────────────────────────────────────────
+function clearChat() {
+  saveCurrentToSession(); messages = [];
+  document.getElementById('messages').querySelectorAll('.msg').forEach(el=>el.remove());
+  document.getElementById('empty').classList.add('show');
+  document.getElementById('clear-btn').style.display = 'none';
+  setText('token-counter','');
+  if (currentSessionId) { const s=sessions.find(x=>x.id===currentSessionId); if(s){s.messages=[];s.title='新会话';saveSessions();renderSessionsList();} }
+}
+
+function showTyping(v) {
+  document.getElementById('typing').style.display = v?'flex':'none';
+  if (!v) setTypingLabel('');
+}
+function _createThinkBlock(container) {
+  const block = document.createElement('div');
+  block.className = 'lp-think-content';
+  const body = document.createElement('div');
+  body.className = 'think-body';
+  block.appendChild(body);
+  container.appendChild(block);
+  return block;
+}
+function _createProcessCard(container) {
+  const card = document.createElement('div');
+  card.className = 'lp-proc-list';
+  card.innerHTML = '<div class="process-steps"></div>';
+  container.appendChild(card);
+  return card;
+}
+function _procStep(card, icon, text, active) {
+  const s = document.createElement('div');
+  s.className = 'process-step' + (active ? ' active' : '');
+  s.innerHTML = `<span class="step-icon">${icon}</span><span class="step-text">${text}</span>`;
+  card.querySelector('.process-steps').appendChild(s);
+  return s;
+}
+function _procUpdateLast(card, icon, text, active) {
+  const steps = card.querySelector('.process-steps');
+  const last = steps.lastElementChild;
+  if (!last) return _procStep(card, icon, text, active);
+  last.className = 'process-step' + (active ? ' active' : '');
+  last.querySelector('.step-icon').textContent = icon;
+  last.querySelector('.step-text').textContent = text;
+  return last;
+}
+function _procDone(card, summary) {
+  const sum = card.querySelector('.p-summary');
+  if (sum) sum.textContent = summary;
+}
+function clearLeftPanel() {
+  ['lp-process','lp-citations','lp-think'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+  ['lp-process-wrap','lp-citations-wrap','lp-think-wrap'].forEach(id => { const el=document.getElementById(id); if(el) el.hidden=true; });
+  const emp=document.getElementById('lp-empty'); if(emp) emp.style.display='';
+}
+function showLpSection(id) {
+  const el=document.getElementById(id); if(el) el.hidden=false;
+  const emp=document.getElementById('lp-empty'); if(emp) emp.style.display='none';
+}
+function openLeftPanel() { document.getElementById('left-panel').classList.remove('lp-collapsed'); }
+function toggleLeftPanel() { document.getElementById('left-panel').classList.toggle('lp-collapsed'); }
+function scrollBottom() { const m=document.getElementById('messages'); m.scrollTop=m.scrollHeight; }
+function setText(id,val) { const el=document.getElementById(id); if(el) el.textContent=val; }
 function hideEmpty() { document.getElementById('empty').classList.remove('show'); }
 function timeStr() { return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); }
-function formatUptime(s) {
-  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
-  return s < 60 ? '刚启动' : `${h}h ${m}m`;
-}
+function formatUptime(s) { const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return s<60?'刚启动':`${h}h ${m}m`; }
 
 function setOnline(v) {
-  const b = document.getElementById('status-badge');
-  const d = document.getElementById('status-dot');
-  const t = document.getElementById('status-text');
-  if (v) {
-    b.className = 'badge badge-status';
-    d.className = 'dot pulse';
-    t.textContent = '在线';
-  } else {
-    b.className = 'badge badge-status offline';
-    d.className = 'dot';
-    t.textContent = '离线';
-  }
+  const b=document.getElementById('status-badge'),d=document.getElementById('status-dot'),t=document.getElementById('status-text');
+  if(v){b.className='badge badge-status';d.className='dot pulse';t.textContent='在线';}
+  else{b.className='badge badge-status offline';d.className='dot';t.textContent='离线';}
 }
 
 function setSendStop(isStop) {
-  const btn = document.getElementById('send-btn');
-  const icon = document.getElementById('send-icon');
-  if (isStop) {
-    btn.style.background = '#ef4444';
-    icon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2" fill="white"/>';
-    btn.title = '停止';
-  } else {
-    btn.style.background = CFG.accentColor;
-    icon.innerHTML = '<path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/>';
-    btn.title = '发送';
-  }
+  const btn=document.getElementById('send-btn'),icon=document.getElementById('send-icon');
+  if(isStop){btn.style.background='#ef4444';icon.innerHTML='<rect x="6" y="6" width="12" height="12" rx="2" fill="white"/>';btn.title='停止';}
+  else{btn.style.background=CFG.accentColor;icon.innerHTML='<path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/>';btn.title='发送';}
 }
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,160)+'px'; }
+
+function showToast(msg, err=false) {
+  const el=document.createElement('div'); el.className='toast'+(err?' err':''); el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.style.opacity='0', 2200);
+  setTimeout(()=>el.remove(), 2600);
 }
 
-// ── Event listeners ───────────────────────────────────────────────────────────
+// ── Event Listeners ────────────────────────────────────────────────────────
 document.getElementById('send-btn').onclick = () => {
-  if (loading) { stopFlag = true; loading = false; setSendStop(false); showTyping(false); }
+  if (loading) { stopFlag=true; loading=false; setSendStop(false); showTyping(false); }
   else sendMessage();
 };
-
 document.getElementById('input').addEventListener('input', function() { autoResize(this); });
 document.getElementById('input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')) { e.preventDefault(); clearChat(); }
+  if ((e.ctrlKey||e.metaKey) && (e.key==='e'||e.key==='E')) { e.preventDefault(); exportChat(); }
+  if (e.key==='Escape') { closeSysPrompt(); closeHub(); }
 });
 
-document.getElementById('clear-btn').onclick = () => {
-  messages = [];
-  document.getElementById('messages').querySelectorAll('.msg').forEach(el => el.remove());
-  document.getElementById('empty').classList.add('show');
-  document.getElementById('clear-btn').style.display = 'none';
-};
-
-window.copyText = copyText;
-// ── Model Hub ────────────────────────────────────────────────────────────────────
+// ── Model Hub (SageLLM /api/hub/*) ─────────────────────────────────────────
 let hubCatalog = [];
-const hubSources = {}; // model_id → EventSource
+const hubSources = {};
 
-function openHub() {
-  document.getElementById('hub-overlay').classList.add('open');
-  loadHub();
-}
-function closeHub() {
-  document.getElementById('hub-overlay').classList.remove('open');
-}
+function openHub() { document.getElementById('hub-overlay').classList.add('open'); loadHub(); }
+function closeHub() { document.getElementById('hub-overlay').classList.remove('open'); }
 
 async function loadHub() {
   try {
     const [cr, cfgr] = await Promise.all([fetch('/api/hub/catalog'), fetch('/config.json')]);
     hubCatalog = await cr.json();
-    const runtimeCfg = cfgr.ok ? await cfgr.json() : {};
-    const el = document.getElementById('hub-models-dir');
-    if (el) el.textContent = '~/Downloads/sagellm-models';
-    const ml = document.getElementById('hub-mirror-label');
-    if (ml) ml.textContent = 'hf-mirror.com';
-    renderHubGrid();
-  } catch(err) {
-    document.getElementById('hub-grid').innerHTML =
-      `<div style="color:#f87171;padding:20px">加载失败: ${err}</div>`;
-  }
+    const cfg2 = await cfgr.json();
+    setText('hub-models-dir', cfg2.modelsDir || '~/Downloads/sagellm-models');
+    setText('hub-mirror-label', cfg2.hfEndpoint || 'huggingface.co');
+  } catch { hubCatalog=[]; }
+  renderHubGrid();
+  hubCatalog.forEach(m => { if(m.download?.status==='downloading') attachHubProgress(m.id); });
 }
 
 function renderHubGrid() {
   const grid = document.getElementById('hub-grid');
-  if (!grid) return;
   grid.innerHTML = '';
+  if (!hubCatalog.length) { grid.innerHTML='<div style="color:var(--muted);padding:20px">无法加载模型目录</div>'; return; }
   hubCatalog.forEach(m => grid.appendChild(buildHubCard(m)));
 }
 
 function buildHubCard(m) {
   const div = document.createElement('div');
-  div.className = 'hub-card' + (m.active ? ' active-model' : '');
-  div.id = 'hub-card-' + m.id;
-  const dl = m.download;
-  const isDownloading = dl?.status === 'downloading';
-  const pct = dl?.pct ?? 0;
-
+  const dl = m.download, pct=dl?.pct||0, isDl=dl?.status==='downloading';
+  div.className='hub-card'+(m.active?' active-model':'');
+  div.id='hub-card-'+m.id;
+  const dot = m.color?`background:${m.color}`:'background:var(--accent)';
   div.innerHTML = `
-    <div class="hc-head">
-      <div style="flex:1;min-width:0">
-        <div class="hc-name">${m.name}</div>
-        <div class="hc-meta">${m.params} · ${m.size_gb} GB 磁盘</div>
-      </div>
-      <div class="hc-vram">${m.vram_gb} GB 显存</div>
+    <div class="hc-top">
+      <div class="hc-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;${dot};margin-right:6px"></span>${escHtml(m.name)}</div>
+      <span class="hc-params">${escHtml(m.params)}</span>
     </div>
-    <div class="hc-desc">${m.description}</div>
-    <div class="hc-tags">${(m.tags||[]).map(t=>`<span class="hc-tag">${t}</span>`).join('')}</div>
-    <div class="hc-progress ${isDownloading ? 'show' : ''}" id="hub-prog-${m.id}">
+    <div class="hc-desc">${escHtml(m.description)}</div>
+    <div class="hc-tags">${(m.tags||[]).map(t=>`<span class="hc-tag">${escHtml(t)}</span>`).join('')}</div>
+    <div class="hc-meta"><span>💾 ${m.size_gb}GB</span><span>🖥 ${m.vram_gb}GB 显存</span></div>
+    <div class="hc-progress ${isDl?'show':''}" id="hub-prog-${m.id}">
       <div class="hc-pbar-track"><div class="hc-pbar-fill" id="hub-bar-${m.id}" style="width:${pct}%"></div></div>
-      <div class="hc-prow">
-        <span id="hub-pspeed-${m.id}"></span>
-        <span id="hub-ppct-${m.id}">${pct}%</span>
-      </div>
+      <div class="hc-pstats"><span id="hub-pspeed-${m.id}"></span><span id="hub-ppct-${m.id}">${pct}%</span></div>
       <div class="hc-pfile" id="hub-pfile-${m.id}"></div>
     </div>
     <div id="hub-footer-${m.id}">${hubCardFooter(m)}</div>`;
-
-  if (isDownloading) attachHubProgress(m.id);
   return div;
 }
 
 function hubCardFooter(m) {
-  const dl = m.download;
-  const isDone = dl?.status === 'done' || m.installed;
-  const isDownloading = dl?.status === 'downloading';
-  const isError = dl?.status === 'error';
-
-  if (isDownloading) return `<button class="btn-hub danger" onclick="hubCancel('${m.id}')">&#x2715; 取消下载</button>`;
+  const dl=m.download;
+  const isDone=dl?.status==='done'||m.installed;
+  const isDl=dl?.status==='downloading';
+  const isErr=dl?.status==='error';
+  if (isDl) return `<button class="btn-hub danger" onclick="hubCancel('${m.id}')">&#x2715; 取消下载</button>`;
   if (isDone) {
     if (m.active) return `<button class="btn-hub success active-label">✓ 当前使用中</button>`;
-    return `<button class="btn-hub success" onclick="hubActivate('${m.id}')">✓ 已安装·切换使用</button>`;
+    return `<button class="btn-hub success" onclick="hubActivate('${m.id}')">✓ 已安装 · 点击切换</button>`;
   }
-  if (isError) return `
-    <div style="font-size:11px;color:#f87171;margin-bottom:6px;word-break:break-all">${(dl.error||'').slice(0,100)}</div>
-    <button class="btn-hub ghost" onclick="hubDownload('${m.id}')">&#x21ba; 重试</button>`;
-  return `<button class="btn-hub primary" onclick="hubDownload('${m.id}')">
-    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v13M5 14l7 7 7-7"/><path d="M3 21h18"/></svg>
-    下载安装
-  </button>`;
+  if (isErr) return `<div style="font-size:11px;color:#f87171;margin-bottom:6px">${(dl.error||'').slice(0,100)}</div><button class="btn-hub ghost" onclick="hubDownload('${m.id}')">&#x21ba; 重试</button>`;
+  return `<button class="btn-hub primary" onclick="hubDownload('${m.id}')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v13M5 14l7 7 7-7"/><path d="M3 21h18"/></svg>下载安装</button>`;
 }
 
 async function hubDownload(modelId) {
-  const r = await fetch('/api/hub/download/' + modelId, {method: 'POST'});
+  const r = await fetch('/api/hub/download/'+modelId, {method:'POST'});
   const d = await r.json();
-  if (d.error) { showToast('错误: ' + d.error, 'red'); return; }
-  const m = hubCatalog.find(x => x.id === modelId);
-  if (m) { m.download = {status: 'downloading', pct: 0, speed_mbps: 0}; updateHubCard(m); }
+  if (d.error) { showToast('错误: '+d.error,true); return; }
+  const m = hubCatalog.find(x=>x.id===modelId);
+  if (m) { m.download={status:'downloading',pct:0,speed_mbps:0}; updateHubCard(m); }
   attachHubProgress(modelId);
 }
 
 async function hubCancel(modelId) {
-  await fetch('/api/hub/download/' + modelId, {method: 'DELETE'});
+  await fetch('/api/hub/download/'+modelId, {method:'DELETE'});
   if (hubSources[modelId]) { hubSources[modelId].close(); delete hubSources[modelId]; }
-  const m = hubCatalog.find(x => x.id === modelId);
-  if (m) { m.download = {status: 'cancelled'}; updateHubCard(m); }
+  const m = hubCatalog.find(x=>x.id===modelId);
+  if (m) { m.download={status:'cancelled'}; updateHubCard(m); }
 }
 
 async function hubActivate(modelId) {
-  const r = await fetch('/api/hub/activate/' + modelId, {method: 'POST'});
+  const r = await fetch('/api/hub/activate/'+modelId, {method:'POST'});
   const d = await r.json();
-  if (d.error) { showToast('错误: ' + d.error, 'red'); return; }
-  hubCatalog.forEach(m => { m.active = (m.id === modelId); });
-  renderHubGrid();
-  loadModels();
-  showToast('✓ 已切换到 ' + modelId);
+  if (d.error) { showToast('错误: '+d.error,true); return; }
+  hubCatalog.forEach(m => m.active=(m.id===modelId));
+  renderHubGrid(); loadModels();
+  showToast('✓ 已切换到 '+modelId);
 }
 
 function attachHubProgress(modelId) {
   if (hubSources[modelId]) return;
-  const es = new EventSource('/api/hub/progress/' + modelId);
+  const es = new EventSource('/api/hub/progress/'+modelId);
   hubSources[modelId] = es;
   es.onmessage = e => {
     const s = JSON.parse(e.data);
-    const bar    = document.getElementById('hub-bar-'    + modelId);
-    const pctEl  = document.getElementById('hub-ppct-'  + modelId);
-    const speedEl= document.getElementById('hub-pspeed-'+ modelId);
-    const fileEl = document.getElementById('hub-pfile-' + modelId);
-    const prog   = document.getElementById('hub-prog-'  + modelId);
-    if (bar)     bar.style.width = (s.pct||0) + '%';
-    if (pctEl)   pctEl.textContent = (s.pct||0) + '%';
-    if (speedEl) speedEl.textContent = s.speed_mbps > 0 ? s.speed_mbps + ' MB/s' : '连接中…';
-    if (fileEl)  fileEl.textContent = s.current_file || '';
-    if (prog)    prog.classList.add('show');
-    const m = hubCatalog.find(x => x.id === modelId);
-    if (m) m.download = s;
-    if (s.status !== 'downloading') {
+    const bar=document.getElementById('hub-bar-'+modelId), pctEl=document.getElementById('hub-ppct-'+modelId);
+    const speedEl=document.getElementById('hub-pspeed-'+modelId), fileEl=document.getElementById('hub-pfile-'+modelId);
+    const prog=document.getElementById('hub-prog-'+modelId);
+    if(bar)     bar.style.width=(s.pct||0)+'%';
+    if(pctEl)   pctEl.textContent=(s.pct||0)+'%';
+    if(speedEl) speedEl.textContent=s.speed_mbps>0?s.speed_mbps+' MB/s':'连接中…';
+    if(fileEl)  fileEl.textContent=s.current_file||'';
+    if(prog)    prog.classList.add('show');
+    const m=hubCatalog.find(x=>x.id===modelId); if(m) m.download=s;
+    if(s.status!=='downloading'){
       es.close(); delete hubSources[modelId];
-      if (m) updateHubCard(m);
-      if (s.status === 'done') {
-        m.installed = true;
-        showToast('✓ ' + modelId + ' 下载完成！');
-        loadModels();
-      }
+      if(m) updateHubCard(m);
+      if(s.status==='done'){if(m) m.installed=true; showToast('✓ '+modelId+' 下载完成！'); loadModels();}
     }
   };
   es.onerror = () => { es.close(); delete hubSources[modelId]; };
 }
 
 function updateHubCard(m) {
-  const footer = document.getElementById('hub-footer-' + m.id);
-  if (footer) footer.innerHTML = hubCardFooter(m);
-  const card = document.getElementById('hub-card-' + m.id);
-  if (card) {
-    if (m.active) card.classList.add('active-model');
-    else card.classList.remove('active-model');
-  }
-  const prog = document.getElementById('hub-prog-' + m.id);
-  if (prog) {
-    if (m.download?.status === 'downloading') prog.classList.add('show');
-    else prog.classList.remove('show');
-  }
+  const footer=document.getElementById('hub-footer-'+m.id); if(footer) footer.innerHTML=hubCardFooter(m);
+  const card=document.getElementById('hub-card-'+m.id);
+  if(card){if(m.active) card.classList.add('active-model'); else card.classList.remove('active-model');}
+  const prog=document.getElementById('hub-prog-'+m.id);
+  if(prog){if(m.download?.status==='downloading') prog.classList.add('show'); else prog.classList.remove('show');}
 }
 
-function showToast(msg, color) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  if (color === 'red') el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,41,59,.95);border:1px solid rgba(248,113,113,.3);color:#f87171;padding:9px 20px;border-radius:12px;font-size:13px;z-index:9999';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.style.opacity = '0', 2000);
-  setTimeout(() => el.remove(), 2400);
-}
+document.getElementById('hub-overlay').addEventListener('click', e => { if(e.target===document.getElementById('hub-overlay')) closeHub(); });
+document.getElementById('sysprompt-modal').addEventListener('click', e => { if(e.target===document.getElementById('sysprompt-modal')) closeSysPrompt(); });
 
-// backdrop click closes hub
-document.getElementById('hub-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('hub-overlay')) closeHub();
-});
-// ── Go ────────────────────────────────────────────────────────────────────────
 boot();
 </script>
 </body>
