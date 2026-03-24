@@ -9,7 +9,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-WORKSTATION_BOOTSTRAP_MODEL_DEFAULT="sshleifer/tiny-gpt2"
+WORKSTATION_BOOTSTRAP_MODEL_DEFAULT_CPU="Qwen/Qwen2.5-1.5B-Instruct"
+WORKSTATION_BOOTSTRAP_MODEL_DEFAULT_ACCEL="Qwen/Qwen2.5-7B-Instruct"
 WORKSTATION_HEALTHCHECK_PROMPT="ping"
 
 DEFAULT_STARTUP_MODEL_MENU_VALUES=(
@@ -121,6 +122,18 @@ check() {
   fi
 }
 
+resolve_compose_command() {
+  if docker compose version &>/dev/null; then
+    printf 'docker compose\n'
+    return 0
+  fi
+  if command -v docker-compose &>/dev/null; then
+    printf 'docker-compose\n'
+    return 0
+  fi
+  printf '\n'
+}
+
 ensure_env_file() {
   if [[ ! -f .env ]]; then
     cp .env.example .env
@@ -134,6 +147,15 @@ load_env_file() {
   # shellcheck disable=SC1091
   source .env 2>/dev/null || true
   set +a
+
+  # Keep optional vars truly optional: empty string should not override
+  # downstream defaults (e.g. Hugging Face endpoint).
+  if [[ -z "${HF_ENDPOINT:-}" ]]; then
+    unset HF_ENDPOINT
+  fi
+  if [[ -z "${HF_TOKEN:-}" ]]; then
+    unset HF_TOKEN
+  fi
 }
 
 update_env_value() {
@@ -242,7 +264,19 @@ build_workspace_pythonpath() {
 }
 
 bootstrap_model() {
-  printf '%s\n' "${WORKSTATION_BOOTSTRAP_MODEL:-$WORKSTATION_BOOTSTRAP_MODEL_DEFAULT}"
+  if [[ -n "${WORKSTATION_BOOTSTRAP_MODEL:-}" ]]; then
+    printf '%s\n' "$WORKSTATION_BOOTSTRAP_MODEL"
+    return 0
+  fi
+
+  case "$(bootstrap_backend)" in
+    cuda|ascend|rocm)
+      printf '%s\n' "$WORKSTATION_BOOTSTRAP_MODEL_DEFAULT_ACCEL"
+      ;;
+    *)
+      printf '%s\n' "$WORKSTATION_BOOTSTRAP_MODEL_DEFAULT_CPU"
+      ;;
+  esac
 }
 
 detect_backend_from_hardware() {
@@ -377,7 +411,9 @@ gateway_inference_ready() {
   local models_json
   local model_id
   local body
+  local body_fallback
   local code
+  local fallback_code
   local timeout_s
 
   if ! gateway_is_running; then
@@ -406,8 +442,74 @@ gateway_inference_ready() {
     return 0
   fi
 
+  # Some base models (e.g. tiny-gpt2) do not define a chat template and return
+  # 400 for chat-completions, while plain completions are healthy.
+  if [[ "$code" == "400" ]] && grep -qi 'chat template' "$body"; then
+    body_fallback="$(mktemp)"
+    fallback_code="$(
+      curl -sS -o "$body_fallback" -w '%{http_code}' --max-time "$timeout_s" \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${VLLM_HUST_API_KEY:-not-required}" \
+        -X POST "$(gateway_probe_url)/v1/completions" \
+        -d "{\"model\":\"${model_id}\",\"prompt\":\"${WORKSTATION_HEALTHCHECK_PROMPT}\",\"max_tokens\":1,\"stream\":false}" \
+        2>/dev/null || true
+    )"
+
+    if [[ "$fallback_code" == "200" ]] && grep -q '"choices"' "$body_fallback"; then
+      rm -f "$body" "$body_fallback"
+      return 0
+    fi
+    rm -f "$body_fallback"
+  fi
+
   rm -f "$body"
   return 1
+}
+
+model_available_in_hf_cache() {
+  local model="$1"
+  local cache_dir
+
+  if [[ -z "$model" ]]; then
+    return 1
+  fi
+
+  # Local model path is considered available without hub checks.
+  if [[ -d "$model" || -f "$model" ]]; then
+    return 0
+  fi
+
+  cache_dir="$HOME/.cache/huggingface/hub/models--${model//\//--}"
+  if [[ -d "$cache_dir/snapshots" ]] && find "$cache_dir/snapshots" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    return 0
+  fi
+
+  return 1
+}
+
+huggingface_endpoint_reachable() {
+  curl -fsS -I --max-time 3 https://huggingface.co >/dev/null 2>&1
+}
+
+backend_target_device() {
+  local backend="$1"
+  case "$backend" in
+    cpu)
+      printf 'cpu\n'
+      ;;
+    cuda)
+      printf 'cuda\n'
+      ;;
+    rocm)
+      printf 'rocm\n'
+      ;;
+    ascend)
+      printf 'npu\n'
+      ;;
+    *)
+      printf '\n'
+      ;;
+  esac
 }
 
 find_listening_pids_for_port() {
@@ -664,6 +766,13 @@ start_full_stack_if_needed() {
   local backend
   local running_model
   local pythonpath
+  local hf_offline_auto
+  local hf_offline_enabled
+  local target_device
+  local treat_as_ascend_runtime
+  local gpu_memory_utilization
+  local -a offline_env
+  local -a backend_env
   auto_start="${WORKSTATION_AUTO_START_GATEWAY:-true}"
   auto_heal="${WORKSTATION_AUTO_HEAL_GATEWAY:-true}"
   tool_call_parser="${WORKSTATION_TOOL_CALL_PARSER:-openai}"
@@ -676,6 +785,22 @@ start_full_stack_if_needed() {
   log_file="$log_dir/vllm-hust-serve.log"
   model="$(bootstrap_model)"
   backend="$(bootstrap_backend)"
+  hf_offline_auto="${WORKSTATION_HF_OFFLINE_AUTO:-true}"
+  hf_offline_enabled="false"
+  target_device="$(backend_target_device "$backend")"
+  treat_as_ascend_runtime="false"
+  gpu_memory_utilization="${WORKSTATION_GPU_MEMORY_UTILIZATION:-}"
+  if [[ "$backend" == "ascend" ]] || ([[ "$backend" == "cpu" ]] && command -v npu-smi &>/dev/null); then
+    treat_as_ascend_runtime="true"
+  fi
+  if [[ "$treat_as_ascend_runtime" == "true" && -z "$gpu_memory_utilization" ]]; then
+    gpu_memory_utilization="${WORKSTATION_ASCEND_GPU_MEMORY_UTILIZATION:-0.35}"
+  fi
+  offline_env=()
+  backend_env=()
+  if [[ -n "$target_device" ]]; then
+    backend_env+=(VLLM_TARGET_DEVICE="$target_device")
+  fi
 
   if gateway_inference_ready; then
     running_model="$(gateway_current_model)"
@@ -708,12 +833,43 @@ start_full_stack_if_needed() {
   fi
 
   mkdir -p "$log_dir"
+
+  if [[ "$hf_offline_auto" == "true" ]] && [[ -z "${HF_ENDPOINT:-}" ]]; then
+    if ! huggingface_endpoint_reachable; then
+      if model_available_in_hf_cache "$model"; then
+        hf_offline_enabled="true"
+        offline_env+=(HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1)
+        echo -e "${YELLOW}ℹ 检测到 huggingface.co 不可达，且本地有缓存模型，自动启用离线模式${NC}"
+      else
+        echo -e "${YELLOW}✗ 检测到 huggingface.co 不可达，且本地未找到模型缓存：${model}${NC}"
+        echo -e "${YELLOW}  请配置可达的 HF_ENDPOINT、准备本地模型路径，或先预下载模型后再启动${NC}"
+        exit 1
+      fi
+    fi
+  fi
+
   echo -e "${BLUE}🌐 未检测到可推理服务，正在自动启动完整栈…${NC}"
   echo -e "   模型: ${GREEN}${model}${NC}"
   echo -e "   后端: ${GREEN}${backend}${NC}"
   echo -e "   端口: ${GREEN}${port}${NC} (engine: ${engine_port})"
+  if [[ "$hf_offline_enabled" == "true" ]]; then
+    echo -e "   模式: ${GREEN}HF 离线缓存模式${NC}"
+  fi
+  if [[ -n "$gpu_memory_utilization" ]]; then
+    echo -e "   显存利用率阈值: ${GREEN}${gpu_memory_utilization}${NC}"
+  fi
+  if [[ "$backend" == "cpu" && "$treat_as_ascend_runtime" == "true" ]]; then
+    echo -e "${YELLOW}ℹ 检测到 Ascend 运行时，启用兼容稳定参数以避免旧 CANN 图模式崩溃${NC}"
+  fi
 
   prepare_backend_runtime_env "$backend"
+
+  # In mixed environments, vLLM may still activate the Ascend platform plugin
+  # even when backend is set to cpu. Ensure acl python module is discoverable
+  # to avoid startup failures caused by missing runtime paths.
+  if [[ "$backend" == "cpu" ]] && command -v npu-smi &>/dev/null; then
+    prepare_backend_runtime_env "ascend"
+  fi
 
   stop_local_vllm_hust_serve_processes "$port" "$engine_port"
   stop_local_processes_on_port "$port"
@@ -738,14 +894,28 @@ start_full_stack_if_needed() {
 
     serve_args+=(--host 0.0.0.0 --port "$port")
 
+    if [[ -n "$target_device" && "$serve_help" == *"--device"* ]]; then
+      serve_args+=(--device "$target_device")
+    fi
+
+    if [[ -n "$gpu_memory_utilization" && "$serve_help" == *"--gpu-memory-utilization"* ]]; then
+      serve_args+=(--gpu-memory-utilization "$gpu_memory_utilization")
+    fi
+
     if [[ "$serve_help" == *"--engine-port"* ]]; then
       serve_args+=(--engine-port "$engine_port")
     fi
 
-    if [[ "$backend" == "ascend" ]]; then
-      # Keep quickstart stable on mixed Ascend runtime versions by disabling graph path.
-      # This avoids runtime symbols that are unavailable on older CANN builds.
-      serve_args+=(--enforce-eager -cc.cudagraph_mode=0)
+    if [[ "$treat_as_ascend_runtime" == "true" ]]; then
+      # Keep quickstart stable on mixed Ascend runtime versions by disabling graph paths.
+      # Use explicit JSON configs supported by current CLI to avoid parser/version drift.
+      serve_args+=(--enforce-eager)
+      if [[ "$serve_help" == *"--compilation-config"* ]]; then
+        serve_args+=(--compilation-config '{"mode":0,"cudagraph_mode":"NONE"}')
+      fi
+      if [[ "$serve_help" == *"--additional-config"* ]]; then
+        serve_args+=(--additional-config '{"ascend_compilation_config":{"enable_npugraph_ex":false,"enable_static_kernel":false}}')
+      fi
 
       # Prefer stability on older CANN builds where fused infer attention may crash
       # for some model head dimensions during chunked/prefix prefill.
@@ -772,6 +942,8 @@ start_full_stack_if_needed() {
     fi
 
     nohup env \
+      "${offline_env[@]}" \
+      "${backend_env[@]}" \
       VLLM_HUST_PREFLIGHT_CANARY=0 \
       VLLM_HUST_STARTUP_CANARY=0 \
       VLLM_HUST_PERIODIC_CANARY=0 \
@@ -780,6 +952,8 @@ start_full_stack_if_needed() {
     pythonpath="$(build_workspace_pythonpath)"
     if command -v python3 &>/dev/null && [[ -n "$pythonpath" ]]; then
       nohup env \
+        "${offline_env[@]}" \
+        "${backend_env[@]}" \
         PYTHONPATH="$pythonpath" \
         VLLM_HUST_PREFLIGHT_CANARY=0 \
         VLLM_HUST_STARTUP_CANARY=0 \
@@ -787,6 +961,8 @@ start_full_stack_if_needed() {
         python3 -m vllm_hust.cli serve --backend "$backend" --model "$model" --host 0.0.0.0 --port "$port" --engine-port "$engine_port" >"$log_file" 2>&1 &
     elif command -v python &>/dev/null && [[ -n "$pythonpath" ]]; then
       nohup env \
+        "${offline_env[@]}" \
+        "${backend_env[@]}" \
         PYTHONPATH="$pythonpath" \
         VLLM_HUST_PREFLIGHT_CANARY=0 \
         VLLM_HUST_STARTUP_CANARY=0 \
@@ -815,10 +991,20 @@ start_full_stack_if_needed() {
 }
 
 MODE="${1:-auto}"
+COMPOSE_COMMAND=""
 
 if [[ "$MODE" == "auto" ]]; then
   if command -v docker &>/dev/null; then
-    MODE="docker"
+    COMPOSE_COMMAND="$(resolve_compose_command)"
+    if [[ -n "$COMPOSE_COMMAND" ]]; then
+      MODE="docker"
+    elif command -v node &>/dev/null && command -v npm &>/dev/null; then
+      MODE="dev"
+      echo -e "${YELLOW}ℹ 检测到 docker 但缺少 Docker Compose（docker compose/docker-compose），自动切换到 dev 模式${NC}"
+    else
+      echo -e "${YELLOW}✗ 检测到 docker，但缺少 Docker Compose（docker compose/docker-compose），且无可用 node/npm 环境${NC}"
+      exit 1
+    fi
   elif command -v node &>/dev/null && command -v npm &>/dev/null; then
     MODE="dev"
     echo -e "${YELLOW}ℹ 未检测到 docker，自动切换到 dev 模式${NC}"
@@ -832,22 +1018,36 @@ if [[ "$MODE" == "docker" ]]; then
   check docker
   check curl
 
+  COMPOSE_COMMAND="${COMPOSE_COMMAND:-$(resolve_compose_command)}"
+  if [[ -z "$COMPOSE_COMMAND" ]]; then
+    echo -e "${YELLOW}✗ 未检测到 Docker Compose（docker compose/docker-compose），无法使用 docker 模式${NC}"
+    echo -e "${YELLOW}  可安装 Docker Compose，或改用: ./quickstart.sh dev${NC}"
+    exit 1
+  fi
+
+  local_compose_cmd=(docker compose)
+  if [[ "$COMPOSE_COMMAND" == "docker-compose" ]]; then
+    local_compose_cmd=(docker-compose)
+  fi
+
   load_env_file
   select_bootstrap_model_interactively
   start_full_stack_if_needed
 
   echo -e "${BLUE}🐳 构建镜像（首次约需 2~3 分钟，请耐心等待…）${NC}"
-  docker compose build
+  "${local_compose_cmd[@]}" build
 
   echo -e "${BLUE}🚀 启动容器…${NC}"
-  docker compose up -d
+  "${local_compose_cmd[@]}" up -d
+
+  compose_hint="$COMPOSE_COMMAND"
 
   echo ""
   echo -e "${GREEN}✅ 启动成功！${NC}"
   echo -e "   浏览器访问: ${GREEN}http://localhost:${APP_PORT:-3000}${NC}"
   echo ""
-  echo -e "   实时日志:   docker compose logs -f"
-  echo -e "   停止服务:   docker compose down"
+  echo -e "   实时日志:   ${compose_hint} logs -f"
+  echo -e "   停止服务:   ${compose_hint} down"
 
 elif [[ "$MODE" == "dev" ]]; then
   check node

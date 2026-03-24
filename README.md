@@ -10,7 +10,7 @@
 
 - **实时流式对话** — 接入任意 `vllm-hust-gateway`（OpenAI 兼容接口）
 - **实时监控面板** — TPS、延迟、GPU 利用率、显存趋势图
-- **Multi-Agent Optimization Lab** — 内置 Planner/Benchmarker/Diagnoser/Optimizer 多智能体链路，一键生成性能优化建议
+- **EvoScientist Embedded Chat** — 直接在工作站里调用 EvoScientist CLI，会话化执行自动科研任务
 - **Prometheus 监控端点** — 内置 `/metrics`，可直接接入 Prometheus 抓取
 - **白牌化** — 品牌名 / Logo / 主题色可通过 `.env` 配置
 - **Node 单运行时** — 前后端统一收敛到 Next.js Route Handlers，避免 Python + Node 双依赖栈
@@ -69,13 +69,13 @@ VLLM_HUST_BASE_URL=http://localhost:8080
 VLLM_HUST_API_KEY=not-required
 WORKSTATION_AUTO_START_GATEWAY=true
 WORKSTATION_AUTO_HEAL_GATEWAY=true
-WORKSTATION_BOOTSTRAP_MODEL=sshleifer/tiny-gpt2
+WORKSTATION_BOOTSTRAP_MODEL=Qwen/Qwen2.5-7B-Instruct
 WORKSTATION_INTERACTIVE_MODEL_MENU=true
 WORKSTATION_BOOTSTRAP_BACKEND=auto
 WORKSTATION_AUTO_DETECT_BACKEND=true
 WORKSTATION_ENGINE_PORT=8902
-DEFAULT_MODEL=default
-BACKEND_TYPE=CPU
+DEFAULT_MODEL=Qwen2.5-7B-Instruct
+BACKEND_TYPE=AUTO
 
 APP_PORT=3000
 APP_BRAND_NAME=vLLM-HUST 工作站
@@ -100,6 +100,24 @@ WORKSTATION_AUTO_DETECT_BACKEND=false
 如需启动 EvoScientist，请在 EvoScientist 仓库中执行它自己的启动脚本；
 如需单独启动本地 vllm-hust OpenAI 服务，请在 vllm-hust 仓库中直接执行原生 `vllm-hust serve` 命令。
 
+工作站内嵌 EvoScientist 会通过后端调用 EvoSci CLI：
+
+```bash
+# 必需：确保本机 8080 上有可用的 vllm-hust OpenAI 接口
+curl http://127.0.0.1:8080/v1/models
+
+# 必需：EvoScientist 侧已配置好 provider/model（在 EvoScientist 配置文件中）
+cat ~/.config/evoscientist/config.yaml
+```
+
+可在 `.env` 中调整嵌入调用参数：
+
+```bash
+WORKSTATION_EVOSCI_BIN=EvoSci
+WORKSTATION_EVOSCI_WORKDIR=/home/shuhao/EvoScientist
+WORKSTATION_EVOSCI_TIMEOUT_MS=180000
+```
+
 ---
 
 ## 🔌 与 vllm-hust-gateway 对接
@@ -109,7 +127,7 @@ WORKSTATION_AUTO_DETECT_BACKEND=false
 | `POST /api/chat` | `POST /v1/chat/completions` | 流式对话（SSE 透传） |
 | `GET  /api/models` | `GET /v1/models` | 模型列表下拉（上游离线时返回兜底模型并显式标记离线） |
 | `GET  /api/metrics` | `GET /v1/stats` + `GET /metrics` | 监控面板 JSON 聚合 |
-| `POST /api/agents/run` | `POST /v1/chat/completions` | 多智能体性能实验编排（规划→压测→诊断→优化） |
+| `POST /api/evoscientist/chat` | `EvoSci -p ...` | 内嵌 EvoScientist 对话调用（CLI 桥接） |
 | `GET  /metrics` | Workstation internal registry | Prometheus 抓取端点 |
 
 > `quickstart.sh` 会先做一次真实推理探测，而不是只看 `/health`。因此本地若只有空 gateway、没有健康 engine，也会被判定为“未就绪”并自动修复。
