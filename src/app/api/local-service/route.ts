@@ -1,6 +1,7 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { DEFAULT_MODEL_ID, SERVER_CONFIG } from "@/lib/config";
+import { getEvoScientistIntegrationStatus } from "@/lib/server/evoscientist";
 import { fetchUpstreamEngineProbe, fetchUpstreamModels } from "@/lib/upstream";
 import type { LocalServiceStatus } from "@/types";
 
@@ -48,6 +49,8 @@ async function getLocalServiceStatus(): Promise<LocalServiceStatus> {
     recommendedAction = "restart";
   }
 
+  const evoScientist = await getEvoScientistIntegrationStatus(currentModel ?? desiredModel);
+
   return {
     baseUrl: SERVER_CONFIG.baseUrl,
     isLocalTarget: localTarget,
@@ -58,6 +61,7 @@ async function getLocalServiceStatus(): Promise<LocalServiceStatus> {
     recommendedAction,
     backendLogFile: path.join(process.cwd(), ".logs", "vllm-hust-serve.log"),
     frontendLogFile: path.join(process.cwd(), ".logs", "workstation-dev.log"),
+    evoScientist,
   };
 }
 

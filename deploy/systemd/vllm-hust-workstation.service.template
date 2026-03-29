@@ -1,0 +1,16 @@
+[Unit]
+Description=vLLM-HUST Workstation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO_DIR__
+ExecStart=/usr/bin/env bash __REPO_DIR__/scripts/run_workstation_systemd.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillMode=process
+
+[Install]
+WantedBy=default.target

@@ -1,5 +1,20 @@
 import { NextRequest } from "next/server";
 import { spawn } from "node:child_process";
+import {
+  cleanEvoScientistOutput,
+  createEvoScientistConfigRoot,
+  getEvoScientistApiKey,
+  getEvoScientistIntegrationStatus,
+  getEvoScientistBaseUrl,
+  getEvoScientistSpawnEnv,
+  removeEvoScientistConfigRoot,
+  resolveEvoScientistCommand,
+  resolveEvoScientistTimeoutMs,
+  resolveEvoScientistWorkdir,
+  resolveServedModel,
+  summarizeEvoScientistFailure,
+} from "@/lib/server/evoscientist";
+import { getWebSearchContext } from "@/lib/server/webSearch";
 import { recordApiRequest } from "@/lib/metrics";
 
 export const runtime = "nodejs";
@@ -7,42 +22,38 @@ export const runtime = "nodejs";
 type EvoChatRequest = {
   prompt?: string;
   model?: string;
+  webSearch?: boolean;
 };
 
-const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
-
-function cleanOutput(raw: string): string {
-  return raw.replace(ANSI_PATTERN, "").replace(/\r/g, "").trim();
-}
-
-function summarizeFailure(raw: string): string {
-  const text = cleanOutput(raw);
+function extractAssistantReply(raw: string): string {
+  const text = cleanEvoScientistOutput(raw);
   if (!text) {
-    return "unknown error";
+    return "";
   }
 
-  const lines = text
+  const workspaceMarker = text.match(/Workspace:[^\n]*\n+([\s\S]*)$/);
+  if (workspaceMarker?.[1]?.trim()) {
+    return workspaceMarker[1].trim();
+  }
+
+  return text
     .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const keyLines = lines.filter((line) =>
-    /(ConnectError|connection error|Failed to connect|Timed out|Error:|RuntimeError|HTTP\s*\d{3})/i.test(line)
-  );
-
-  if (keyLines.length > 0) {
-    return keyLines.slice(-4).join("\n").slice(0, 2000);
-  }
-
-  return lines.slice(-12).join("\n").slice(0, 2000);
-}
-
-function resolveTimeoutMs(): number {
-  const configured = Number(process.env.WORKSTATION_EVOSCI_TIMEOUT_MS || "180000");
-  if (!Number.isFinite(configured) || configured <= 0) {
-    return 180000;
-  }
-  return Math.min(Math.floor(configured), 600000);
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return false;
+      }
+      return !(
+        trimmed === "Loading agent..." ||
+        trimmed.startsWith("⚠") ||
+        trimmed.startsWith("Thread:") ||
+        trimmed.startsWith("Workspace:") ||
+        trimmed.startsWith("> ") ||
+        /^─+$/.test(trimmed)
+      );
+    })
+    .join("\n")
+    .trim();
 }
 
 async function runEvoScientist(prompt: string, model?: string): Promise<{
@@ -52,27 +63,29 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
   exitCode: number | null;
   command: string[];
 }> {
-  const bin = process.env.WORKSTATION_EVOSCI_BIN || "EvoSci";
-  const workdir = process.env.WORKSTATION_EVOSCI_WORKDIR || "/home/shuhao/EvoScientist";
-  const timeoutMs = resolveTimeoutMs();
+  const workdir = resolveEvoScientistWorkdir();
+  const timeoutMs = resolveEvoScientistTimeoutMs();
+  const baseUrl = getEvoScientistBaseUrl();
+  const apiKey = getEvoScientistApiKey();
+  const resolvedModel = await resolveServedModel(model);
+  const configRoot = createEvoScientistConfigRoot({
+    model: resolvedModel,
+    baseUrl,
+    apiKey,
+  });
 
-  const command = [bin, "-p", prompt, "--ui", "cli", "--no-thinking", "--workdir", workdir];
-  // Newer EvoScientist CLI no longer accepts --provider/--model at top level.
-  // Keep request compatibility but route provider/model selection to EvoScientist config.
-  void model;
+  const command = resolveEvoScientistCommand(prompt, workdir);
 
   const startedAt = Date.now();
+
+  const cleanupConfigRoot = () => {
+    removeEvoScientistConfigRoot(configRoot);
+  };
 
   return await new Promise((resolve, reject) => {
     const child = spawn(command[0], command.slice(1), {
       cwd: workdir,
-      env: {
-        ...process.env,
-        FORCE_COLOR: "0",
-        CLICOLOR: "0",
-        NO_COLOR: "1",
-        TERM: "dumb",
-      },
+      env: getEvoScientistSpawnEnv({ configRoot, apiKey, baseUrl, workdir }),
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -94,6 +107,7 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
     });
 
     child.on("error", (error) => {
+      cleanupConfigRoot();
       reject(error);
     });
 
@@ -106,6 +120,7 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
     child.on("close", (code) => {
       clearTimeout(timer);
       const durationMs = Date.now() - startedAt;
+      cleanupConfigRoot();
       if (timedOut) {
         resolve({
           durationMs,
@@ -128,36 +143,58 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as EvoChatRequest;
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const model = typeof body.model === "string" ? body.model : undefined;
+    const webSearch = body.webSearch !== false;
 
     if (!prompt) {
       recordApiRequest("/api/evoscientist/chat", "POST", 400, (performance.now() - start) / 1000);
       return Response.json({ error: "prompt 不能为空" }, { status: 400 });
     }
 
-    const result = await runEvoScientist(prompt, model);
-    const stdout = cleanOutput(result.stdout);
-    const stderr = cleanOutput(result.stderr);
+    const searchContext = await getWebSearchContext(prompt, webSearch);
+    const effectivePrompt = searchContext.context
+      ? `${searchContext.context}\n研究任务：${prompt}`
+      : prompt;
+    const result = await runEvoScientist(effectivePrompt, model);
+    const stdout = cleanEvoScientistOutput(result.stdout);
+    const stderr = cleanEvoScientistOutput(result.stderr);
+    const integration = await getEvoScientistIntegrationStatus(model);
 
     if (result.exitCode !== 0) {
       recordApiRequest("/api/evoscientist/chat", "POST", 502, (performance.now() - start) / 1000);
-      const detail = summarizeFailure(`${stderr}\n${stdout}`);
+      const detail = summarizeEvoScientistFailure(`${stderr}\n${stdout}`);
       return Response.json(
         {
           error: "EvoScientist 执行失败",
           detail,
           exitCode: result.exitCode,
           command: result.command,
+          integration,
+          search: {
+            enabled: searchContext.enabled,
+            attempted: searchContext.attempted,
+            mode: searchContext.mode,
+            query: searchContext.query,
+            results: searchContext.results,
+          },
         },
         { status: 502 }
       );
     }
 
-    const reply = stdout || "EvoScientist 未返回可显示内容。";
+    const reply = extractAssistantReply(stdout) || stdout || "EvoScientist 未返回可显示内容。";
     recordApiRequest("/api/evoscientist/chat", "POST", 200, (performance.now() - start) / 1000);
     return Response.json({
       reply,
       durationMs: result.durationMs,
       command: result.command,
+      integration,
+      search: {
+        enabled: searchContext.enabled,
+        attempted: searchContext.attempted,
+        mode: searchContext.mode,
+        query: searchContext.query,
+        results: searchContext.results,
+      },
     });
   } catch (error: unknown) {
     recordApiRequest("/api/evoscientist/chat", "POST", 500, (performance.now() - start) / 1000);

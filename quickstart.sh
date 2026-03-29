@@ -335,6 +335,31 @@ launch_local_workstation_backend() {
   nohup env "${env_assignments[@]}" "${command_words[@]}" >"$log_file" 2>&1 &
 }
 
+default_tool_call_parser_for_model() {
+  local model="${1:-}"
+
+  case "$model" in
+    Qwen/Qwen2.5-*|Qwen/QwQ-*)
+      printf 'hermes\n'
+      ;;
+    Qwen/Qwen3-Coder-*)
+      printf 'qwen3_xml\n'
+      ;;
+    meta-llama/Llama-3.2-*)
+      printf 'pythonic\n'
+      ;;
+    meta-llama/Llama-4-*)
+      printf 'llama4_pythonic\n'
+      ;;
+    openai/gpt-oss-*)
+      printf 'openai\n'
+      ;;
+    *)
+      printf 'openai\n'
+      ;;
+  esac
+}
+
 gateway_host() {
   local base_url="${VLLM_HUST_BASE_URL:-http://localhost:8080}"
   local authority="${base_url#*://}"
@@ -1139,7 +1164,6 @@ start_full_stack_if_needed() {
   local -a backend_env
   auto_start="${WORKSTATION_AUTO_START_GATEWAY:-true}"
   auto_heal="${WORKSTATION_AUTO_HEAL_GATEWAY:-true}"
-  tool_call_parser="${WORKSTATION_TOOL_CALL_PARSER:-openai}"
   enable_auto_tool_choice="${WORKSTATION_ENABLE_AUTO_TOOL_CHOICE:-true}"
   disable_prefix_caching="${WORKSTATION_DISABLE_PREFIX_CACHING:-false}"
   disable_chunked_prefill="${WORKSTATION_DISABLE_CHUNKED_PREFILL:-false}"
@@ -1148,6 +1172,7 @@ start_full_stack_if_needed() {
   log_dir="$SCRIPT_DIR/.logs"
   log_file="$log_dir/vllm-hust-serve.log"
   model="$(bootstrap_model)"
+  tool_call_parser="${WORKSTATION_TOOL_CALL_PARSER:-$(default_tool_call_parser_for_model "$model")}"
   backend="$(bootstrap_backend)"
   hf_offline_auto="${WORKSTATION_HF_OFFLINE_AUTO:-true}"
   hf_offline_enabled="false"
@@ -1329,11 +1354,12 @@ start_full_stack_if_needed() {
       serve_args+=(--no-enable-chunked-prefill)
     fi
 
-    # Keep OpenAI tool-calling compatible for multi-agent frameworks when supported.
-    if [[ "$enable_auto_tool_choice" == "true" && "$serve_help" == *"--enable-auto-tool-choice"* ]]; then
+    # Workstation-local stacks should keep tool calling enabled for agent flows
+    # such as EvoScientist even when `serve --help` probing is unreliable.
+    if [[ "$enable_auto_tool_choice" == "true" ]]; then
       serve_args+=(--enable-auto-tool-choice)
     fi
-    if [[ -n "$tool_call_parser" && "$serve_help" == *"--tool-call-parser"* ]]; then
+    if [[ -n "$tool_call_parser" ]]; then
       serve_args+=(--tool-call-parser "$tool_call_parser")
     fi
 

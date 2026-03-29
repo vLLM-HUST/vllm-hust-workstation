@@ -97,6 +97,14 @@ export default function LocalServiceCard() {
     status.currentModel !== status.desiredModel
       ? "当前服务已运行其他模型；“一键拉起 / 修复后端”会优先复用当前健康服务，如需按配置模型切换请点击“重启本地后端”。"
       : null;
+  const evoStatus = status?.evoScientist;
+  const evoStatusTone = !evoStatus
+    ? "text-white/55"
+    : evoStatus.ready && status?.inferenceReady
+      ? "text-emerald-200"
+      : evoStatus.commandMode === "unavailable"
+        ? "text-red-200"
+        : "text-amber-200";
 
   return (
     <div className="bg-white/5 rounded-xl p-4 border border-white/8 space-y-3">
@@ -116,6 +124,16 @@ export default function LocalServiceCard() {
         <p>目标地址: {status?.baseUrl ?? "加载中"}</p>
         <p>期望模型: {status?.desiredModel ?? "加载中"}</p>
         <p>当前模型: {status?.currentModel ?? "未探测到"}</p>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 space-y-1">
+        <p className={`font-medium ${evoStatusTone}`}>
+          EvoScientist: {!evoStatus ? "加载中" : evoStatus.ready && status?.inferenceReady ? "已绑定本地后端" : "链路待就绪"}
+        </p>
+        <p className="text-white/55">后端绑定: {evoStatus?.baseUrl ?? "加载中"}</p>
+        <p className="text-white/55">Evo 模型: {evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测"}</p>
+        <p className="text-white/55">启动方式: {evoStatus?.commandMode === "binary" ? "EvoSci 可执行文件" : evoStatus?.commandMode === "python-module" ? "Python 模块回退" : "未找到可用命令"}</p>
+        <p className="text-white/55">搜索增强: {evoStatus?.searchEnabled ? "已启用，复用 workstation 联网搜索" : "已关闭"}</p>
       </div>
 
       {message ? <p className="text-xs text-cyan-200/90 leading-5">{message}</p> : null}

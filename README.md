@@ -249,6 +249,66 @@ npm run build
 npm run start
 ```
 
+### Self-Hosted Runner + systemd --user 部署
+
+如果 A100 主机不能直接暴露公网入口，推荐把 `vllm-hust-workstation` 放到一台 GitHub self-hosted runner 上，然后由 workflow 触发本机 `systemd --user` 常驻服务。
+
+这套仓库内置了最小部署骨架：
+
+- workflow: `.github/workflows/self-hosted-deploy.yml`
+- deploy 脚本: `scripts/deploy_workstation.sh`
+- systemd 启动脚本: `scripts/run_workstation_systemd.sh`
+- unit 模板: `deploy/systemd/vllm-hust-workstation.service.template`
+
+建议流程：
+
+```bash
+# 1) 首次准备 .env
+cp .env.example .env
+
+# 2) 填好后端地址、端口、品牌信息
+#    至少确认这些变量：
+#    VLLM_HUST_BASE_URL / APP_PORT / APP_BRAND_NAME / APP_FRAME_ANCESTORS
+
+# 3) 本机一次性安装 systemd 用户服务
+./scripts/deploy_workstation.sh install-service
+
+# 4) 本机构建并切换到 production runtime
+./scripts/deploy_workstation.sh ci-deploy
+
+# 5) 查看服务状态 / 日志
+./scripts/deploy_workstation.sh status
+./scripts/deploy_workstation.sh logs
+```
+
+说明：
+
+- deploy 脚本不会跑 `npm run dev`，而是执行 `next build`，然后把 `.next/standalone`、`.next/static`、`public/` 组装到固定 runtime 目录。
+- systemd 常驻服务只负责运行这个 runtime，避免把交互式 quickstart、本地 demo 控制逻辑带进生产服务。
+- workflow 默认跑在 `self-hosted` runner 上；runner 所在用户需要具备可用的 `systemd --user` 会话。
+
+### Cloudflare Tunnel 需要什么凭据
+
+推荐你优先用 Cloudflare Dashboard 的 token 模式，它最省事：
+
+1. 你的域名已经托管在 Cloudflare
+2. 在 Zero Trust / Access / Tunnels 里创建一个 tunnel
+3. 给这个 tunnel 绑定公开 hostname，例如 `workstation.your-domain.com`
+4. 把该 tunnel 的 `token` 放到主机上，用 `cloudflared tunnel run --token ...` 启动
+
+这种模式下，主机上真正需要的敏感信息只有：
+
+- `Tunnel Token`
+
+不需要预先放 `cert.pem`。
+
+如果你要用 CLI 管理型 named tunnel，那么主机上需要的是另一套凭据：
+
+- `~/.cloudflared/cert.pem`：Cloudflare 账户级 origin cert，用于 `cloudflared tunnel create/list` 等管理命令
+- 对应 tunnel 的 `credentials-file` JSON：运行该 tunnel 时使用
+
+前面 `cloudflared tunnel list` 报错缺少 `cert.pem`，说的是这种“CLI 管理型”模式，不是 token 模式本身不可用。
+
 或继续使用 Docker：
 
 ```bash

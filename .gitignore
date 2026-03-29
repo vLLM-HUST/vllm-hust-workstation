@@ -5,7 +5,9 @@ __pycache__/
 nohup.out
 node_modules/
 .next/
+*.tsbuildinfo
 dist/
 *.log
 *.tmp
 config.ini
+.workstation-deploy/
