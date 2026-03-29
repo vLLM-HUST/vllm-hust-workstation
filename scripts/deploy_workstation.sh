@@ -264,8 +264,11 @@ case "$MODE" in
   ci-deploy)
     ci_deploy
     ;;
+  deploy)
+    ci_deploy
+    ;;
   *)
-    echo "Usage: $0 {build|install-service|restart|status|logs|ci-deploy}" >&2
+    echo "Usage: $0 {build|install-service|restart|status|logs|deploy|ci-deploy}" >&2
     exit 1
     ;;
 esac

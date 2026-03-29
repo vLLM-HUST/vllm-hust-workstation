@@ -249,13 +249,12 @@ npm run build
 npm run start
 ```
 
-### Self-Hosted Runner + systemd --user 部署
+### systemd --user 部署
 
-如果 A100 主机不能直接暴露公网入口，推荐把 `vllm-hust-workstation` 放到一台 GitHub self-hosted runner 上，然后由 workflow 触发本机 `systemd --user` 常驻服务。
+如果 A100 主机不能直接暴露公网入口，直接在主机本地用脚本安装和更新 `systemd --user` 常驻服务即可，不需要把 deployment 绑定到 GitHub Actions workflow。
 
 这套仓库内置了最小部署骨架：
 
-- workflow: `.github/workflows/self-hosted-deploy.yml`
 - deploy 脚本: `scripts/deploy_workstation.sh`
 - systemd 启动脚本: `scripts/run_workstation_systemd.sh`
 - unit 模板: `deploy/systemd/vllm-hust-workstation.service.template`
@@ -274,7 +273,7 @@ cp .env.example .env
 ./scripts/deploy_workstation.sh install-service
 
 # 4) 本机构建并切换到 production runtime
-./scripts/deploy_workstation.sh ci-deploy
+./scripts/deploy_workstation.sh deploy
 
 # 5) 查看服务状态 / 日志
 ./scripts/deploy_workstation.sh status
@@ -285,7 +284,45 @@ cp .env.example .env
 
 - deploy 脚本不会跑 `npm run dev`，而是执行 `next build`，然后把 `.next/standalone`、`.next/static`、`public/` 组装到固定 runtime 目录。
 - systemd 常驻服务只负责运行这个 runtime，避免把交互式 quickstart、本地 demo 控制逻辑带进生产服务。
-- workflow 默认跑在 `self-hosted` runner 上；runner 所在用户需要具备可用的 `systemd --user` 会话。
+- 一旦服务由 `systemd --user` 拉起，后续生命周期就归 systemd 管，不会因为你关闭 shell、退出 VS Code，或结束某个外部调用而自动停止。
+
+### 多模型 Fleet 自动部署
+
+如果你想在这台 A100 上同时挂多条 `vllm-hust serve` 实例，可以直接用仓库里的 fleet 清单：
+
+- manifest: `deploy/model-fleet.json`
+- 本地部署脚本: `scripts/deploy_model_fleet.sh`
+
+默认策略：
+
+- 默认把 `32B` 固定到第二张卡，把 `0.5B / 1.5B / 3B / 7B / 14B` 放到第一张卡。
+- 若第一张卡还有余量，会继续尝试 `DeepSeek-R1-Distill-Qwen-7B` 和 `Llama-3.1-8B-Instruct` 这类补位模型。
+- `only_cached=true`，所以本机未完整缓存的模型会自动跳过；存在 `.incomplete` 分片的下载中模型不会被误判为可启动。
+- 调度时会读取当前 `nvidia-smi` 的实时空闲显存，不主动打断已有实例。
+
+本机先看规划：
+
+```bash
+./scripts/deploy_model_fleet.sh plan
+```
+
+本机直接部署：
+
+```bash
+./scripts/deploy_model_fleet.sh deploy
+```
+
+查看状态：
+
+```bash
+./scripts/deploy_model_fleet.sh status
+```
+
+如果你后面补齐了更大的模型：
+
+1. 先把权重放进本机 Hugging Face cache，或把 `only_cached` 改成 `false`
+2. 再把 `deploy/model-fleet.json` 里对应模型的 `enabled` 打开
+3. 本地再次执行 `./scripts/deploy_model_fleet.sh deploy`
 
 ### Cloudflare Tunnel 需要什么凭据
 

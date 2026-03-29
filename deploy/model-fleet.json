@@ -1,0 +1,83 @@
+{
+  "defaults": {
+    "service_prefix": "vllm-hust-model",
+    "start_port": 8100,
+    "host": "0.0.0.0",
+    "gpu_memory_utilization": 0.9,
+    "reserve_vram_mb": 4096,
+    "only_cached": true,
+    "max_models_per_gpu": 8
+  },
+  "models": [
+    {
+      "name": "qwen25-0p5b",
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "estimated_vram_mb": 2500,
+      "allowed_gpu_indices": [0],
+      "enabled": true
+    },
+    {
+      "name": "qwen25-1p5b",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "estimated_vram_mb": 5000,
+      "allowed_gpu_indices": [0],
+      "enabled": true
+    },
+    {
+      "name": "qwen25-3b",
+      "model": "Qwen/Qwen2.5-3B-Instruct",
+      "estimated_vram_mb": 9000,
+      "allowed_gpu_indices": [0],
+      "enabled": true
+    },
+    {
+      "name": "qwen25-7b",
+      "model": "Qwen/Qwen2.5-7B-Instruct",
+      "estimated_vram_mb": 18000,
+      "allowed_gpu_indices": [0],
+      "enabled": true
+    },
+    {
+      "name": "qwen25-14b",
+      "model": "Qwen/Qwen2.5-14B-Instruct",
+      "estimated_vram_mb": 36000,
+      "allowed_gpu_indices": [0],
+      "enabled": true
+    },
+    {
+      "name": "qwen25-32b",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "estimated_vram_mb": 70000,
+      "allowed_gpu_indices": [1],
+      "enabled": true,
+      "note": "Pinned to the second A100 so the first A100 remains available for the small-model stack."
+    },
+    {
+      "name": "deepseek-r1-qwen-7b",
+      "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "estimated_vram_mb": 18000,
+      "allowed_gpu_indices": [0],
+      "tool_call_parser": "hermes",
+      "enabled": true,
+      "note": "Optional overflow model for the small-model GPU when additional cache and VRAM are available."
+    },
+    {
+      "name": "llama31-8b",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "estimated_vram_mb": 20000,
+      "allowed_gpu_indices": [0],
+      "tool_call_parser": "pythonic",
+      "enabled": true,
+      "note": "Optional overflow model for remaining headroom on the small-model GPU."
+    },
+    {
+      "name": "qwen25-72b",
+      "model": "Qwen/Qwen2.5-72B-Instruct",
+      "estimated_vram_mb": 45000,
+      "tensor_parallel_size": 2,
+      "allowed_gpu_indices": [0, 1],
+      "enabled": false,
+      "note": "Requires both A100 GPUs and should be enabled only when the pair is available for a single model service."
+    }
+  ]
+}
