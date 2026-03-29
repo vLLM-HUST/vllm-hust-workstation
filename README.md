@@ -107,6 +107,8 @@ APP_PORT=3000
 APP_BRAND_NAME=vLLM-HUST 工作站
 APP_BRAND_LOGO=
 APP_ACCENT_COLOR=#6366f1
+# 若需要让 website 以 iframe 嵌入此页面，可限制允许嵌入的来源域名
+# APP_FRAME_ANCESTORS=https://intellistream.github.io https://vllm-hust.example.com
 ```
 
 如不希望每次启动都弹出模型选择菜单，可在 `.env` 中设置：
@@ -124,10 +126,52 @@ WORKSTATION_BOOTSTRAP_BACKEND=cuda
 WORKSTATION_AUTO_DETECT_BACKEND=false
 ```
 
-如需启动 EvoScientist，请在 EvoScientist 仓库中执行它自己的启动脚本；
+如需手动覆盖本地 `vllm-hust serve` 的工具解析器，可在 `.env` 中设置：
+
+```dotenv
+WORKSTATION_TOOL_CALL_PARSER=hermes
+```
+
+未显式设置时，quickstart 会按模型自动选择默认 parser：Qwen2.5 / QwQ 使用 `hermes`，Qwen3-Coder 使用 `qwen3_xml`，Llama 3.2 使用 `pythonic`，Llama 4 使用 `llama4_pythonic`，其余模型默认 `openai`。
+
+工作站内嵌 EvoScientist 现在会自动通过后端调用 EvoSci CLI，并为每次请求临时注入一份 EvoScientist 配置：
+
+- provider 固定为 `custom-openai`
+- `base_url` 默认继承 `VLLM_HUST_BASE_URL` 并自动补齐 `/v1`
+- `api_key` 默认继承 `VLLM_HUST_API_KEY`，未设置时使用 `not-required`
+- `model` 优先使用当前工作站模型，并自动对齐到后端真实 served model id（例如把 `Qwen2.5-7B-Instruct` 解析为 `Qwen/Qwen2.5-7B-Instruct`）
+
+如需覆盖这些默认值，可在 `.env` 中追加：
+
+```dotenv
+WORKSTATION_EVOSCI_BASE_URL=http://localhost:8080/v1
+WORKSTATION_EVOSCI_API_KEY=not-required
+WORKSTATION_EVOSCI_MODEL=Qwen/Qwen2.5-7B-Instruct
+```
+
 如需单独启动本地 vllm-hust OpenAI 服务，请在 vllm-hust 仓库中直接执行原生 `vllm-hust serve` 命令。
 
-工作站内嵌 EvoScientist 会通过后端调用 EvoSci CLI：
+## 🌐 挂到 A100 后台并呈现到 website
+
+如果目标是“workstation 部署在 A100 机器上，然后在 `vllm-hust-website` 首页中展示”，推荐按下面的方式做：
+
+1. 在 A100 主机上部署 `vllm-hust` OpenAI 兼容服务，例如 `http://A100_HOST:8080`
+2. 在同一台机器或同一内网可达机器上部署 `vllm-hust-workstation`
+3. 给 workstation 配置远端后端地址：
+
+```dotenv
+VLLM_HUST_BASE_URL=https://A100_HOST:8080
+APP_BRAND_NAME=vLLM-HUST A100 Workstation
+APP_FRAME_ANCESTORS=https://intellistream.github.io https://your-website-domain
+```
+
+4. 确保 workstation 以 HTTPS 对外暴露，再把该 URL 写入 `vllm-hust-website/data/workstation_embed.json`
+
+说明：
+
+- `website` 当前是静态站点，适合做 iframe 展示或外链跳转，不负责给 workstation 反向代理 API。
+- 如果 `website` 走 HTTPS，而 workstation 还是 HTTP，浏览器会拦截混合内容，无法嵌入。
+- `APP_FRAME_ANCESTORS` 留空时不会额外下发 `frame-ancestors` 限制；生产部署建议显式填写 website 域名。
 
 ```bash
 # 必需：确保本机 8080 上有可用的 vllm-hust OpenAI 接口
@@ -141,6 +185,8 @@ cat ~/.config/evoscientist/config.yaml
 
 ```bash
 WORKSTATION_EVOSCI_BIN=EvoSci
+# 可选：若 EvoSci 不在 PATH，或需切换到独立 Python 环境
+# WORKSTATION_EVOSCI_PYTHON_BIN=/home/shuhao/miniforge3/envs/EvoSci/bin/python
 WORKSTATION_EVOSCI_WORKDIR=/home/shuhao/EvoScientist
 WORKSTATION_EVOSCI_TIMEOUT_MS=180000
 ```
