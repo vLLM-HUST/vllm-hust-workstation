@@ -308,39 +308,47 @@ cp .env.example .env
 - `vllm-hust` backend 现在也可以由 `systemd --user` 常驻接管
 - `website` 也可以本地以 `systemd --user` 常驻挂在 `127.0.0.1:8000`
 
-以后日常只需要记这几个命令：
+以后日常优先只记这一个入口：
+
+```bash
+./ops.sh
+```
+
+它默认会直接打开中文分组菜单。若你不想进菜单，再用下面这些子命令：
 
 ```bash
 # 查看本地与公网状态
-./scripts/manage_public_stack.sh status
+./ops.sh status
 
 # 打开统一交互菜单
-./scripts/manage_public_stack.sh menu
+./ops.sh menu
 
 # 安装 / 更新并重启本地 vllm-hust backend systemd 服务
-./scripts/manage_public_stack.sh deploy-backend
+./ops.sh deploy-backend
 
 # 重启本地 vllm-hust backend systemd 服务
-./scripts/manage_public_stack.sh restart-backend
+./ops.sh restart-backend
 
 # 仅重启 workstation systemd 服务
-./scripts/manage_public_stack.sh restart-workstation
+./ops.sh restart-workstation
 
 # 仅重启 website systemd 服务
-./scripts/manage_public_stack.sh restart-website
+./ops.sh restart-website
 
 # 同时安装 / 更新两个 UI 服务
-./scripts/manage_public_stack.sh deploy-ui
+./ops.sh deploy-ui
 
 # 若你改了前端代码或 .env，重新构建并部署 workstation
-./scripts/manage_public_stack.sh deploy-workstation
+./ops.sh deploy-workstation
 
 # 一次性重启 backend + workstation
-./scripts/manage_public_stack.sh restart-all
+./ops.sh restart-all
 
 # 看日志
-./scripts/manage_public_stack.sh logs
+./ops.sh logs
 ```
+
+如果你还想保留原始脚本入口，`./scripts/manage_public_stack.sh` 仍然可用；`./ops.sh` 只是更短的顶层包装器。
 
 推荐顺序：
 

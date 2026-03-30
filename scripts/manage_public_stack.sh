@@ -20,19 +20,25 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/manage_public_stack.sh <command>
 
-Commands:
-  menu                 Interactive menu for backend, workstation, and website services
-  status               Show backend, workstation, and public URL health
-  restart-backend      Restart local vllm-hust backend systemd service
-  deploy-backend       Install/update and restart the backend systemd service
-  restart-workstation  Restart the workstation systemd service
-  deploy-workstation   Rebuild and redeploy the workstation runtime via systemd
-  restart-website      Restart the website systemd service
-  deploy-website       Install/update and restart the website systemd service
-  restart-ui           Restart workstation and website systemd services
-  deploy-ui            Install/update and restart workstation and website services
-  restart-all          Restart backend first, then restart workstation and website
-  logs                 Show backend, workstation, and website journals
+统一运维命令：
+  menu                 打开交互式菜单
+  status               查看 backend / workstation / website 状态
+  logs                 查看 backend / workstation / website 日志
+
+后端服务：
+  deploy-backend       安装或更新 backend systemd 服务并重启
+  restart-backend      重启 backend systemd 服务
+
+UI 服务：
+  deploy-workstation   安装或更新 workstation systemd 服务并重启
+  restart-workstation  重启 workstation systemd 服务
+  deploy-website       安装或更新 website systemd 服务并重启
+  restart-website      重启 website systemd 服务
+  deploy-ui            一次性安装或更新 workstation + website
+  restart-ui           一次性重启 workstation + website
+
+整栈操作：
+  restart-all          先更新 backend，再重启 workstation + website
 EOF
 }
 
@@ -134,44 +140,91 @@ show_status() {
 
 interactive_menu() {
   local choice=""
+  local action=""
 
   while true; do
     cat <<'EOF'
 
-== Public Stack Menu ==
-1) status
-2) deploy-backend
-3) restart-backend
-4) deploy-workstation
-5) restart-workstation
-6) deploy-website
-7) restart-website
-8) deploy-ui
-9) restart-ui
-10) restart-all
-11) logs
-12) quit
+========================================
+  vLLM-HUST 统一运维菜单
+========================================
+
+[常用]
+  1) 查看整栈状态
+  2) 查看整栈日志
+  3) 更新 backend
+  4) 重启 backend
+
+[UI 服务]
+  5) 更新 workstation
+  6) 重启 workstation
+  7) 更新 website
+  8) 重启 website
+  9) 一次性更新 UI(workstation + website)
+ 10) 一次性重启 UI(workstation + website)
+
+[整栈]
+ 11) 更新 backend + 重启 UI
+
+[其他]
+ 12) 退出
 EOF
-    printf 'Select action: '
+    printf '请选择操作 [1-12]: '
     read -r choice
+
+    action=""
     case "$choice" in
-      1) show_status ;;
-      2) deploy_backend ;;
-      3) restart_backend ;;
-      4) deploy_workstation ;;
-      5) restart_workstation ;;
-      6) deploy_website ;;
-      7) restart_website ;;
-      8) deploy_ui ;;
-      9) restart_ui ;;
-      10)
+      1) action="show_status" ;;
+      2) action="show_logs" ;;
+      3) action="deploy_backend" ;;
+      4) action="restart_backend" ;;
+      5) action="deploy_workstation" ;;
+      6) action="restart_workstation" ;;
+      7) action="deploy_website" ;;
+      8) action="restart_website" ;;
+      9) action="deploy_ui" ;;
+      10) action="restart_ui" ;;
+      11) action="restart_all" ;;
+      12|q|quit|exit) return 0 ;;
+      *) echo "无效选择: $choice" >&2 ;;
+    esac
+
+    case "$action" in
+      show_status)
+        show_status
+        ;;
+      show_logs)
+        show_logs
+        ;;
+      deploy_backend)
+        deploy_backend
+        ;;
+      restart_backend)
+        restart_backend
+        ;;
+      deploy_workstation)
+        deploy_workstation
+        ;;
+      restart_workstation)
+        restart_workstation
+        ;;
+      deploy_website)
+        deploy_website
+        ;;
+      restart_website)
+        restart_website
+        ;;
+      deploy_ui)
+        deploy_ui
+        ;;
+      restart_ui)
+        restart_ui
+        ;;
+      restart_all)
         deploy_backend
         restart_ui
         show_status
         ;;
-      11) show_logs ;;
-      12|q|quit|exit) return 0 ;;
-      *) echo "Unknown selection: $choice" >&2 ;;
     esac
   done
 }
