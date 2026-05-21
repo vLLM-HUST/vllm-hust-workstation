@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SageLLM Gateway 自动守护进程
+# vLLM-HUST Gateway 自动守护进程
 # 每 20 秒检查一次：如果 8091 gateway 无 engine，自动找一个健康的重连
 
 GW_PORT=8091

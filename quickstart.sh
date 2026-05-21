@@ -420,23 +420,54 @@ frontend_port() {
   printf '%s\n' "${APP_PORT:-3000}"
 }
 
+frontend_runtime_port_from_log() {
+  local log_file="${1:-}"
+
+  if [[ -z "$log_file" || ! -f "$log_file" ]]; then
+    return 1
+  fi
+
+  grep -Eo 'http://localhost:[0-9]+' "$log_file" 2>/dev/null | tail -n1 | awk -F: '{print $NF}'
+}
+
+frontend_active_port() {
+  local runtime_port=""
+
+  runtime_port="$(frontend_runtime_port_from_log "$(frontend_log_file)" || true)"
+  if [[ "$runtime_port" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$runtime_port"
+    return 0
+  fi
+
+  frontend_port
+}
+
 frontend_probe_url() {
-  printf 'http://127.0.0.1:%s\n' "$(frontend_port)"
+  local port="${1:-}"
+
+  if [[ -z "$port" ]]; then
+    port="$(frontend_active_port)"
+  fi
+
+  printf 'http://127.0.0.1:%s\n' "$port"
 }
 
 frontend_http_code() {
-  curl -sS -o /dev/null -w '%{http_code}' --max-time 2 "$(frontend_probe_url)" 2>/dev/null || true
+  local port="${1:-}"
+  curl -sS -o /dev/null -w '%{http_code}' --max-time 2 "$(frontend_probe_url "$port")" 2>/dev/null || true
 }
 
 frontend_is_healthy() {
+  local port="${1:-}"
   local code
-  code="$(frontend_http_code)"
+  code="$(frontend_http_code "$port")"
   [[ "$code" =~ ^[23][0-9][0-9]$ ]]
 }
 
 frontend_is_running() {
+  local port="${1:-}"
   local code
-  code="$(frontend_http_code)"
+  code="$(frontend_http_code "$port")"
   [[ -n "$code" && "$code" != "000" ]]
 }
 
@@ -1477,10 +1508,12 @@ ensure_frontend_dependencies() {
 
 ensure_frontend_dev_server() {
   local app_port
+  local active_port
   local http_code
   local log_file
 
   app_port="$(frontend_port)"
+  active_port="$app_port"
   log_file="$(frontend_log_file)"
 
   ensure_node_runtime || true
@@ -1496,6 +1529,7 @@ ensure_frontend_dev_server() {
   mkdir -p "$SCRIPT_DIR/.logs"
   stop_local_processes_on_port "$app_port"
   ensure_local_port_available "$app_port" "工作站前端" "APP_PORT=<new-port>"
+  maybe_reset_stale_frontend_build_cache || true
   ensure_frontend_dependencies
 
   echo -e "${BLUE}🖥️ 正在后台启动工作站前端…${NC}"
@@ -1503,17 +1537,20 @@ ensure_frontend_dev_server() {
 
   for _ in {1..60}; do
     sleep 2
-    http_code="$(frontend_http_code)"
-    if frontend_is_healthy; then
-      echo -e "${GREEN}✅ 工作站前端已就绪：$(frontend_probe_url)${NC}"
+    active_port="$(frontend_runtime_port_from_log "$log_file" || true)"
+    if [[ ! "$active_port" =~ ^[0-9]+$ ]]; then
+      active_port="$app_port"
+    fi
+    http_code="$(frontend_http_code "$active_port")"
+    if frontend_is_healthy "$active_port"; then
+      echo -e "${GREEN}✅ 工作站前端已就绪：$(frontend_probe_url "$active_port")${NC}"
       echo -e "   日志文件: ${GREEN}$log_file${NC}"
       return 0
     fi
   done
-    if frontend_is_running; then
+    if frontend_is_running "$active_port"; then
       echo -e "${YELLOW}♻️ 检测到现有工作站前端实例异常（HTTP ${http_code:-unknown}），将自动重启${NC}"
     fi
-    maybe_reset_stale_frontend_build_cache "$http_code" || true
 
   echo -e "${YELLOW}✗ 工作站前端启动失败或 120s 内未就绪，请检查日志：$log_file${NC}"
   exit 1
