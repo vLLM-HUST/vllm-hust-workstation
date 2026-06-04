@@ -484,8 +484,8 @@ input[type=range].param-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
         <div class="param-hint">低=精准 · 高=创意</div>
       </div>
       <div class="param-row">
-        <div class="param-header"><span class="param-label">📏 最大长度</span><span class="param-value" id="pv-maxtok">2048</span></div>
-        <input type="range" class="param-slider" id="p-maxtok" min="256" max="8192" step="256" value="2048" oninput="updateParam('max_tokens',+this.value)">
+        <div class="param-header"><span class="param-label">📏 最大长度</span><span class="param-value" id="pv-maxtok">8192</span></div>
+        <input type="range" class="param-slider" id="p-maxtok" min="256" max="32768" step="256" value="8192" oninput="updateParam('max_tokens',+this.value)">
       </div>
       <div class="param-row">
         <div class="param-header"><span class="param-label">🎲 Top-P</span><span class="param-value" id="pv-topp">0.90</span></div>
@@ -558,7 +558,7 @@ let stopFlag = false;
 const tpsHistory = [], latHistory = [];
 const HISTORY_MAX = 50;
 let sysPrompt = '';
-let genParams = { temperature: 0.7, max_tokens: 2048, top_p: 0.9 };
+let genParams = { temperature: 0.7, max_tokens: 8192, top_p: 0.9 };
 let attachedFile = null;
 let webSearch = false;
 let sessions = [];
@@ -694,9 +694,9 @@ function updateParam(key, val) {
 }
 
 function resetParams() {
-  genParams = { temperature:0.7, max_tokens:2048, top_p:0.9 };
-  document.getElementById('p-temp').value=0.7; document.getElementById('p-maxtok').value=2048; document.getElementById('p-topp').value=0.9;
-  setText('pv-temp','0.7'); setText('pv-maxtok','2048'); setText('pv-topp','0.90');
+  genParams = { temperature:0.7, max_tokens:8192, top_p:0.9 };
+  document.getElementById('p-temp').value=0.7; document.getElementById('p-maxtok').value=8192; document.getElementById('p-topp').value=0.9;
+  setText('pv-temp','0.7'); setText('pv-maxtok','8192'); setText('pv-topp','0.90');
   showToast('参数已重置为默认值');
 }
 
@@ -780,7 +780,7 @@ function setActiveSession(id, clearUI=true) {
   currentSessionId = id;
   messages  = [...(s.messages||[])];
   sysPrompt = s.sysPrompt || '';
-  genParams = {...(s.params||{temperature:0.7,max_tokens:2048,top_p:0.9})};
+  genParams = {...(s.params||{temperature:0.7,max_tokens:8192,top_p:0.9})};
   updateSysPromptBar();
   document.getElementById('p-temp').value   = genParams.temperature;
   document.getElementById('p-maxtok').value = genParams.max_tokens;
@@ -1014,6 +1014,10 @@ async function streamAssistant(userText) {
             thinkBodyEl = thinkBodyEl || thinkEl.querySelector('.think-body');
             thinkBodyEl.textContent += reasonDelta;
             thinkBodyEl.scrollTop = thinkBodyEl.scrollHeight;
+            if (!firstTokenTime) {
+              firstTokenTime = Date.now();
+              _procUpdateLast(procCard, '✍️', '正在思考...', true);
+            }
           }
           // ── regular content delta ──────────────────────────────────────
           const delta = json.choices?.[0]?.delta?.content ?? '';
@@ -1050,6 +1054,11 @@ async function streamAssistant(userText) {
     msgsEl.appendChild(el);
   } finally {
     showTyping(false);
+    // Fallback: if no regular content but reasoning was generated, use reasoning
+    if (!content && !rawContent && thinkBodyEl) {
+      content = thinkBodyEl.textContent || '';
+      renderBubble(id, content);
+    }
     const ttft = firstTokenTime ? firstTokenTime-startTime : Date.now()-startTime;
     const words = (content||rawContent).split(/\s+/).filter(Boolean).length;
     _procUpdateLast(procCard, '✅', '生成完成', false);

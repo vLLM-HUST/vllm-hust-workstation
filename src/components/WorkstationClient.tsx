@@ -309,6 +309,18 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
               if (typeof reasoningDelta === "string" && reasoningDelta) {
                 streamThink += reasoningDelta;
                 setThinkText(streamThink);
+                if (firstToken) {
+                  firstTokenTs = Date.now();
+                  firstToken = false;
+                  setProcessSteps(
+                    createSteps({
+                      webSearch,
+                      stage: "generating",
+                      resultCount,
+                      query: effectiveQuery,
+                    })
+                  );
+                }
               }
 
               const delta = json.choices?.[0]?.delta?.content ?? "";
@@ -375,6 +387,15 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           );
         }
       } finally {
+        // If no regular content was generated but reasoning was, use reasoning as fallback
+        if (!fullContent && streamThink) {
+          fullContent = streamThink;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: fullContent } : m
+            )
+          );
+        }
         const finalContent = fullContent.trim();
         const ttft = firstTokenTs ? firstTokenTs - startTs : Date.now() - startTs;
         const words = finalContent.split(/\s+/).filter(Boolean).length;
