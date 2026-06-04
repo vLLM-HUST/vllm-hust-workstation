@@ -11,6 +11,7 @@ import {
   Copy,
   CheckCheck,
   Globe,
+  Lightbulb,
 } from "lucide-react";
 import type { Message } from "@/types";
 import clsx from "clsx";
@@ -21,10 +22,12 @@ interface ChatPanelProps {
   accentColor: string;
   webSearch: boolean;
   searchEnabled: boolean;
+  thinkingEnabled: boolean;
   onSend: (text: string) => void;
   onStop: () => void;
   onClear: () => void;
   onToggleWebSearch: () => void;
+  onToggleThinking: () => void;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -135,10 +138,12 @@ export default function ChatPanel({
   accentColor,
   webSearch,
   searchEnabled,
+  thinkingEnabled,
   onSend,
   onStop,
   onClear,
   onToggleWebSearch,
+  onToggleThinking,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -245,6 +250,19 @@ export default function ChatPanel({
             style={{ minHeight: "24px", maxHeight: "180px" }}
           />
           <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
+            <button
+              type="button"
+              onClick={onToggleThinking}
+              className={clsx(
+                "w-8 h-8 rounded-xl flex items-center justify-center transition-colors border",
+                thinkingEnabled
+                  ? "text-violet-200 border-violet-400/35 bg-violet-400/15"
+                  : "text-white/30 border-white/10 hover:text-white/60 hover:border-white/20"
+              )}
+              title={thinkingEnabled ? "深度思考：已开启" : "深度思考：已关闭"}
+            >
+              <Lightbulb size={14} />
+            </button>
             {searchEnabled && (
               <button
                 type="button"
@@ -290,6 +308,7 @@ export default function ChatPanel({
         <div className="flex items-center justify-center gap-3 mt-2 text-xs">
           <p className="text-white/15">本地私有推理 · 端到端加密 · 零数据上报</p>
           {searchEnabled && webSearch && <span className="text-sky-300/80">🌐 联网搜索已开启</span>}
+          {thinkingEnabled && <span className="text-violet-300/80">💡 深度思考已开启</span>}
         </div>
       </div>
     </div>

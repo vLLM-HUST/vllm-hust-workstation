@@ -102,6 +102,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [metricsHistory, setMetricsHistory] = useState<HistoryPoint[]>([]);
   const [webSearch, setWebSearch] = useState(false);
+  const [thinkingEnabled, setThinkingEnabled] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
   const [processSteps, setProcessSteps] = useState<ProcessStep[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -122,6 +123,17 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
       // ignore localStorage errors
     }
   }, [searchEnabled]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("vllm_hust_thinking");
+      if (stored !== null) {
+        setThinkingEnabled(stored !== "0");
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+  }, []);
 
   // Load models list from gateway
   useEffect(() => {
@@ -191,6 +203,18 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
     });
   }, [searchEnabled]);
 
+  const handleToggleThinking = useCallback(() => {
+    setThinkingEnabled((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem("vllm_hust_thinking", next ? "1" : "0");
+      } catch {
+        // ignore localStorage errors
+      }
+      return next;
+    });
+  }, []);
+
   const handleSend = useCallback(
     async (text: string) => {
       const userMsg: Message = {
@@ -243,7 +267,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, model, stream: true, web_search: webSearch }),
+          body: JSON.stringify({ messages: history, model, stream: true, web_search: webSearch, enable_thinking: thinkingEnabled }),
           signal: ctrl.signal,
         });
 
@@ -421,7 +445,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         abortRef.current = null;
       }
     },
-    [messages, model, webSearch]
+    [messages, model, webSearch, thinkingEnabled]
   );
 
   const handleStop = useCallback(() => {
@@ -466,10 +490,12 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           accentColor={accentColor}
           webSearch={webSearch}
           searchEnabled={searchEnabled}
+          thinkingEnabled={thinkingEnabled}
           onSend={handleSend}
           onStop={handleStop}
           onClear={handleClear}
           onToggleWebSearch={handleToggleWebSearch}
+          onToggleThinking={handleToggleThinking}
         />
         <MetricsDashboard
           snapshot={metrics}

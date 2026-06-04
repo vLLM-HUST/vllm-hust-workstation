@@ -557,6 +557,10 @@ async def chat(request: Request):
     body = await request.json()
     body.setdefault("stream", True)
 
+    # ── Thinking mode control ─────────────────────────────────────────────────
+    enable_thinking = body.pop("enable_thinking", True)
+    body["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
+
     # ── Optional web search injection ────────────────────────────────────────
     do_search: bool = bool(body.pop("web_search", False)) and SEARCH_ENABLED
     search_results: list[dict] = []

@@ -427,6 +427,7 @@ input[type=range].param-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
             </button>
             <button class="icon-btn2" id="web-search-btn" title="联网搜索（点击开关）" onclick="toggleWebSearch()">🌐</button>
+            <button class="icon-btn2" id="thinking-btn" title="深度思考：已开启（点击关闭）" onclick="toggleThinking()">💡</button>
             <button id="send-btn" title="发送">
               <svg id="send-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
             </button>
@@ -561,6 +562,7 @@ let sysPrompt = '';
 let genParams = { temperature: 0.7, max_tokens: 8192, top_p: 0.9 };
 let attachedFile = null;
 let webSearch = false;
+let thinkingEnabled = true;
 let sessions = [];
 let currentSessionId = null;
 let backends = [];
@@ -600,6 +602,8 @@ async function boot() {
   if (sessions.length === 0) newSession(false); else setActiveSession(sessions[0].id, false);
   // Restore webSearch toggle state from last session
   try { if (localStorage.getItem('webSearch') === '1') toggleWebSearch(true); } catch {}
+  // Restore thinking toggle state
+  try { if (localStorage.getItem('thinkingEnabled') === '0') toggleThinking(false); } catch {}
 }
 
 // ── Backends (/api/backends + PUT /api/backend) ───────────────────────────
@@ -924,6 +928,16 @@ function toggleWebSearch(force) {
   try { localStorage.setItem('webSearch', webSearch ? '1' : '0'); } catch {}
 }
 
+function toggleThinking(force) {
+  thinkingEnabled = (force !== undefined) ? force : !thinkingEnabled;
+  const btn = document.getElementById('thinking-btn');
+  if (btn) {
+    btn.classList.toggle('active', thinkingEnabled);
+    btn.title = thinkingEnabled ? '深度思考：已开启（点击关闭）' : '深度思考：已关闭（点击开启）';
+  }
+  try { localStorage.setItem('thinkingEnabled', thinkingEnabled ? '1' : '0'); } catch {}
+}
+
 // ── Think-block helpers ──────────────────────────────────────────────────
 function parseThinkContent(raw) {
   // Returns {think, main} — handles incomplete (streaming) <think> block
@@ -966,7 +980,7 @@ async function streamAssistant(userText) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ messages:history, model, stream:true,
         temperature:genParams.temperature, max_tokens:genParams.max_tokens, top_p:genParams.top_p,
-        web_search: webSearch }),
+        web_search: webSearch, enable_thinking: thinkingEnabled }),
     });
     // Hide typing spinner BEFORE inserting DOM nodes so citations/think blocks
     // appear in the right position (not sandwiched under the spinner).

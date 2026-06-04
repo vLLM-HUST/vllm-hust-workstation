@@ -14,17 +14,31 @@ import type { SearchResult } from "@/types";
 export const runtime = "nodejs";
 
 const SEARCH_TIMEOUT_MS = Number(process.env.SEARCH_TIMEOUT_MS || "8000");
-const DEFAULT_CHAT_MAX_TOKENS = Number(process.env.WORKSTATION_DEFAULT_MAX_TOKENS || "128");
+const DEFAULT_CHAT_MAX_TOKENS = Number(process.env.WORKSTATION_DEFAULT_MAX_TOKENS || "4096");
+
+/** System prompt to keep Qwen3 thinking concise on resource-constrained NPU hardware */
+const THINKING_BUDGET_SYSTEM_PROMPT =
+  process.env.WORKSTATION_SYSTEM_PROMPT ||
+  "你是一个有用的AI助手。思考时请简明扼要，将内部推理控制在200字以内，然后直接给出清晰完整的回答。";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { messages, model, stream = true } = body;
   const doSearch = Boolean(body.web_search);
+  const enableThinking = body.enable_thinking !== false; // default true
   const encoder = new TextEncoder();
 
   let searchResults: SearchResult[] = [];
   let searchQuery = "";
   let searchAttempted = false;
   let outboundMessages = Array.isArray(messages) ? [...messages] : [];
+
+  // Prepend system prompt if none exists to constrain thinking verbosity
+  if (!outboundMessages.some((m: { role: string }) => m.role === "system") && THINKING_BUDGET_SYSTEM_PROMPT) {
+    outboundMessages = [
+      { role: "system", content: THINKING_BUDGET_SYSTEM_PROMPT },
+      ...outboundMessages,
+    ];
+  }
 
   if (doSearch) {
     const lastUserMessage = [...outboundMessages].reverse().find((message) => message?.role === "user");
@@ -70,6 +84,7 @@ export async function POST(req: NextRequest) {
           typeof body?.max_tokens === "number" && Number.isFinite(body.max_tokens)
             ? body.max_tokens
             : DEFAULT_CHAT_MAX_TOKENS,
+        chat_template_kwargs: { enable_thinking: enableThinking },
       }),
     });
     recordUpstreamRequest(
