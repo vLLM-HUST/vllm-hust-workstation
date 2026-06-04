@@ -4,6 +4,17 @@ import type { ModelHubDownloadState, ModelHubModel } from "@/types";
 
 export const MODEL_CATALOG: ModelHubModel[] = [
   {
+    id: "Qwen3-32B",
+    name: "Qwen 3 32B",
+    repoId: "Qwen/Qwen3-32B",
+    params: "32B",
+    sizeGb: 65.6,
+    vramGb: 40,
+    description: "Qwen3 旗舰指令模型，中英文与代码推理能力极强，当前已部署在本机 NPU 上。",
+    tags: ["中文", "推理", "当前部署"],
+    color: "#10b981",
+  },
+  {
     id: "Qwen2.5-7B-Instruct",
     name: "Qwen 2.5 7B",
     repoId: "Qwen/Qwen2.5-7B-Instruct",
