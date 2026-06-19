@@ -11,3 +11,6 @@ dist/
 *.tmp
 config.ini
 .workstation-deploy/
+
+# Shell redirect artifact from conda $* expansion bug (see deploy_workstation.sh)
+=20,

@@ -58,7 +58,13 @@ ensure_node_runtime() {
   fi
 
   echo "[deploy] node/npm not found, installing ${node_version_spec} into conda env ${conda_env}" >&2
-  "$conda_cmd" install -y -n "$conda_env" -c conda-forge "$node_version_spec"
+  # Use `command conda` to bypass the conda shell function wrapper installed
+  # by `conda init`.  That wrapper uses $* expansion, which strips quoting
+  # from arguments containing shell metacharacters (>=, <).  Without this,
+  # a version spec like "nodejs>=20,<21" gets re-parsed by bash as:
+  #   nodejs  >"=20,"  <21   (creating a garbage "=20," file)
+  # shellcheck disable=SC2086
+  command "$conda_cmd" install -y -n "$conda_env" -c conda-forge "$node_version_spec"
 
   if [[ -n "${CONDA_PREFIX:-}" && -d "${CONDA_PREFIX}/bin" ]]; then
     case ":$PATH:" in

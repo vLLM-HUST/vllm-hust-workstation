@@ -181,7 +181,12 @@ ensure_node_runtime() {
   echo -e "   conda env: ${GREEN}${conda_env}${NC}"
   echo -e "   package:   ${GREEN}${node_version_spec}${NC}"
 
-  "$conda_cmd" install -y -n "$conda_env" -c conda-forge "$node_version_spec"
+  # Use `command` to bypass the conda shell function wrapper (installed by
+  # `conda init`).  The wrapper uses $* expansion which strips quoting, so
+  # "nodejs>=20,<21" gets re-parsed as redirections (>=, <), creating a
+  # garbage "=20," file.  `command` calls the binary directly.
+  # shellcheck disable=SC2086
+  command "$conda_cmd" install -y -n "$conda_env" -c conda-forge "$node_version_spec"
 
   if [[ -n "${CONDA_PREFIX:-}" && -d "${CONDA_PREFIX}/bin" ]]; then
     case ":$PATH:" in
