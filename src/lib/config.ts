@@ -1,6 +1,6 @@
 import type { AppConfig } from "@/types";
 
-export const DEFAULT_MODEL_ID = "Qwen2.5-7B-Instruct";
+export const DEFAULT_MODEL_ID = "Qwen3-32B";
 
 export function getAppConfig(): AppConfig {
   return {

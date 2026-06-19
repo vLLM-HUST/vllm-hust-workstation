@@ -110,6 +110,13 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   const [thinkText, setThinkText] = useState("");
   const [modelHubOpen, setModelHubOpen] = useState(false);
   const [agentLabOpen, setAgentLabOpen] = useState(false);
+  const [stackVersions, setStackVersions] = useState<{ vllmHust: string; vllmAscendHust: string }>({
+    vllmHust: "...",
+    vllmAscendHust: "...",
+  });
+  const [hardware, setHardware] = useState<{ npu: string; cpu: string; memory: string }>({
+    npu: "", cpu: "", memory: "",
+  });
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -133,6 +140,22 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
     } catch {
       // ignore localStorage errors
     }
+  }, []);
+
+  // Fetch stack versions for the Powered By footer
+  useEffect(() => {
+    fetch("/api/versions")
+      .then((r) => r.json())
+      .then((d) => setStackVersions({ vllmHust: d.vllmHust ?? "unknown", vllmAscendHust: d.vllmAscendHust ?? "unknown" }))
+      .catch(() => setStackVersions({ vllmHust: "unknown", vllmAscendHust: "unknown" }));
+  }, []);
+
+  // Fetch hardware info for the footer
+  useEffect(() => {
+    fetch("/api/hardware")
+      .then((r) => r.json())
+      .then((d) => setHardware({ npu: d.npu ?? "", cpu: d.cpu ?? "", memory: d.memory ?? "" }))
+      .catch(() => {});
   }, []);
 
   // Load models list from gateway
@@ -508,6 +531,24 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           onModelChange={setModel}
         />
       </main>
+      <footer className="flex flex-col items-center justify-center gap-1 py-1.5 text-xs text-white/40 bg-black/20 border-t border-white/5 shrink-0">
+        {(hardware.npu || hardware.cpu || hardware.memory) && (
+          <div className="flex items-center gap-4 font-mono text-[0.65rem] text-white/30">
+            {hardware.npu && <span>{hardware.npu}</span>}
+            {hardware.cpu && <span>{hardware.cpu}</span>}
+            {hardware.memory && <span>{hardware.memory}</span>}
+          </div>
+        )}
+        <div className="flex items-center gap-6">
+          <span>Powered by</span>
+          <a href="https://github.com/intellistream/vllm-hust" target="_blank" rel="noopener noreferrer" className="hover:text-white/70 transition-colors">
+            vLLM-HUST <span className="font-mono text-white/30">{stackVersions.vllmHust}</span>
+          </a>
+          <a href="https://github.com/intellistream/vllm-ascend-hust" target="_blank" rel="noopener noreferrer" className="hover:text-white/70 transition-colors">
+            vLLM-Ascend-HUST <span className="font-mono text-white/30">{stackVersions.vllmAscendHust}</span>
+          </a>
+        </div>
+      </footer>
       <ModelHubModal
         open={modelHubOpen}
         currentModel={model}
