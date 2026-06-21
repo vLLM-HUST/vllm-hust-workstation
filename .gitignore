@@ -14,3 +14,6 @@ config.ini
 
 # Shell redirect artifact from conda $* expansion bug (see deploy_workstation.sh)
 =20,
+
+# Dev screenshots
+step*.png
