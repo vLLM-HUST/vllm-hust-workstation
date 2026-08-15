@@ -84,6 +84,8 @@ npm run dev
 # 若本机 8080 已被占用，可改成例如 http://localhost:18080
 VLLM_HUST_BASE_URL=http://localhost:8080
 VLLM_HUST_API_KEY=not-required
+WORKSTATION_BACKEND_MODE=local
+WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED=true
 WORKSTATION_AUTO_START_GATEWAY=true
 WORKSTATION_AUTO_HEAL_GATEWAY=true
 WORKSTATION_ENFORCE_BOOTSTRAP_MODEL_ON_START=false
@@ -111,6 +113,34 @@ APP_ACCENT_COLOR=#6366f1
 # 若需要让 website 以 iframe 嵌入此页面，可限制允许嵌入的来源域名
 # APP_FRAME_ANCESTORS=https://intellistream.github.io https://vllm-hust.example.com
 ```
+
+### 复用平台共享后端
+
+当 workstation 只作为 UI/API 代理，复用另一套已由 systemd 管理的
+OpenAI-compatible 推理服务时，应明确使用 external 模式：
+
+```dotenv
+VLLM_HUST_BASE_URL=http://127.0.0.1:18001
+VLLM_HUST_API_KEY_FILE=/path/to/workstation-backend-api-key
+# 若共享平台已有受保护 env，也可改用：
+# VLLM_HUST_API_KEY_ENV_FILE=/path/to/shared-runtime.env
+# VLLM_HUST_API_KEY_ENV_NAME=VLLM_HUST_API_KEY
+WORKSTATION_BACKEND_MODE=external
+WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED=false
+WORKSTATION_AUTO_START_GATEWAY=false
+WORKSTATION_AUTO_HEAL_GATEWAY=false
+```
+
+密钥文件应仅包含一行 token，并设置为 `0600`。external 模式仍允许
+`/api/chat`、`/api/models` 和监控探测访问共享后端，但 `/api/local-service`
+的启动、停止和重启动作会返回 403，页面也不会展示这些危险操作。后端 URL
+和 API key 不再通过 `next.config.mjs` 固化到构建结果；它们只在 Node 服务端
+运行时读取，因此切换机器或后端无需重新硬编码代码，也不会把 key 打进浏览器
+静态资源。
+
+`VLLM_HUST_API_KEY_ENV_FILE` 适用于同一宿主机上已经存在受保护运行时
+配置的情况。启动脚本在 subshell 中读取 `VLLM_HUST_API_KEY_ENV_NAME` 指定的
+单个变量，不会把源文件中的其它 token 或部署参数导入 workstation。
 
 如不希望每次启动都弹出模型选择菜单，可在 `.env` 中设置：
 

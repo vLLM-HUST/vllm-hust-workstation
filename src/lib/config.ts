@@ -2,6 +2,14 @@ import type { AppConfig } from "@/types";
 
 export const DEFAULT_MODEL_ID = "Qwen3-32B";
 
+export function isLocalBackendControlEnabled(): boolean {
+  const explicit = process.env.WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED;
+  if (explicit !== undefined) {
+    return explicit.toLowerCase() === "true";
+  }
+  return process.env.WORKSTATION_BACKEND_MODE !== "external";
+}
+
 export function getAppConfig(): AppConfig {
   return {
     brandName: process.env.APP_BRAND_NAME || "vLLM-HUST 工作站",

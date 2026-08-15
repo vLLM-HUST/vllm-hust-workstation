@@ -1,6 +1,10 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { DEFAULT_MODEL_ID, SERVER_CONFIG } from "@/lib/config";
+import {
+  DEFAULT_MODEL_ID,
+  SERVER_CONFIG,
+  isLocalBackendControlEnabled,
+} from "@/lib/config";
 import { getEvoScientistIntegrationStatus } from "@/lib/server/evoscientist";
 import { fetchUpstreamEngineProbe, fetchUpstreamModels } from "@/lib/upstream";
 import type { LocalServiceStatus } from "@/types";
@@ -33,7 +37,8 @@ async function getLocalServiceStatus(): Promise<LocalServiceStatus> {
     process.env.DEFAULT_MODEL ||
     DEFAULT_MODEL_ID;
   const currentModel = engineProbe.modelIds[0] ?? modelsProbe.ids[0] ?? null;
-  const localTarget = isLocalTarget(SERVER_CONFIG.baseUrl);
+  const localTarget =
+    isLocalBackendControlEnabled() && isLocalTarget(SERVER_CONFIG.baseUrl);
   const gatewayReachable = modelsProbe.reachable || engineProbe.status !== null;
   const inferenceReady =
     engineProbe.state === "healthy" ||
@@ -75,6 +80,13 @@ export async function POST(request: Request) {
 
   if (!action || !["ensure-backend", "restart-backend", "stop-local"].includes(action)) {
     return Response.json({ error: "invalid action" }, { status: 400 });
+  }
+
+  if (!isLocalBackendControlEnabled()) {
+    return Response.json(
+      { error: "workstation uses an externally managed shared backend; local control is disabled" },
+      { status: 403 }
+    );
   }
 
   if (!isLocalTarget(SERVER_CONFIG.baseUrl)) {

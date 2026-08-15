@@ -82,9 +82,11 @@ export default function LocalServiceCard() {
         ? "text-amber-300"
         : "text-red-300";
   const statusText = !status
-    ? "正在探测本地服务…"
+    ? "正在探测推理服务…"
     : !status.isLocalTarget
-      ? "当前连接远端服务，页面不控制远端进程"
+      ? status.inferenceReady
+        ? "共享推理后端可用，进程由平台统一管理"
+        : "共享推理后端暂不可用，页面不会启动备用引擎"
       : status.inferenceReady
         ? "本地推理服务可用"
         : status.gatewayReachable
@@ -111,7 +113,7 @@ export default function LocalServiceCard() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-white/55 text-xs font-medium uppercase tracking-wider">
-            演示控制台
+            推理服务
           </p>
           <p className={`text-sm mt-1 ${statusTone}`}>{statusText}</p>
         </div>
@@ -139,11 +141,11 @@ export default function LocalServiceCard() {
       {message ? <p className="text-xs text-cyan-200/90 leading-5">{message}</p> : null}
   {mismatchHint ? <p className="text-xs text-amber-200/90 leading-5">{mismatchHint}</p> : null}
 
-      <div className="grid grid-cols-1 gap-2">
+      {status?.isLocalTarget !== false ? <div className="grid grid-cols-1 gap-2">
         <button
           type="button"
           onClick={() => runAction("ensure-backend")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-emerald-400/15 text-emerald-100 border border-emerald-300/20 hover:bg-emerald-400/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Play size={14} />
@@ -152,7 +154,7 @@ export default function LocalServiceCard() {
         <button
           type="button"
           onClick={() => runAction("restart-backend")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-amber-400/15 text-amber-100 border border-amber-300/20 hover:bg-amber-400/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <RotateCcw size={14} />
@@ -161,13 +163,17 @@ export default function LocalServiceCard() {
         <button
           type="button"
           onClick={() => runAction("stop-local")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-white/8 text-white/75 border border-white/10 hover:bg-white/12 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Square size={14} />
           停止本地演示栈
         </button>
-      </div>
+      </div> : (
+        <div className="rounded-lg border border-cyan-300/15 bg-cyan-300/5 px-3 py-2 text-xs leading-5 text-cyan-100/75">
+          此工作站复用平台共享模型服务。本页面仅提交推理请求，不具备启动、停止或重启后端的权限。
+        </div>
+      )}
 
       <p className="text-[11px] text-white/30 leading-5">
         后端日志: {status?.backendLogFile ?? "加载中"}
