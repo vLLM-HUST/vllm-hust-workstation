@@ -46,15 +46,17 @@ export default function InferenceSidebar({
   return (
     <aside
       className={clsx(
-        "border-r border-white/10 bg-slate-950/60 transition-all duration-300 ease-out overflow-hidden flex-shrink-0",
-        open ? "w-80 min-w-[320px]" : "w-12"
+        "border-r border-white/10 bg-slate-950/95 md:bg-slate-950/60 transition-all duration-300 ease-out overflow-hidden flex-shrink-0",
+        open
+          ? "w-80 min-w-[320px] max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,calc(100vw-2.5rem))] max-md:min-w-0 max-md:shadow-2xl"
+          : "w-12 max-md:w-10"
       )}
     >
       <div className="h-full flex">
         <button
           type="button"
           onClick={onToggle}
-          className="w-12 border-r border-white/10 flex flex-col items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-12 max-md:w-10 border-r border-white/10 flex flex-col items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
           title={open ? "收起推理面板" : "展开推理面板"}
         >
           <span className="text-base">🔭</span>

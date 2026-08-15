@@ -7,6 +7,7 @@ DEPLOY_HOME_DEFAULT="$REPO_DIR/.workstation-deploy"
 SERVICE_NAME_DEFAULT="vllm-hust-workstation"
 SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 SYSTEMD_TEMPLATE="$REPO_DIR/deploy/systemd/vllm-hust-workstation.service.template"
+source "$SCRIPT_DIR/lib/runtime_secrets.sh"
 
 resolve_conda_command() {
   if [[ -n "${CONDA_EXE:-}" && -x "${CONDA_EXE}" ]]; then
@@ -94,8 +95,9 @@ load_env_file() {
   ensure_env_file
   set -a
   # shellcheck disable=SC1091
-  source "$REPO_DIR/.env" 2>/dev/null || true
+  source "$REPO_DIR/.env"
   set +a
+  load_workstation_upstream_api_key
 }
 
 deploy_home() {
@@ -132,9 +134,9 @@ ensure_systemd_user() {
 npm_install() {
   cd "$REPO_DIR"
   if [[ -f package-lock.json ]]; then
-    npm ci
+    npm ci --no-audit --no-fund
   else
-    npm install --prefer-offline
+    npm install --prefer-offline --no-audit --no-fund
   fi
 }
 

@@ -34,12 +34,38 @@ describe("shared backend safety", () => {
   });
 
   it("loads shared env credentials only in the server runtime launcher", () => {
-    const launcher = fs.readFileSync(
-      path.join(process.cwd(), "scripts/run_workstation_systemd.sh"),
+    const resolver = fs.readFileSync(
+      path.join(process.cwd(), "scripts/lib/runtime_secrets.sh"),
       "utf8"
     );
-    expect(launcher).toContain("VLLM_HUST_API_KEY_ENV_FILE");
-    expect(launcher).toContain("VLLM_HUST_API_KEY_ENV_NAME");
-    expect(launcher).toContain("source \"$VLLM_HUST_API_KEY_ENV_FILE\"");
+    expect(resolver).toContain("VLLM_HUST_API_KEY_ENV_FILE");
+    expect(resolver).toContain("VLLM_HUST_API_KEY_ENV_NAME");
+    expect(resolver).toContain("WORKSTATION_ADMIN_TOKEN_ENV_FILE");
+    expect(resolver).toContain('source "$secret_env_file"');
+
+    for (const script of ["deploy_workstation.sh", "run_workstation_systemd.sh"]) {
+      const content = fs.readFileSync(path.join(process.cwd(), "scripts", script), "utf8");
+      expect(content).toContain("load_workstation_upstream_api_key");
+    }
+  });
+
+  it("prevents unified operations from mutating an external backend", () => {
+    const content = fs.readFileSync(
+      path.join(process.cwd(), "scripts/manage_public_stack.sh"),
+      "utf8"
+    );
+    expect(content).toContain("ensure_managed_backend");
+    expect(content).toContain("WORKSTATION_BACKEND_MODE:-local");
+    expect(content).not.toContain('source "$REPO_DIR/.env" 2>/dev/null || true');
+  });
+
+  it("requires an administrator token for managed external restarts", () => {
+    const route = fs.readFileSync(
+      path.join(process.cwd(), "src/app/api/local-service/route.ts"),
+      "utf8"
+    );
+    expect(route).toContain("timingSafeEqual");
+    expect(route).toContain("x-workstation-admin-token");
+    expect(route).toContain("WORKSTATION_EXTERNAL_BACKEND_SYSTEMD_SERVICE");
   });
 });

@@ -498,7 +498,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         onOpenAgentLab={() => setAgentLabOpen(true)}
         online={online}
       />
-      <main className="flex flex-1 overflow-hidden">
+      <main className="relative flex flex-1 min-w-0 overflow-hidden">
         <InferenceSidebar
           open={panelOpen}
           onToggle={() => setPanelOpen((prev) => !prev)}
@@ -531,7 +531,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           onModelChange={setModel}
         />
       </main>
-      <footer className="flex flex-col items-center justify-center gap-1 py-1.5 text-xs text-white/40 bg-black/20 border-t border-white/5 shrink-0">
+      <footer className="hidden sm:flex flex-col items-center justify-center gap-1 py-1.5 text-xs text-white/40 bg-black/20 border-t border-white/5 shrink-0">
         {(hardware.npu || hardware.cpu || hardware.memory) && (
           <div className="flex items-center gap-4 font-mono text-[0.65rem] text-white/30">
             {hardware.npu && <span>{hardware.npu}</span>}

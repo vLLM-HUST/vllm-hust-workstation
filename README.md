@@ -96,7 +96,7 @@ WORKSTATION_BOOTSTRAP_BACKEND=auto
 WORKSTATION_AUTO_DETECT_BACKEND=true
 WORKSTATION_ASCEND_COMPILE_CUSTOM_KERNELS=0
 WORKSTATION_AUTO_INSTALL_NODE_WITH_CONDA=true
-WORKSTATION_NODEJS_CONDA_SPEC=nodejs>=20,<21
+WORKSTATION_NODEJS_CONDA_SPEC="nodejs>=20,<21"
 WORKSTATION_AUTO_FALLBACK_TO_LOCAL_CACHE=true
 # 默认是 gateway port + 1；若冲突可改成其他空闲端口
 WORKSTATION_ENGINE_PORT=8902
@@ -107,7 +107,7 @@ HF_ENDPOINT=https://hf-mirror.com
 
 # 若 3000 已被占用，可改成例如 3300
 APP_PORT=3000
-APP_BRAND_NAME=vLLM-HUST 工作站
+APP_BRAND_NAME="vLLM-HUST 工作站"
 APP_BRAND_LOGO=
 APP_ACCENT_COLOR=#6366f1
 # 若需要让 website 以 iframe 嵌入此页面，可限制允许嵌入的来源域名
@@ -129,11 +129,16 @@ WORKSTATION_BACKEND_MODE=external
 WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED=false
 WORKSTATION_AUTO_START_GATEWAY=false
 WORKSTATION_AUTO_HEAL_GATEWAY=false
+# 可选：启用独立的 Workstation 管理员模式
+# WORKSTATION_ADMIN_TOKEN_FILE=/path/to/workstation-admin-token
+# WORKSTATION_EXTERNAL_BACKEND_SYSTEMD_SERVICE=inference-engine.service
 ```
 
 密钥文件应仅包含一行 token，并设置为 `0600`。external 模式仍允许
-`/api/chat`、`/api/models` 和监控探测访问共享后端，但 `/api/local-service`
-的启动、停止和重启动作会返回 403，页面也不会展示这些危险操作。后端 URL
+`/api/chat`、`/api/models` 和监控探测访问共享后端，但普通访客不能启动、
+停止或重启共享引擎。若同时配置独立管理员 token 和固定 systemd user unit，
+管理员可以在页面中显式进入管理员模式后执行重启；令牌只保留在当前页面内存，
+不会持久化。后端 URL
 和 API key 不再通过 `next.config.mjs` 固化到构建结果；它们只在 Node 服务端
 运行时读取，因此切换机器或后端无需重新硬编码代码，也不会把 key 打进浏览器
 静态资源。
@@ -141,6 +146,8 @@ WORKSTATION_AUTO_HEAL_GATEWAY=false
 `VLLM_HUST_API_KEY_ENV_FILE` 适用于同一宿主机上已经存在受保护运行时
 配置的情况。启动脚本在 subshell 中读取 `VLLM_HUST_API_KEY_ENV_NAME` 指定的
 单个变量，不会把源文件中的其它 token 或部署参数导入 workstation。
+管理员 token 也支持对应的 `WORKSTATION_ADMIN_TOKEN_ENV_FILE` 和
+`WORKSTATION_ADMIN_TOKEN_ENV_NAME`，但建议使用与推理 API key 不同的凭据。
 
 如不希望每次启动都弹出模型选择菜单，可在 `.env` 中设置：
 

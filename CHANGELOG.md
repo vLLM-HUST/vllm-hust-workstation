@@ -16,6 +16,11 @@ All notable changes to vllm-hust-workstation will be documented in this file.
 - **Runtime backend switching** — backend URL and API key are no longer frozen through `next.config.mjs`, so production systemd configuration is authoritative after deployment.
 - **Browser secret boundary** — upstream credentials are no longer eligible for Next client-bundle injection; regression tests and a production static-asset scan guard the boundary.
 - **Test discovery** — Vitest now collects formal TypeScript suites instead of executing a standalone manual `.test.js` script that calls `process.exit`.
+- **Strict production env loading** — shell-sensitive and whitespace-containing sample values are quoted, and production startup no longer hides `.env` parse errors that silently drop model/runtime settings.
+- **External backend operations guard** — unified operations probes the configured endpoint and refuses backend restart/deploy actions when workstation uses a shared external inference service.
+- **Shared model status** — the local-service panel reports the configured upstream model in external mode instead of a stale local bootstrap model.
+- **Mobile chat layout** — narrow screens prioritize chat, keep inference details as an overlay, and remove monitoring/header overflow; shared mode also hides internal backend paths from the public status card.
+- **Product boundary and admin mode** — the Workstation UI no longer presents shared-engine operations as ordinary visitor actions; a separate in-memory administrator mode is required for an explicitly configured managed restart.
 
 ### Changed
 

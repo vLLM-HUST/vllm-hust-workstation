@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Cpu, ChevronDown, PackageOpen, Bot } from "lucide-react";
+import { ChevronDown, PackageOpen, Bot } from "lucide-react";
 
 interface HeaderProps {
   brandName: string;
@@ -29,11 +29,11 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header
-      className="flex items-center justify-between px-6 py-3 border-b border-white/10"
+      className="flex min-w-0 items-center justify-between gap-3 px-3 py-3 sm:px-6 border-b border-white/10"
       style={{ background: `linear-gradient(135deg, ${accentColor}22 0%, #0f172a 100%)` }}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         {brandLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={brandLogo} alt="logo" className="h-8 w-auto" />
@@ -45,21 +45,13 @@ export default function Header({
             AI
           </div>
         )}
-        <span className="text-white font-semibold text-lg tracking-tight">
+        <span className="truncate text-white font-semibold text-base sm:text-lg tracking-tight">
           {brandName}
         </span>
       </div>
 
-      {/* Center badges */}
-      <div className="flex items-center gap-3">
-        <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium bg-emerald-400/10 px-3 py-1.5 rounded-full border border-emerald-400/20">
-          <ShieldCheck size={13} />
-          数据不出境
-        </span>
-        <span className="flex items-center gap-1.5 text-sky-400 text-xs font-medium bg-sky-400/10 px-3 py-1.5 rounded-full border border-sky-400/20">
-          <Cpu size={13} />
-          国产算力
-        </span>
+      {/* Keep the top bar operational: one health signal, no marketing copy. */}
+      <div className="hidden sm:flex items-center gap-3">
         <span
           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${
             online
@@ -75,11 +67,11 @@ export default function Header({
       </div>
 
       {/* Model selector */}
-      <div className="flex items-center gap-3">
+      <div className="hidden sm:flex min-w-0 items-center gap-2 lg:gap-3">
         <button
           type="button"
           onClick={onOpenAgentLab}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20 transition-colors text-sm"
+          className="hidden lg:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20 transition-colors text-sm"
         >
           <Bot size={14} />
           EvoScientist
@@ -87,12 +79,12 @@ export default function Header({
         <button
           type="button"
           onClick={onOpenModelHub}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-colors text-sm"
+          className="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-colors text-sm"
         >
           <PackageOpen size={14} />
           模型库
         </button>
-        <div className="relative">
+        <div className="relative max-w-[44vw] lg:max-w-none">
           <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}

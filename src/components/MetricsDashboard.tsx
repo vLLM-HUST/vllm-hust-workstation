@@ -154,7 +154,7 @@ export default function MetricsDashboard({
   const s = snapshot;
 
   return (
-    <aside className="w-80 min-w-[280px] max-w-xs border-l border-white/10 flex flex-col overflow-y-auto bg-slate-900/50">
+    <aside className="hidden xl:flex w-80 min-w-[280px] max-w-xs border-l border-white/10 flex-col overflow-y-auto bg-slate-900/50">
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-white/70 text-xs font-semibold uppercase tracking-widest">
           实时监控
@@ -178,14 +178,14 @@ export default function MetricsDashboard({
                     : "text-amber-300 text-xs"
               }
             >
-              {!online ? "离线兜底" : liveModelSwitchSupported ? "在线可切换" : "需重启切换"}
+              {!online ? "离线兜底" : liveModelSwitchSupported ? "在线可切换" : "平台单模型"}
             </span>
           </div>
           <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
             disabled={!liveModelSwitchSupported}
-            title={liveModelSwitchSupported ? "在线切换当前请求使用的模型" : "当前后端只有一个在线模型，切换需先在模型库设为默认并重启后端"}
+            title={liveModelSwitchSupported ? "在线切换当前请求使用的模型" : "当前后端由平台托管为单模型服务"}
             className="w-full appearance-none bg-slate-950/60 border border-white/10 text-white text-sm px-3 py-2 rounded-lg cursor-pointer focus:outline-none focus:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {models.map((item) => (
@@ -197,7 +197,7 @@ export default function MetricsDashboard({
           <p className="text-white/30 text-xs leading-5">
             {liveModelSwitchSupported
               ? "当前后端暴露了多个在线模型，切换会作用于新请求。"
-              : "当前后端是单模型服务；如需换模型，请在模型库里设为默认后重启本地后端。"}
+              : "当前后端是平台托管的单模型服务；模型切换由平台运维统一完成。"}
           </p>
         </div>
 
