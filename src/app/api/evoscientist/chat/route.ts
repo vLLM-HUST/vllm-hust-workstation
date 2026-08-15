@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { spawn } from "node:child_process";
 import {
   cleanEvoScientistOutput,
   createEvoScientistConfigRoot,
@@ -11,9 +10,10 @@ import {
   resolveEvoScientistCommand,
   resolveEvoScientistTimeoutMs,
   resolveEvoScientistWorkdir,
-  resolveServedModel,
+  resolveServedModelCapability,
   summarizeEvoScientistFailure,
 } from "@/lib/server/evoscientist";
+import { spawnManagedProcess } from "@/lib/server/evoscientist/lifecycle";
 import { getWebSearchContext } from "@/lib/server/webSearch";
 import { recordApiRequest } from "@/lib/metrics";
 
@@ -56,7 +56,7 @@ function extractAssistantReply(raw: string): string {
     .trim();
 }
 
-async function runEvoScientist(prompt: string, model?: string): Promise<{
+async function runEvoScientist(prompt: string, model?: string, signal?: AbortSignal): Promise<{
   durationMs: number;
   stdout: string;
   stderr: string;
@@ -67,11 +67,12 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
   const timeoutMs = resolveEvoScientistTimeoutMs();
   const baseUrl = getEvoScientistBaseUrl();
   const apiKey = getEvoScientistApiKey();
-  const resolvedModel = await resolveServedModel(model);
+  const capability = await resolveServedModelCapability(model);
   const configRoot = createEvoScientistConfigRoot({
-    model: resolvedModel,
+    model: capability.id,
     baseUrl,
     apiKey,
+    contextWindowTokens: capability.maxContextTokens,
   });
 
   const command = resolveEvoScientistCommand(prompt, workdir);
@@ -83,11 +84,19 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
   };
 
   return await new Promise((resolve, reject) => {
-    const child = spawn(command[0], command.slice(1), {
+    const { child, terminate } = spawnManagedProcess({
+      command,
       cwd: workdir,
-      env: getEvoScientistSpawnEnv({ configRoot, apiKey, baseUrl, workdir }),
-      stdio: ["ignore", "pipe", "pipe"],
+      env: getEvoScientistSpawnEnv({
+        configRoot,
+        apiKey,
+        baseUrl,
+        workdir,
+        contextWindowTokens: capability.maxContextTokens ?? undefined,
+      }),
     });
+    const abortHandler = () => terminate();
+    signal?.addEventListener("abort", abortHandler, { once: true });
 
     let stdout = "";
     let stderr = "";
@@ -107,18 +116,19 @@ async function runEvoScientist(prompt: string, model?: string): Promise<{
     });
 
     child.on("error", (error) => {
+      signal?.removeEventListener("abort", abortHandler);
       cleanupConfigRoot();
       reject(error);
     });
 
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGTERM");
-      setTimeout(() => child.kill("SIGKILL"), 2500);
+      terminate();
     }, timeoutMs);
 
     child.on("close", (code) => {
       clearTimeout(timer);
+      signal?.removeEventListener("abort", abortHandler);
       const durationMs = Date.now() - startedAt;
       cleanupConfigRoot();
       if (timedOut) {
@@ -154,7 +164,7 @@ export async function POST(req: NextRequest) {
     const effectivePrompt = searchContext.context
       ? `${searchContext.context}\n研究任务：${prompt}`
       : prompt;
-    const result = await runEvoScientist(effectivePrompt, model);
+    const result = await runEvoScientist(effectivePrompt, model, req.signal);
     const stdout = cleanEvoScientistOutput(result.stdout);
     const stderr = cleanEvoScientistOutput(result.stderr);
     const integration = await getEvoScientistIntegrationStatus(model);
