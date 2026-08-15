@@ -4,6 +4,24 @@ All notable changes to vllm-hust-workstation will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-15
+
+### Added
+
+- **Shared backend mode** — external mode reuses an independently managed OpenAI-compatible backend while disabling workstation engine start/stop/restart actions, including for loopback endpoints.
+- **Runtime credential files** — production startup can read one API key from a dedicated file or a named variable in a trusted external env without importing unrelated settings.
+
+### Fixed
+
+- **Runtime backend switching** — backend URL and API key are no longer frozen through `next.config.mjs`, so production systemd configuration is authoritative after deployment.
+- **Browser secret boundary** — upstream credentials are no longer eligible for Next client-bundle injection; regression tests and a production static-asset scan guard the boundary.
+- **Test discovery** — Vitest now collects formal TypeScript suites instead of executing a standalone manual `.test.js` script that calls `process.exit`.
+- **Strict production env loading** — shell-sensitive and whitespace-containing sample values are quoted, and production startup no longer hides `.env` parse errors that silently drop model/runtime settings.
+- **External backend operations guard** — unified operations probes the configured endpoint and refuses backend restart/deploy actions when workstation uses a shared external inference service.
+- **Shared model status** — the local-service panel reports the configured upstream model in external mode instead of a stale local bootstrap model.
+- **Mobile chat layout** — narrow screens prioritize chat, keep inference details as an overlay, and remove monitoring/header overflow; shared mode also hides internal backend paths from the public status card.
+- **Product boundary and admin mode** — the Workstation UI no longer presents shared-engine operations as ordinary visitor actions; a separate in-memory administrator mode is required for an explicitly configured managed restart.
+
 ### Changed
 
 - **Frontend preview startup** — `quickstart.sh ui` 现在会在启动前清理来自其他工作区的旧 `.next` 缓存，并跟随 Next.js 实际分配的端口做健康检查；当 `3000` 已被占用时，不再误报启动失败或触发缺失 manifest 的 500 错误。

@@ -175,6 +175,7 @@ export interface LocalServiceStatus {
   currentModel: string | null;
   desiredModel: string;
   recommendedAction: "none" | "start" | "restart" | "external";
+  managedRestartAvailable: boolean;
   backendLogFile: string;
   frontendLogFile: string;
   evoScientist: EvoScientistIntegrationStatus;

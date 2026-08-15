@@ -12,16 +12,17 @@ DEPLOY_WEBSITE="$WEBSITE_REPO_DIR/scripts/deploy_website_service.sh"
 WORKSTATION_SERVICE="${WORKSTATION_SYSTEMD_SERVICE_NAME:-vllm-hust-workstation}"
 BACKEND_SERVICE="${WORKSTATION_BACKEND_SYSTEMD_SERVICE_NAME:-vllm-hust-backend}"
 WEBSITE_SERVICE="${WEBSITE_SYSTEMD_SERVICE_NAME:-vllm-hust-website}"
-BACKEND_MODELS_URL="${BACKEND_MODELS_URL:-http://127.0.0.1:8080/v1/models}"
-WORKSTATION_MODELS_URL="${WORKSTATION_MODELS_URL:-http://127.0.0.1:3001/api/models}"
-WEBSITE_URL="${WEBSITE_URL:-http://127.0.0.1:8000}"
 
 if [[ -f "$REPO_DIR/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
-  source "$REPO_DIR/.env" 2>/dev/null || true
+  source "$REPO_DIR/.env"
   set +a
 fi
+
+BACKEND_MODELS_URL="${BACKEND_MODELS_URL:-${VLLM_HUST_BASE_URL:-http://127.0.0.1:8080}/v1/models}"
+WORKSTATION_MODELS_URL="${WORKSTATION_MODELS_URL:-http://127.0.0.1:${APP_PORT:-3001}/api/models}"
+WEBSITE_URL="${WEBSITE_URL:-http://127.0.0.1:8000}"
 
 usage() {
   cat <<'EOF'
@@ -94,11 +95,20 @@ show_service_status() {
 }
 
 restart_backend() {
+  ensure_managed_backend
   (cd "$REPO_DIR" && "$DEPLOY_BACKEND" restart)
 }
 
 deploy_backend() {
+  ensure_managed_backend
   (cd "$REPO_DIR" && "$DEPLOY_BACKEND" ci-deploy)
+}
+
+ensure_managed_backend() {
+  if [[ "${WORKSTATION_BACKEND_MODE:-local}" == "external" ]]; then
+    echo "Backend management is disabled: workstation uses an external/shared inference service." >&2
+    return 1
+  fi
 }
 
 restart_workstation() {

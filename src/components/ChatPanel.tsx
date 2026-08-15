@@ -177,7 +177,7 @@ export default function ChatPanel({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 space-y-5">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-20">
             <div
@@ -192,10 +192,8 @@ export default function ChatPanel({
             </div>
             <div className="flex flex-wrap gap-2 justify-center max-w-md">
               {[
-                "帮我写一份项目立项报告",
-                "用 Python 实现快速排序",
-                "分析这段数据的趋势",
-                "总结以下文档内容",
+                "分析当前推理服务的性能指标",
+                "帮我排查一次请求的延迟瓶颈",
               ].map((s) => (
                 <button
                   key={s}
@@ -234,9 +232,9 @@ export default function ChatPanel({
       </div>
 
       {/* Input */}
-      <div className="px-6 pb-6 pt-2 border-t border-white/8">
-        <div className="flex items-end gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-white/20 transition-colors">
-          <button className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0 mb-0.5">
+      <div className="px-3 pb-3 pt-2 sm:px-6 sm:pb-6 border-t border-white/8">
+        <div className="flex items-end gap-2 sm:gap-3 bg-white/5 border border-white/10 rounded-2xl px-3 sm:px-4 py-3 focus-within:border-white/20 transition-colors">
+          <button className="hidden sm:block text-white/30 hover:text-white/60 transition-colors flex-shrink-0 mb-0.5">
             <Paperclip size={18} />
           </button>
           <textarea
@@ -244,7 +242,7 @@ export default function ChatPanel({
             value={input}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息… (Enter 发送，Shift+Enter 换行)"
+            placeholder="输入消息…"
             rows={1}
             className="flex-1 bg-transparent text-white/90 text-sm placeholder-white/25 resize-none focus:outline-none leading-relaxed"
             style={{ minHeight: "24px", maxHeight: "180px" }}
@@ -306,7 +304,7 @@ export default function ChatPanel({
           </div>
         </div>
         <div className="flex items-center justify-center gap-3 mt-2 text-xs">
-          <p className="text-white/15">本地私有推理 · 端到端加密 · 零数据上报</p>
+          <p className="hidden sm:block text-white/15">平台私有推理 · 端到端加密 · 零数据上报</p>
           {searchEnabled && webSearch && <span className="text-sky-300/80">🌐 联网搜索已开启</span>}
           {thinkingEnabled && <span className="text-violet-300/80">💡 深度思考已开启</span>}
         </div>

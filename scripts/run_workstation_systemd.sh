@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$SCRIPT_DIR/lib/runtime_secrets.sh"
 DEPLOY_HOME="${WORKSTATION_DEPLOY_HOME:-$REPO_DIR/.workstation-deploy}"
 SYSTEMD_ENV_FILE="${WORKSTATION_SYSTEMD_ENV_FILE:-$DEPLOY_HOME/systemd.env}"
 EXTERNAL_APP_PORT="${APP_PORT:-}"
@@ -17,9 +18,11 @@ fi
 if [[ -f "$REPO_DIR/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
-  source "$REPO_DIR/.env" 2>/dev/null || true
+  source "$REPO_DIR/.env"
   set +a
 fi
+
+load_workstation_upstream_api_key
 
 if [[ -n "$EXTERNAL_APP_PORT" ]]; then
   APP_PORT="$EXTERNAL_APP_PORT"

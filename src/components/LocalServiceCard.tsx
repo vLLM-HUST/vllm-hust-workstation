@@ -6,7 +6,7 @@ import type { LocalServiceStatus } from "@/types";
 
 const POLL_INTERVAL = 5000;
 
-type ActionName = "ensure-backend" | "restart-backend" | "stop-local";
+type ActionName = "ensure-backend" | "restart-backend" | "stop-local" | "restart-managed-backend";
 
 async function parseJsonSafe<T>(response: Response): Promise<T | null> {
   try {
@@ -20,6 +20,7 @@ export default function LocalServiceCard() {
   const [status, setStatus] = useState<LocalServiceStatus | null>(null);
   const [pendingAction, setPendingAction] = useState<ActionName | null>(null);
   const [message, setMessage] = useState<string>("");
+  const [adminToken, setAdminToken] = useState<string>("");
 
   const loadStatus = useCallback(async () => {
     const response = await fetch("/api/local-service", { cache: "no-store" });
@@ -50,13 +51,19 @@ export default function LocalServiceCard() {
 
   const runAction = useCallback(
     async (action: ActionName) => {
+      if (action === "restart-managed-backend" && !adminToken) return;
       setPendingAction(action);
       setMessage("");
 
       try {
         const response = await fetch("/api/local-service", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(action === "restart-managed-backend" && adminToken
+              ? { "X-Workstation-Admin-Token": adminToken }
+              : {}),
+          },
           body: JSON.stringify({ action }),
         });
         const payload = await parseJsonSafe<{ error?: string; message?: string }>(response);
@@ -71,8 +78,27 @@ export default function LocalServiceCard() {
         setPendingAction(null);
       }
     },
-    [loadStatus]
+    [adminToken, loadStatus]
   );
+
+  const enterAdminMode = useCallback(async () => {
+    const token = window.prompt("请输入 Workstation 管理员令牌");
+    if (!token) return;
+    const response = await fetch("/api/local-service", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Workstation-Admin-Token": token,
+      },
+      body: JSON.stringify({ action: "authorize-admin" }),
+    });
+    if (!response.ok) {
+      setMessage("管理员令牌无效");
+      return;
+    }
+    setAdminToken(token);
+    setMessage("管理员模式已启用；令牌仅保存在当前页面内存中");
+  }, []);
 
   const statusTone = !status
     ? "text-white/60"
@@ -82,9 +108,11 @@ export default function LocalServiceCard() {
         ? "text-amber-300"
         : "text-red-300";
   const statusText = !status
-    ? "正在探测本地服务…"
+    ? "正在探测推理服务…"
     : !status.isLocalTarget
-      ? "当前连接远端服务，页面不控制远端进程"
+      ? status.inferenceReady
+        ? "共享推理后端可用，进程由平台统一管理"
+        : "共享推理后端暂不可用，页面不会启动备用引擎"
       : status.inferenceReady
         ? "本地推理服务可用"
         : status.gatewayReachable
@@ -111,7 +139,7 @@ export default function LocalServiceCard() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-white/55 text-xs font-medium uppercase tracking-wider">
-            演示控制台
+            推理服务
           </p>
           <p className={`text-sm mt-1 ${statusTone}`}>{statusText}</p>
         </div>
@@ -121,7 +149,7 @@ export default function LocalServiceCard() {
       </div>
 
       <div className="text-xs text-white/45 space-y-1">
-        <p>目标地址: {status?.baseUrl ?? "加载中"}</p>
+        <p>目标地址: {status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
         <p>期望模型: {status?.desiredModel ?? "加载中"}</p>
         <p>当前模型: {status?.currentModel ?? "未探测到"}</p>
       </div>
@@ -130,7 +158,7 @@ export default function LocalServiceCard() {
         <p className={`font-medium ${evoStatusTone}`}>
           EvoScientist: {!evoStatus ? "加载中" : evoStatus.ready && status?.inferenceReady ? "已绑定本地后端" : "链路待就绪"}
         </p>
-        <p className="text-white/55">后端绑定: {evoStatus?.baseUrl ?? "加载中"}</p>
+        <p className="text-white/55">后端绑定: {status?.isLocalTarget === false ? "平台共享推理服务" : evoStatus?.baseUrl ?? "加载中"}</p>
         <p className="text-white/55">Evo 模型: {evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测"}</p>
         <p className="text-white/55">启动方式: {evoStatus?.commandMode === "binary" ? "EvoSci 可执行文件" : evoStatus?.commandMode === "python-module" ? "Python 模块回退" : "未找到可用命令"}</p>
         <p className="text-white/55">搜索增强: {evoStatus?.searchEnabled ? "已启用，复用 workstation 联网搜索" : "已关闭"}</p>
@@ -139,11 +167,11 @@ export default function LocalServiceCard() {
       {message ? <p className="text-xs text-cyan-200/90 leading-5">{message}</p> : null}
   {mismatchHint ? <p className="text-xs text-amber-200/90 leading-5">{mismatchHint}</p> : null}
 
-      <div className="grid grid-cols-1 gap-2">
+      {status?.isLocalTarget !== false ? <div className="grid grid-cols-1 gap-2">
         <button
           type="button"
           onClick={() => runAction("ensure-backend")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-emerald-400/15 text-emerald-100 border border-emerald-300/20 hover:bg-emerald-400/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Play size={14} />
@@ -152,7 +180,7 @@ export default function LocalServiceCard() {
         <button
           type="button"
           onClick={() => runAction("restart-backend")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-amber-400/15 text-amber-100 border border-amber-300/20 hover:bg-amber-400/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <RotateCcw size={14} />
@@ -161,17 +189,52 @@ export default function LocalServiceCard() {
         <button
           type="button"
           onClick={() => runAction("stop-local")}
-          disabled={pendingAction !== null || status?.isLocalTarget === false}
+          disabled={pendingAction !== null}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-white/8 text-white/75 border border-white/10 hover:bg-white/12 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Square size={14} />
           停止本地演示栈
         </button>
-      </div>
+      </div> : (
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            onClick={() => loadStatus()}
+            disabled={pendingAction !== null}
+            className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-emerald-400/15 text-emerald-100 border border-emerald-300/20 hover:bg-emerald-400/25 disabled:opacity-50 transition-colors"
+          >
+            <Play size={14} />
+            重新检测推理服务
+          </button>
+          {status?.managedRestartAvailable && !adminToken ? (
+            <button
+              type="button"
+              onClick={enterAdminMode}
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-colors"
+            >
+              <Wrench size={14} />
+              进入管理员模式
+            </button>
+          ) : null}
+          {status?.managedRestartAvailable && adminToken ? (
+            <button
+              type="button"
+              onClick={() => runAction("restart-managed-backend")}
+              disabled={pendingAction !== null}
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-amber-400/15 text-amber-100 border border-amber-300/20 hover:bg-amber-400/25 disabled:opacity-50 transition-colors"
+            >
+              <RotateCcw size={14} />
+              管理员重启推理后端
+            </button>
+          ) : null}
+        </div>
+      )}
 
-      <p className="text-[11px] text-white/30 leading-5">
-        后端日志: {status?.backendLogFile ?? "加载中"}
-      </p>
+      {status?.isLocalTarget !== false ? (
+        <p className="text-[11px] text-white/30 leading-5">
+          后端日志: {status?.backendLogFile ?? "加载中"}
+        </p>
+      ) : null}
     </div>
   );
 }
