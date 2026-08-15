@@ -4,6 +4,20 @@ All notable changes to vllm-hust-workstation will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-15
+
+### Added
+
+- **Model-aware research context** — discover the served context window from `/v1/models` and pass it into EvoScientist's model profile so DeepAgents compacts proactively.
+- **Modular EvoScientist adapter** — separate runtime discovery, backend capability selection, execution preparation, and child-process lifecycle from the HTTP route.
+- **Research lifecycle recovery** — client disconnect, explicit cancellation, and timeout now terminate the complete EvoScientist process group with a bounded force-kill fallback.
+
+### Fixed
+
+- **EvoScientist runtime readiness** — prefer the project's locked virtual environment, require a real sessions/CLI import probe, and surface Python/import failures instead of reporting a false-ready integration that later returns HTTP 500.
+- **Portable EvoScientist paths** — derive default checkout/workspace paths from the current home directory rather than a deployment-specific username.
+- **Runtime test resolution** — align Vitest's `@/` alias with Next.js so integration modules are exercised directly instead of being excluded from unit coverage.
+
 ## [0.1.1] - 2026-08-15
 
 ### Added

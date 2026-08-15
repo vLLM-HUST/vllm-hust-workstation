@@ -149,6 +149,19 @@ WORKSTATION_AUTO_HEAL_GATEWAY=false
 管理员 token 也支持对应的 `WORKSTATION_ADMIN_TOKEN_ENV_FILE` 和
 `WORKSTATION_ADMIN_TOKEN_ENV_NAME`，但建议使用与推理 API key 不同的凭据。
 
+### EvoScientist 运行环境
+
+EvoScientist 要求 Python 3.11 或更高版本。建议在其仓库中使用锁文件创建独立
+环境，Workstation 会自动优先选择该项目的 `.venv/bin/python`：
+
+```bash
+cd /path/to/EvoScientist
+uv sync --frozen --no-dev
+```
+
+也可通过 `WORKSTATION_EVOSCI_PYTHON_BIN` 指定其它完整环境。状态探测会真实
+导入 sessions 与 CLI 模块，解释器版本或依赖不兼容时不会再误报 ready。
+
 如不希望每次启动都弹出模型选择菜单，可在 `.env` 中设置：
 
 ```dotenv
@@ -227,6 +240,8 @@ WORKSTATION_EVOSCI_BIN=EvoSci
 # WORKSTATION_EVOSCI_PYTHON_BIN=/path/to/EvoSci/bin/python
 WORKSTATION_EVOSCI_WORKDIR=/path/to/EvoScientist
 WORKSTATION_EVOSCI_TIMEOUT_MS=180000
+# 后端未在 /v1/models 返回上下文能力时才需要显式配置：
+# WORKSTATION_EVOSCI_CONTEXT_WINDOW_TOKENS=32768
 ```
 
 ---

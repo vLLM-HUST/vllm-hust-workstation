@@ -16,6 +16,8 @@ def _parse_json(value: str):
 
 
 def _is_sensitive_key(key: str) -> bool:
+    if key == "context_window_tokens":
+        return False
     sensitive_tokens = ("api_key", "password", "secret", "token", "aes_key")
     return any(token in key for token in sensitive_tokens)
 

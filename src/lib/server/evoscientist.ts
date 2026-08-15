@@ -1,6 +1,4 @@
 import {
-  accessSync,
-  constants,
   closeSync,
   cpSync,
   existsSync,
@@ -14,7 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { basename, delimiter, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { DEFAULT_MODEL_ID, SERVER_CONFIG } from "@/lib/config";
 import { getWorkstationSearchMode, isWorkstationSearchEnabled } from "@/lib/server/webSearch";
 import type {
@@ -28,18 +26,37 @@ import type {
   EvoScientistThreadMetadata,
   EvoScientistWorkspaceOption,
 } from "@/types";
+import {
+  canRunEvoScientistModule,
+  DEFAULT_EVOSCI_BIN,
+  DEFAULT_EVOSCI_WORKDIR,
+  findExecutableInPath,
+  getEvoScientistSpawnEnv,
+  probeEvoScientistRuntime,
+  PYTHON_FALLBACK_CANDIDATES,
+  resolveEvoScientistWorkdir,
+  resolvePythonBinary,
+} from "./evoscientist/runtime";
+import {
+  fetchModelCapabilities,
+  selectModelCapability,
+  type ModelCapability,
+} from "./evoscientist/capabilities";
 
-type ModelsResponse = {
-  data?: Array<{
-    id?: string;
-  }>;
-};
+export {
+  canRunEvoScientistModule,
+  DEFAULT_EVOSCI_BIN,
+  DEFAULT_EVOSCI_WORKDIR,
+  findExecutableInPath,
+  getEvoScientistSpawnEnv,
+  probeEvoScientistRuntime,
+  PYTHON_FALLBACK_CANDIDATES,
+  resolveEvoScientistWorkdir,
+  resolvePythonBinary,
+} from "./evoscientist/runtime";
 
-export const DEFAULT_EVOSCI_BIN = "EvoSci";
-export const DEFAULT_EVOSCI_WORKDIR = "/home/shuhao/EvoScientist";
 export const DEFAULT_EVOSCI_PROVIDER = "custom-openai";
-export const PYTHON_FALLBACK_CANDIDATES = ["python3", "python"];
-export const DEFAULT_DEV_WORKSPACE_FILE = process.env.WORKSTATION_DEV_WORKSPACE_FILE || "/home/shuhao/vllm-hust-dev-hub/vllm-hust-dev-hub.code-workspace";
+export const DEFAULT_DEV_WORKSPACE_FILE = process.env.WORKSTATION_DEV_WORKSPACE_FILE || join(homedir(), "vllm-hust-dev-hub", "vllm-hust-dev-hub.code-workspace");
 export const DEFAULT_EVOSCI_CHANNEL_HEALTH_PORT = Number(process.env.WORKSTATION_EVOSCI_CHANNEL_HEALTH_PORT || "39190");
 const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
 const EXCLUDED_WORKSPACE_NAMES = new Set([
@@ -116,7 +133,7 @@ function getEvoScientistUserConfigDir(): string {
     : resolve(homedir(), ".config", "evoscientist");
 }
 
-function mergeFlatYaml(base: string, overrides: Record<string, string | boolean>): string {
+function mergeFlatYaml(base: string, overrides: Record<string, string | boolean | number>): string {
   let next = base.trimEnd();
 
   for (const [key, rawValue] of Object.entries(overrides)) {
@@ -161,75 +178,12 @@ function cleanupChannelWorkerFiles(metadata?: ChannelWorkerMetadata | null): voi
   }
 }
 
-function isExecutableFile(filePath: string): boolean {
-  try {
-    accessSync(filePath, constants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function isDirectoryPath(dirPath: string): boolean {
   try {
     return statSync(dirPath).isDirectory();
   } catch {
     return false;
   }
-}
-
-function findSiblingPython(binaryPath: string): string | null {
-  const siblingPython = resolve(binaryPath, "..", "python");
-  return isExecutableFile(siblingPython) ? siblingPython : null;
-}
-
-export function findExecutableInPath(binary: string): string | null {
-  if (!binary) {
-    return null;
-  }
-
-  if (binary.includes("/")) {
-    const resolved = resolve(binary);
-    return isExecutableFile(resolved) ? resolved : null;
-  }
-
-  const pathValue = process.env.PATH || "";
-  for (const entry of pathValue.split(delimiter)) {
-    if (!entry) {
-      continue;
-    }
-    const candidate = join(entry, binary);
-    if (isExecutableFile(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-export function resolvePythonBinary(): string | null {
-  const configured = (process.env.WORKSTATION_EVOSCI_PYTHON_BIN || "").trim();
-  const configuredCandidates = configured ? [configured] : [];
-  const evosciBinary = findExecutableInPath((process.env.WORKSTATION_EVOSCI_BIN || DEFAULT_EVOSCI_BIN).trim());
-  const siblingPython = evosciBinary ? findSiblingPython(evosciBinary) : null;
-  const candidates = [
-    ...configuredCandidates,
-    ...(siblingPython ? [siblingPython] : []),
-    ...PYTHON_FALLBACK_CANDIDATES,
-  ];
-
-  for (const candidate of candidates) {
-    const resolved = findExecutableInPath(candidate);
-    if (resolved) {
-      return resolved;
-    }
-  }
-
-  return null;
-}
-
-export function resolveEvoScientistWorkdir(): string {
-  return resolve(process.env.WORKSTATION_EVOSCI_WORKDIR || DEFAULT_EVOSCI_WORKDIR);
 }
 
 function createWorkspaceOption(name: string, absolutePath: string): EvoScientistWorkspaceOption {
@@ -327,13 +281,12 @@ export function resolveEvoScientistTimeoutMs(): number {
   return Math.min(Math.floor(configured), 600000);
 }
 
-export function canRunEvoScientistModule(workdir: string): boolean {
-  return existsSync(join(workdir, "EvoScientist", "cli", "__init__.py"));
-}
-
-function formatYamlValue(value: string | boolean): string {
+function formatYamlValue(value: string | boolean | number): string {
   if (typeof value === "boolean") {
     return value ? "true" : "false";
+  }
+  if (typeof value === "number") {
+    return String(value);
   }
   return JSON.stringify(value);
 }
@@ -342,6 +295,7 @@ export function createEvoScientistConfigRoot(options: {
   model: string;
   baseUrl: string;
   apiKey: string;
+  contextWindowTokens?: number | null;
 }): string {
   const configRoot = mkdtempSync(join(tmpdir(), "vllm-hust-evosci-"));
   const configDir = join(configRoot, "evoscientist");
@@ -357,16 +311,21 @@ export function createEvoScientistConfigRoot(options: {
     ? readFileSync(join(configDir, "config.yaml"), "utf-8")
     : "";
 
+  const overrides: Record<string, string | boolean | number> = {
+    provider: DEFAULT_EVOSCI_PROVIDER,
+    model: options.model,
+    custom_openai_api_key: options.apiKey,
+    custom_openai_base_url: options.baseUrl,
+    ui_backend: "cli",
+    show_thinking: false,
+  };
+  if (options.contextWindowTokens) {
+    overrides.context_window_tokens = options.contextWindowTokens;
+  }
+
   writeFileSync(
     join(configDir, "config.yaml"),
-    mergeFlatYaml(baseConfig, {
-      provider: DEFAULT_EVOSCI_PROVIDER,
-      model: options.model,
-      custom_openai_api_key: options.apiKey,
-      custom_openai_base_url: options.baseUrl,
-      ui_backend: "cli",
-      show_thinking: false,
-    }),
+    mergeFlatYaml(baseConfig, overrides),
     "utf-8"
   );
 
@@ -392,27 +351,6 @@ export function getEvoScientistBaseUrl(): string {
 
 export function getEvoScientistApiKey(): string {
   return (process.env.WORKSTATION_EVOSCI_API_KEY || SERVER_CONFIG.apiKey || "not-required").trim() || "not-required";
-}
-
-export function getEvoScientistSpawnEnv(options: {
-  configRoot?: string;
-  apiKey?: string;
-  baseUrl?: string;
-  workdir?: string;
-}): NodeJS.ProcessEnv {
-  const pythonPathEntries = [options.workdir, process.env.PYTHONPATH].filter(Boolean);
-
-  return {
-    ...process.env,
-    ...(options.configRoot ? { XDG_CONFIG_HOME: options.configRoot } : {}),
-    ...(options.apiKey ? { CUSTOM_OPENAI_API_KEY: options.apiKey } : {}),
-    ...(options.baseUrl ? { CUSTOM_OPENAI_BASE_URL: options.baseUrl } : {}),
-    PYTHONPATH: pythonPathEntries.join(delimiter),
-    FORCE_COLOR: "0",
-    CLICOLOR: "0",
-    NO_COLOR: "1",
-    TERM: "dumb",
-  };
 }
 
 export function getEvoScientistApiKeyMode(): EvoScientistIntegrationStatus["apiKeyMode"] {
@@ -460,7 +398,7 @@ export function summarizeEvoScientistFailure(raw: string): string {
     .filter(Boolean);
 
   const keyLines = lines.filter((line) =>
-    /(ConnectError|connection error|Failed to connect|Timed out|Error:|RuntimeError|HTTP\s*\d{3})/i.test(line)
+    /(ConnectError|connection error|Failed to connect|Timed out|Error:|RuntimeError|ImportError|ModuleNotFoundError|HTTP\s*\d{3})/i.test(line)
   );
 
   if (keyLines.length > 0) {
@@ -726,10 +664,12 @@ export async function startEvoScientistChannelWorker(options: {
   }
 
   const workdir = resolveEvoScientistWorkdir();
+  const capability = await resolveServedModelCapability(options.model);
   const configRoot = createEvoScientistConfigRoot({
-    model: options.model,
+    model: capability.id,
     baseUrl: getEvoScientistBaseUrl(),
     apiKey: getEvoScientistApiKey(),
+    contextWindowTokens: capability.maxContextTokens,
   });
   const command = [
     pythonBin,
@@ -752,6 +692,7 @@ export async function startEvoScientistChannelWorker(options: {
         apiKey: getEvoScientistApiKey(),
         baseUrl: getEvoScientistBaseUrl(),
         workdir,
+        contextWindowTokens: capability.maxContextTokens ?? undefined,
       }),
       detached: true,
       stdio: ["ignore", stdoutFd, stderrFd],
@@ -765,7 +706,7 @@ export async function startEvoScientistChannelWorker(options: {
       healthPort: DEFAULT_EVOSCI_CHANNEL_HEALTH_PORT,
       startedAt: new Date().toISOString(),
       workspaceDir: options.workspaceDir,
-      model: options.model,
+      model: capability.id,
       configuredChannels: options.configuredChannels,
     };
     writeFileSync(getChannelWorkerPidFile(), `${metadata.pid}\n`, "utf-8");
@@ -810,63 +751,16 @@ export async function stopEvoScientistChannelWorker(): Promise<EvoScientistChann
   return getEvoScientistChannelWorkerStatus();
 }
 
-function getModelAliases(modelId: string): string[] {
-  const trimmed = modelId.trim();
-  if (!trimmed) {
-    return [];
-  }
-
-  const aliases = new Set<string>([trimmed]);
-  const tail = trimmed.split("/").pop();
-  if (tail) {
-    aliases.add(tail);
-  }
-  return [...aliases];
+function configuredContextWindow(): number | null {
+  const raw = (process.env.WORKSTATION_EVOSCI_CONTEXT_WINDOW_TOKENS || "").trim();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
-function resolveModelFromIds(requestedModels: string[], modelIds: string[]): string | null {
-  if (!modelIds.length) {
-    return null;
-  }
-
-  for (const candidate of requestedModels) {
-    const aliases = getModelAliases(candidate);
-    const exactMatch = modelIds.find((modelId) => aliases.includes(modelId));
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    const aliasedMatch = modelIds.find((modelId) => {
-      const servedAliases = getModelAliases(modelId);
-      return aliases.some((alias) => servedAliases.includes(alias));
-    });
-    if (aliasedMatch) {
-      return aliasedMatch;
-    }
-  }
-
-  return modelIds[0];
-}
-
-async function fetchServedModelIds(): Promise<string[]> {
-  const response = await fetch(`${SERVER_CONFIG.baseUrl}/v1/models`, {
-    headers: {
-      Authorization: `Bearer ${SERVER_CONFIG.apiKey}`,
-    },
-    signal: AbortSignal.timeout(3000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`models probe failed: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as ModelsResponse;
-  return (payload.data || [])
-    .map((item) => (typeof item.id === "string" ? item.id.trim() : ""))
-    .filter(Boolean);
-}
-
-export async function resolveServedModel(preferredModel?: string): Promise<string> {
+export async function resolveServedModelCapability(
+  preferredModel?: string
+): Promise<ModelCapability> {
   const requestedModels = [
     getRequestedModel(preferredModel),
     process.env.WORKSTATION_EVOSCI_MODEL,
@@ -874,18 +768,27 @@ export async function resolveServedModel(preferredModel?: string): Promise<strin
     process.env.DEFAULT_MODEL,
     DEFAULT_MODEL_ID,
   ].filter((value): value is string => Boolean(value && value.trim()));
+  const fallback = {
+    id: requestedModels[0] || DEFAULT_MODEL_ID,
+    maxContextTokens: configuredContextWindow(),
+  };
 
   try {
-    const modelIds = await fetchServedModelIds();
-    const resolved = resolveModelFromIds(requestedModels, modelIds);
-    if (resolved) {
-      return resolved;
-    }
+    const capabilities = await fetchModelCapabilities({
+      baseUrl: SERVER_CONFIG.baseUrl,
+      apiKey: SERVER_CONFIG.apiKey,
+    });
+    const selected = selectModelCapability(requestedModels, capabilities);
+    return selected
+      ? { ...selected, maxContextTokens: selected.maxContextTokens ?? fallback.maxContextTokens }
+      : fallback;
   } catch {
-    return requestedModels[0] || DEFAULT_MODEL_ID;
+    return fallback;
   }
+}
 
-  return requestedModels[0] || DEFAULT_MODEL_ID;
+export async function resolveServedModel(preferredModel?: string): Promise<string> {
+  return (await resolveServedModelCapability(preferredModel)).id;
 }
 
 export async function getEvoScientistIntegrationStatus(preferredModel?: string): Promise<EvoScientistIntegrationStatus> {
@@ -901,15 +804,22 @@ export async function getEvoScientistIntegrationStatus(preferredModel?: string):
   let resolvedModel: string | null = null;
   let backendReachable = false;
   try {
-    const modelIds = await fetchServedModelIds();
-    backendReachable = modelIds.length > 0;
-    resolvedModel = resolveModelFromIds([configuredModel], modelIds) ?? configuredModel;
+    const capabilities = await fetchModelCapabilities({
+      baseUrl: SERVER_CONFIG.baseUrl,
+      apiKey: SERVER_CONFIG.apiKey,
+    });
+    backendReachable = capabilities.length > 0;
+    resolvedModel = selectModelCapability([configuredModel], capabilities)?.id ?? configuredModel;
   } catch {
     resolvedModel = null;
     backendReachable = false;
   }
 
-  const bridgeReady = Boolean(pythonBin) && (commandMode === "binary" || canRunEvoScientistModule(workdir));
+  const bridgeReady = Boolean(
+    pythonBin &&
+    (commandMode === "binary" || canRunEvoScientistModule(workdir)) &&
+    await probeEvoScientistRuntime(pythonBin, workdir)
+  );
 
   return {
     provider: DEFAULT_EVOSCI_PROVIDER,
