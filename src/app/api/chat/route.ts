@@ -1,4 +1,5 @@
 import { SERVER_CONFIG } from "@/lib/config";
+import { getServerApiKey } from "@/lib/runtimeSecret";
 import { getWebSearchContext } from "@/lib/server/webSearch";
 import {
   beginChatRequest,
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${SERVER_CONFIG.apiKey}`,
+        Authorization: `Bearer ${getServerApiKey()}`,
       },
       body: JSON.stringify({
         ...body,

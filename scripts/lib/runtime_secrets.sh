@@ -31,24 +31,33 @@ read_workstation_named_secret() {
   fi
 }
 
-# Resolve only the upstream API key and optional administrator token required
-# by workstation. Trusted source files are evaluated in subshells so unrelated
-# settings never leak into the workstation process.
-load_workstation_upstream_api_key() {
+# Validate the configured source without exporting its value. The long-lived
+# Next.js process uses this path and resolves the current value with an
+# inode/size/mtime cache, so key rotation needs no workstation restart.
+validate_workstation_upstream_api_key_source() {
   read_workstation_named_secret \
     "${VLLM_HUST_API_KEY_FILE:-}" \
     "${VLLM_HUST_API_KEY_ENV_FILE:-}" \
     "${VLLM_HUST_API_KEY_ENV_NAME:-VLLM_HUST_API_KEY}"
-  if [[ -n "$REPLY" ]]; then
-    VLLM_HUST_API_KEY="$REPLY"
-  fi
-
-  if [[ -z "${VLLM_HUST_API_KEY:-}" ]]; then
+  if [[ -z "$REPLY" && -z "${VLLM_HUST_API_KEY:-}" ]]; then
     echo "Configured workstation upstream API key source is empty" >&2
     return 1
   fi
+}
+
+# Export the resolved value only for short-lived operator commands that call
+# the upstream directly. Do not use this in the long-lived workstation server.
+load_workstation_upstream_api_key() {
+  validate_workstation_upstream_api_key_source
+  if [[ -n "$REPLY" ]]; then
+    VLLM_HUST_API_KEY="$REPLY"
+  fi
   export VLLM_HUST_API_KEY
 
+  load_workstation_admin_token
+}
+
+load_workstation_admin_token() {
   read_workstation_named_secret \
     "${WORKSTATION_ADMIN_TOKEN_FILE:-}" \
     "${WORKSTATION_ADMIN_TOKEN_ENV_FILE:-}" \

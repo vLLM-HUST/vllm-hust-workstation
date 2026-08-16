@@ -1,4 +1,5 @@
 import { SERVER_CONFIG } from "@/lib/config";
+import { getServerApiKey } from "@/lib/runtimeSecret";
 import type { MetricsSnapshot } from "@/types";
 
 export type UpstreamProbeResult = {
@@ -65,7 +66,8 @@ export async function fetchUpstreamModels(timeoutMs = 3000): Promise<UpstreamMod
 
   try {
     const res = await fetch(`${SERVER_CONFIG.baseUrl}/v1/models`, {
-      headers: { Authorization: `Bearer ${SERVER_CONFIG.apiKey}` },
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${getServerApiKey()}` },
       signal: AbortSignal.timeout(timeoutMs),
     });
     const durationSeconds = (performance.now() - start) / 1000;
@@ -99,7 +101,8 @@ export async function fetchUpstreamEngineProbe(timeoutMs = 2000): Promise<Upstre
 
   try {
     const res = await fetch(`${SERVER_CONFIG.baseUrl}/v1/management/engines`, {
-      headers: { Authorization: `Bearer ${SERVER_CONFIG.apiKey}` },
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${getServerApiKey()}` },
       signal: AbortSignal.timeout(timeoutMs),
     });
     const durationSeconds = (performance.now() - start) / 1000;
@@ -147,6 +150,7 @@ export async function fetchUpstreamMetrics(timeoutMs = 2000): Promise<UpstreamMe
 
   try {
     const res = await fetch(`${SERVER_CONFIG.baseUrl}/metrics`, {
+      cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
     });
     const durationSeconds = (performance.now() - start) / 1000;
@@ -204,7 +208,8 @@ export async function fetchUpstreamStats(timeoutMs = 2000): Promise<UpstreamMetr
 
   try {
     const res = await fetch(`${SERVER_CONFIG.baseUrl}/v1/stats`, {
-      headers: { Authorization: `Bearer ${SERVER_CONFIG.apiKey}` },
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${getServerApiKey()}` },
       signal: AbortSignal.timeout(timeoutMs),
     });
     const durationSeconds = (performance.now() - start) / 1000;

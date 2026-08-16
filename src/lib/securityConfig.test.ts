@@ -43,10 +43,35 @@ describe("shared backend safety", () => {
     expect(resolver).toContain("WORKSTATION_ADMIN_TOKEN_ENV_FILE");
     expect(resolver).toContain('source "$secret_env_file"');
 
-    for (const script of ["deploy_workstation.sh", "run_workstation_systemd.sh"]) {
-      const content = fs.readFileSync(path.join(process.cwd(), "scripts", script), "utf8");
-      expect(content).toContain("load_workstation_upstream_api_key");
-    }
+    const deploy = fs.readFileSync(
+      path.join(process.cwd(), "scripts/deploy_workstation.sh"),
+      "utf8"
+    );
+    const runtime = fs.readFileSync(
+      path.join(process.cwd(), "scripts/run_workstation_systemd.sh"),
+      "utf8"
+    );
+    expect(deploy).toContain("load_workstation_upstream_api_key");
+    expect(runtime).toContain("validate_workstation_upstream_api_key_source");
+    expect(runtime).toContain("unset VLLM_HUST_API_KEY");
+    expect(runtime).toContain("load_workstation_admin_token");
+  });
+
+  it("never caches live model or upstream availability state", () => {
+    const route = fs.readFileSync(
+      path.join(process.cwd(), "src/app/api/models/route.ts"),
+      "utf8"
+    );
+    const upstream = fs.readFileSync(
+      path.join(process.cwd(), "src/lib/upstream.ts"),
+      "utf8"
+    );
+
+    expect(route).toContain('export const dynamic = "force-dynamic"');
+    expect(route).toContain("export const revalidate = 0");
+    expect(route).toContain('"Cache-Control": "no-store, max-age=0"');
+    expect(route).not.toContain("export const revalidate = 30");
+    expect(upstream.match(/cache: "no-store"/g)).toHaveLength(4);
   });
 
   it("prevents unified operations from mutating an external backend", () => {

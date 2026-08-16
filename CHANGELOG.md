@@ -4,6 +4,21 @@ All notable changes to vllm-hust-workstation will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-16
+
+### Fixed
+
+- **Rotation-safe Sage Mate backend credentials** — the long-lived Workstation
+  process now retains only the configured secret source path. A file-fingerprint
+  cache reloads the current API key after an atomic or in-place rotation without
+  requiring a Workstation restart or placing the key in the process environment.
+- **Live model discovery** — `/api/models` and all upstream probes explicitly bypass
+  Next.js data/full-route caching, preventing public hostnames from serving a stale
+  model identity or readiness state after backend changes.
+- **Secret boundary regression coverage** — tests cover in-place key rotation,
+  fail-closed empty sources, non-cached live status, and the long-lived launcher's
+  key-free process environment contract.
+
 ## [0.1.2] - 2026-08-15
 
 ### Added

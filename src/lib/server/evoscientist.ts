@@ -14,6 +14,7 @@ import {
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { DEFAULT_MODEL_ID, SERVER_CONFIG } from "@/lib/config";
+import { getServerApiKey } from "@/lib/runtimeSecret";
 import { getWorkstationSearchMode, isWorkstationSearchEnabled } from "@/lib/server/webSearch";
 import type {
   EvoScientistAdminSnapshot,
@@ -350,7 +351,7 @@ export function getEvoScientistBaseUrl(): string {
 }
 
 export function getEvoScientistApiKey(): string {
-  return (process.env.WORKSTATION_EVOSCI_API_KEY || SERVER_CONFIG.apiKey || "not-required").trim() || "not-required";
+  return (process.env.WORKSTATION_EVOSCI_API_KEY || getServerApiKey()).trim() || "not-required";
 }
 
 export function getEvoScientistApiKeyMode(): EvoScientistIntegrationStatus["apiKeyMode"] {
@@ -776,7 +777,7 @@ export async function resolveServedModelCapability(
   try {
     const capabilities = await fetchModelCapabilities({
       baseUrl: SERVER_CONFIG.baseUrl,
-      apiKey: SERVER_CONFIG.apiKey,
+      apiKey: getServerApiKey(),
     });
     const selected = selectModelCapability(requestedModels, capabilities);
     return selected
@@ -806,7 +807,7 @@ export async function getEvoScientistIntegrationStatus(preferredModel?: string):
   try {
     const capabilities = await fetchModelCapabilities({
       baseUrl: SERVER_CONFIG.baseUrl,
-      apiKey: SERVER_CONFIG.apiKey,
+      apiKey: getServerApiKey(),
     });
     backendReachable = capabilities.length > 0;
     resolvedModel = selectModelCapability([configuredModel], capabilities)?.id ?? configuredModel;

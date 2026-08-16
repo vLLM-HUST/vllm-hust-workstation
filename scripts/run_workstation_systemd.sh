@@ -22,7 +22,11 @@ if [[ -f "$REPO_DIR/.env" ]]; then
   set +a
 fi
 
-load_workstation_upstream_api_key
+validate_workstation_upstream_api_key_source
+if [[ -n "${VLLM_HUST_API_KEY_FILE:-}" || -n "${VLLM_HUST_API_KEY_ENV_FILE:-}" ]]; then
+  unset VLLM_HUST_API_KEY
+fi
+load_workstation_admin_token
 
 if [[ -n "$EXTERNAL_APP_PORT" ]]; then
   APP_PORT="$EXTERNAL_APP_PORT"

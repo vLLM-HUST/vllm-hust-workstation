@@ -23,5 +23,4 @@ export function getAppConfig(): AppConfig {
 
 export const SERVER_CONFIG = {
   baseUrl: process.env.VLLM_HUST_BASE_URL || "http://localhost:8080",
-  apiKey: process.env.VLLM_HUST_API_KEY || "not-required",
 };
