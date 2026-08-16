@@ -81,6 +81,10 @@ describe("shared backend safety", () => {
     );
     expect(content).toContain("ensure_managed_backend");
     expect(content).toContain("WORKSTATION_BACKEND_MODE:-local");
+    expect(content).toContain("load_workstation_upstream_api_key");
+    expect(content).toContain("curl_authenticated_status");
+    expect(content).toContain("--config -");
+    expect(content).not.toContain('"Authorization: Bearer ${VLLM_HUST_API_KEY}"');
     expect(content).not.toContain('source "$REPO_DIR/.env" 2>/dev/null || true');
   });
 

@@ -12,6 +12,7 @@ DEPLOY_WEBSITE="$WEBSITE_REPO_DIR/scripts/deploy_website_service.sh"
 WORKSTATION_SERVICE="${WORKSTATION_SYSTEMD_SERVICE_NAME:-vllm-hust-workstation}"
 BACKEND_SERVICE="${WORKSTATION_BACKEND_SYSTEMD_SERVICE_NAME:-vllm-hust-backend}"
 WEBSITE_SERVICE="${WEBSITE_SYSTEMD_SERVICE_NAME:-vllm-hust-website}"
+source "$SCRIPT_DIR/lib/runtime_secrets.sh"
 
 if [[ -f "$REPO_DIR/.env" ]]; then
   set -a
@@ -76,10 +77,19 @@ curl_status() {
   fi
 }
 
-backend_probe_args() {
+curl_authenticated_status() {
+  local label="$1"
+  local url="$2"
   if [[ -n "${VLLM_HUST_API_KEY:-}" && "${VLLM_HUST_API_KEY}" != "not-required" ]]; then
-    printf '%s\n' "-H" "Authorization: Bearer ${VLLM_HUST_API_KEY}"
+    if printf 'header = "Authorization: Bearer %s"\n' "$VLLM_HUST_API_KEY" \
+      | curl -fsS --max-time 10 --config - "$url" >/dev/null 2>&1; then
+      echo "[ok] $label -> $url"
+      return 0
+    fi
+    echo "[fail] $label -> $url"
+    return 1
   fi
+  curl_status "$label" "$url"
 }
 
 show_service_status() {
@@ -146,17 +156,15 @@ show_logs() {
 }
 
 show_status() {
-  local -a backend_args
-  mapfile -t backend_args < <(backend_probe_args)
-
+  load_workstation_upstream_api_key
   echo "=== local health ==="
-  curl_status "backend" "$BACKEND_MODELS_URL" "${backend_args[@]}" || true
+  curl_authenticated_status "backend" "$BACKEND_MODELS_URL" || true
   curl_status "workstation" "$WORKSTATION_MODELS_URL" || true
   curl_status "website" "$WEBSITE_URL" || true
   echo
   echo "=== public health ==="
   curl_status "public workstation" "https://ws.sage.org.ai/api/models" || true
-  curl_status "public backend" "https://api.sage.org.ai/v1/models" "${backend_args[@]}" || true
+  curl_authenticated_status "public backend" "https://api.sage.org.ai/v1/models" || true
   echo
   show_service_status "backend" "$BACKEND_SERVICE"
   echo

@@ -18,6 +18,9 @@ All notable changes to vllm-hust-workstation will be documented in this file.
 - **Secret boundary regression coverage** — tests cover in-place key rotation,
   fail-closed empty sources, non-cached live status, and the long-lived launcher's
   key-free process environment contract.
+- **Authenticated operator probes** — the unified status command resolves the same
+  shared Sage Mate credential and feeds it to curl over standard input rather than
+  exposing it in curl's process arguments.
 
 ## [0.1.2] - 2026-08-15
 
