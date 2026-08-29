@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "canonical_registry": "https://github.com/vLLM-HUST/vllm-hust-docs/tree/codex/ecosystem-architecture-reorganization/registry",
+  "repository": "https://github.com/vLLM-HUST/vllm-hust-workstation",
+  "repository_role": "public_application",
+  "relation_to_runtime": "supports_runtime_delivery",
+  "lifecycle": "incubating",
+  "artifacts": [
+    {
+      "id": "vllm-hust-workstation-application",
+      "artifact_type": "application",
+      "system_role": "product_ui",
+      "delivery_model": "source_repository",
+      "execution_planes": ["api", "external_service"],
+      "integration_contracts": [],
+      "integration_surfaces": ["OpenAI-compatible inference API", "Prometheus metrics endpoint"]
+    }
+  ],
+  "system_boundaries": {
+    "is": [
+      "a private AI workstation UI, API proxy, monitoring surface, and local deployment facade",
+      "a consumer and optional lifecycle wrapper of an explicitly configured inference backend"
+    ],
+    "is_not": [
+      "the inference runtime core or a vLLM plugin",
+      "a cluster-wide scheduling or serving control plane",
+      "the owner of backend compatibility or performance claims"
+    ]
+  },
+  "validation": ["npm test", "npm run build", "git diff --check"],
+  "compatibility_document": "README.md"
+}
