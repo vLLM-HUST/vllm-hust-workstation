@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const RECEIPT_SCHEMA = "vllm-hust.workstation-runtime-provenance/v1";
+const RECEIPT_SCHEMA = "vllm-hust.workstation-runtime-provenance/v2";
 const SHA_PATTERN = /^[0-9a-f]{40}$/;
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
@@ -10,6 +10,7 @@ export interface RuntimeComponentProvenance {
   repository: string;
   commit: string;
   commitUrl: string;
+  version: string;
 }
 
 export interface RuntimeProvenance {
@@ -18,8 +19,9 @@ export interface RuntimeProvenance {
   capturedAt?: string;
   reason?: string;
   container?: { name: string; id: string; startedAt: string };
-  image?: { reference: string; id: string; digest: string };
+  image?: { reference: string; id: string; digest: string; createdAt: string };
   runtimeLock?: { schema: string; sourceMode: string };
+  compatibility?: { base: string; vllmPackage: string; vllmAscendPackage: string };
   components?: {
     core: RuntimeComponentProvenance;
     plugin: RuntimeComponentProvenance;
@@ -59,12 +61,15 @@ export function parseRuntimeProvenance(raw: string): RuntimeProvenance {
     return unavailable("运行来源 receipt schema 不受支持");
   }
 
-  const { container, image, runtimeLock, components, capturedAt } = receipt;
-  if (!capturedAt || !container || !image || !runtimeLock || !components) {
+  const { container, image, runtimeLock, compatibility, components, capturedAt } = receipt;
+  if (!capturedAt || !container || !image || !runtimeLock || !compatibility || !components) {
     return unavailable("运行来源 receipt 字段不完整");
   }
   if (!DIGEST_PATTERN.test(image.digest) || !DIGEST_PATTERN.test(image.id)) {
     return unavailable("运行镜像 digest 无效");
+  }
+  if (!image.createdAt || !compatibility.base || !compatibility.vllmPackage || !compatibility.vllmAscendPackage) {
+    return unavailable("运行镜像兼容基座信息不完整");
   }
   if (
     runtimeLock.schema !== "vllm-hust.production-runtime-lock/v1" ||
@@ -84,6 +89,9 @@ export function parseRuntimeProvenance(raw: string): RuntimeProvenance {
   ) {
     return unavailable("运行源码仓库不是 canonical vLLM-HUST 仓库");
   }
+  if (!components.core.version || !components.plugin.version) {
+    return unavailable("运行源码版本信息不完整");
+  }
 
   const expectedCoreUrl = `${components.core.repository}/commit/${components.core.commit}`;
   const expectedPluginUrl = `${components.plugin.repository}/commit/${components.plugin.commit}`;
@@ -98,6 +106,7 @@ export function parseRuntimeProvenance(raw: string): RuntimeProvenance {
     container,
     image,
     runtimeLock,
+    compatibility,
     components,
     vllmHust: components.core.commit,
     vllmAscendHust: components.plugin.commit,

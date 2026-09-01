@@ -602,8 +602,12 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
                   <dt className="app-text-muted">容器</dt><dd className="app-text-secondary break-all">{runtimeProvenance.container?.name}</dd>
                   <dt className="app-text-muted">镜像</dt><dd className="app-text-secondary break-all">{runtimeProvenance.image.reference}</dd>
                   <dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.image.digest}</dd>
+                  <dt className="app-text-muted">兼容基座</dt><dd className="app-text-secondary">{runtimeProvenance.compatibility?.base}</dd>
+                  <dt className="app-text-muted">构建时间</dt><dd className="app-text-secondary">{runtimeProvenance.image.createdAt}</dd>
                   <dt className="app-text-muted">Core SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.core.commit}</dd>
+                  <dt className="app-text-muted">Core source</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.core.version}</dd>
                   <dt className="app-text-muted">Plugin SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.plugin.commit}</dd>
+                  <dt className="app-text-muted">Plugin source</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.plugin.version}</dd>
                   <dt className="app-text-muted">证据时间</dt><dd className="app-text-secondary">{runtimeProvenance.capturedAt}</dd>
                 </dl>
               </div>

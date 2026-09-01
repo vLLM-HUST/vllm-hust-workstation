@@ -57,6 +57,12 @@ core_commit = labels.get("ai.vllm-hust.vllm-core.commit", "")
 plugin_commit = labels.get("ai.vllm-hust.vllm-ascend.commit", "")
 lock_schema = labels.get("ai.vllm-hust.runtime-lock.schema", "")
 source_mode = labels.get("ai.vllm-hust.source-mode", "")
+compatibility_base = labels.get("ai.vllm-hust.compatibility.base", "")
+vllm_package = labels.get("ai.vllm-hust.compatibility.vllm-package", "")
+vllm_ascend_package = labels.get("ai.vllm-hust.compatibility.vllm-ascend-package", "")
+core_version = labels.get("ai.vllm-hust.vllm-core.source-version", "")
+plugin_version = labels.get("ai.vllm-hust.vllm-ascend.source-version", "")
+image_created_at = labels.get("org.opencontainers.image.created", "")
 
 if core_repo != "https://github.com/vLLM-HUST/vllm-hust":
     raise SystemExit("image core repository is not canonical vLLM-HUST")
@@ -66,6 +72,8 @@ if not re.fullmatch(r"[0-9a-f]{40}", core_commit) or not re.fullmatch(r"[0-9a-f]
     raise SystemExit("image source commits are not immutable 40-character SHAs")
 if lock_schema != "vllm-hust.production-runtime-lock/v1":
     raise SystemExit("image runtime lock schema is not trusted")
+if not all((compatibility_base, vllm_package, vllm_ascend_package, core_version, plugin_version, image_created_at)):
+    raise SystemExit("image compatibility or source-version labels are incomplete")
 
 image_id = image.get("Id", "")
 repo_digests = image.get("RepoDigests") or []
@@ -74,7 +82,7 @@ if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id) or not re.fullmatch(r"sha2
     raise SystemExit("image identity is not an immutable sha256 digest")
 
 payload = {
-    "schema": "vllm-hust.workstation-runtime-provenance/v1",
+    "schema": "vllm-hust.workstation-runtime-provenance/v2",
     "source": "docker-inspect-receipt",
     "capturedAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
     "container": {
@@ -86,19 +94,27 @@ payload = {
         "reference": container.get("Config", {}).get("Image", ""),
         "id": image_id,
         "digest": digest,
+        "createdAt": image_created_at,
     },
     "runtimeLock": {"schema": lock_schema, "sourceMode": source_mode},
+    "compatibility": {
+        "base": compatibility_base,
+        "vllmPackage": vllm_package,
+        "vllmAscendPackage": vllm_ascend_package,
+    },
     "components": {
         "core": {
             "name": "vLLM-HUST",
             "repository": core_repo,
             "commit": core_commit,
+            "version": core_version,
             "commitUrl": f"{core_repo}/commit/{core_commit}",
         },
         "plugin": {
             "name": "vLLM-Ascend-HUST",
             "repository": plugin_repo,
             "commit": plugin_commit,
+            "version": plugin_version,
             "commitUrl": f"{plugin_repo}/commit/{plugin_commit}",
         },
     },
