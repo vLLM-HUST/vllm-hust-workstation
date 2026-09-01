@@ -8,11 +8,28 @@ import InferenceSidebar, { type ProcessStep } from "@/components/InferenceSideba
 import ModelHubModal from "@/components/ModelHubModal";
 import AgentLabModal from "@/components/AgentLabModal";
 import type { AppConfig, Message, MetricsSnapshot, SearchResult } from "@/types";
+import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
 
 const METRICS_INTERVAL = 3000;
 const HISTORY_MAX = 60;
 
 type HistoryPoint = { time: number; tps: number; latency: number; gpu: number };
+type Theme = "light" | "dark";
+
+const unavailableProvenance: RuntimeProvenance = {
+  available: false,
+  source: "unavailable",
+  vllmHust: "unavailable",
+  vllmAscendHust: "unavailable",
+};
+
+function shortSha(value?: string): string {
+  return value ? value.slice(0, 10) : "unavailable";
+}
+
+function shortDigest(value?: string): string {
+  return value ? `${value.slice(0, 18)}…` : "unavailable";
+}
 
 function parseThinkContent(raw: string): { think: string; main: string } {
   const open = raw.indexOf("<think>");
@@ -110,15 +127,19 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   const [thinkText, setThinkText] = useState("");
   const [modelHubOpen, setModelHubOpen] = useState(false);
   const [agentLabOpen, setAgentLabOpen] = useState(false);
-  const [stackVersions, setStackVersions] = useState<{ vllmHust: string; vllmAscendHust: string }>({
-    vllmHust: "...",
-    vllmAscendHust: "...",
-  });
+  const [metricsOpen, setMetricsOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [runtimeProvenance, setRuntimeProvenance] = useState<RuntimeProvenance>(unavailableProvenance);
   const [hardware, setHardware] = useState<{ npu: string; cpu: string; memory: string }>({
     npu: "", cpu: "", memory: "",
   });
 
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+    setTheme(current);
+  }, []);
 
   useEffect(() => {
     if (!searchEnabled) {
@@ -142,12 +163,12 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
     }
   }, []);
 
-  // Fetch stack versions for the Powered By footer
+  // Fetch immutable runtime provenance captured from the serving container.
   useEffect(() => {
     fetch("/api/versions")
       .then((r) => r.json())
-      .then((d) => setStackVersions({ vllmHust: d.vllmHust ?? "unknown", vllmAscendHust: d.vllmAscendHust ?? "unknown" }))
-      .catch(() => setStackVersions({ vllmHust: "unknown", vllmAscendHust: "unknown" }));
+      .then((d: RuntimeProvenance) => setRuntimeProvenance(d))
+      .catch(() => setRuntimeProvenance(unavailableProvenance));
   }, []);
 
   // Fetch hardware info for the footer
@@ -233,6 +254,20 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         window.localStorage.setItem("vllm_hust_thinking", next ? "1" : "0");
       } catch {
         // ignore localStorage errors
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((previous) => {
+      const next = previous === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      document.documentElement.style.colorScheme = next;
+      try {
+        window.localStorage.setItem("vllm_hust_theme", next);
+      } catch {
+        // Keep the in-memory theme when storage is unavailable.
       }
       return next;
     });
@@ -485,7 +520,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="app-shell flex h-screen flex-col overflow-hidden">
       <Header
         brandName={brandName}
         brandLogo={brandLogo}
@@ -496,6 +531,9 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         onModelChange={setModel}
         onOpenModelHub={() => setModelHubOpen(true)}
         onOpenAgentLab={() => setAgentLabOpen(true)}
+        onOpenMetrics={() => setMetricsOpen(true)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         online={online}
       />
       <main className="relative flex flex-1 min-w-0 overflow-hidden">
@@ -519,6 +557,11 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           onClear={handleClear}
           onToggleWebSearch={handleToggleWebSearch}
           onToggleThinking={handleToggleThinking}
+          onOpenInference={() => setPanelOpen(true)}
+          onOpenMetrics={() => setMetricsOpen(true)}
+          online={online}
+          model={model}
+          hardware={hardware}
         />
         <MetricsDashboard
           snapshot={metrics}
@@ -529,25 +572,46 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           liveModelSwitchSupported={liveModelSwitchSupported}
           online={online}
           onModelChange={setModel}
+          open={metricsOpen}
+          onClose={() => setMetricsOpen(false)}
+          runtimeProvenance={runtimeProvenance}
         />
       </main>
-      <footer className="hidden sm:flex flex-col items-center justify-center gap-1 py-1.5 text-xs text-white/40 bg-black/20 border-t border-white/5 shrink-0">
+      <footer className="app-surface app-border relative flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t px-3 py-2 text-[11px] sm:text-xs">
         {(hardware.npu || hardware.cpu || hardware.memory) && (
-          <div className="flex items-center gap-4 font-mono text-[0.65rem] text-white/30">
+          <div className="app-text-muted hidden items-center gap-3 font-mono sm:flex">
             {hardware.npu && <span>{hardware.npu}</span>}
             {hardware.cpu && <span>{hardware.cpu}</span>}
             {hardware.memory && <span>{hardware.memory}</span>}
           </div>
         )}
-        <div className="flex items-center gap-6">
-          <span>Powered by</span>
-          <a href="https://github.com/intellistream/vllm-hust" target="_blank" rel="noopener noreferrer" className="hover:text-white/70 transition-colors">
-            vLLM-HUST <span className="font-mono text-white/30">{stackVersions.vllmHust}</span>
-          </a>
-          <a href="https://github.com/intellistream/vllm-ascend-hust" target="_blank" rel="noopener noreferrer" className="hover:text-white/70 transition-colors">
-            vLLM-Ascend-HUST <span className="font-mono text-white/30">{stackVersions.vllmAscendHust}</span>
-          </a>
-        </div>
+        {runtimeProvenance.available && runtimeProvenance.components && runtimeProvenance.image ? (
+          <div className="app-text-muted flex min-w-0 items-center gap-2 sm:gap-3">
+            <span className="hidden sm:inline">运行来源</span>
+            <a href={runtimeProvenance.components.core.commitUrl} target="_blank" rel="noopener noreferrer" className="app-text-secondary whitespace-nowrap hover:underline">
+              core <code>{shortSha(runtimeProvenance.components.core.commit)}</code>
+            </a>
+            <a href={runtimeProvenance.components.plugin.commitUrl} target="_blank" rel="noopener noreferrer" className="app-text-secondary whitespace-nowrap hover:underline">
+              plugin <code>{shortSha(runtimeProvenance.components.plugin.commit)}</code>
+            </a>
+            <details className="runtime-details">
+              <summary className="app-text-secondary cursor-pointer whitespace-nowrap">image {shortDigest(runtimeProvenance.image.digest)}</summary>
+              <div className="app-card absolute bottom-[calc(100%+0.6rem)] right-3 z-50 w-[min(44rem,calc(100vw-1.5rem))] rounded-xl p-4 text-left shadow-2xl">
+                <p className="app-text text-sm font-semibold">实际推理运行来源</p>
+                <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-[7rem_1fr]">
+                  <dt className="app-text-muted">容器</dt><dd className="app-text-secondary break-all">{runtimeProvenance.container?.name}</dd>
+                  <dt className="app-text-muted">镜像</dt><dd className="app-text-secondary break-all">{runtimeProvenance.image.reference}</dd>
+                  <dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.image.digest}</dd>
+                  <dt className="app-text-muted">Core SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.core.commit}</dd>
+                  <dt className="app-text-muted">Plugin SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.plugin.commit}</dd>
+                  <dt className="app-text-muted">证据时间</dt><dd className="app-text-secondary">{runtimeProvenance.capturedAt}</dd>
+                </dl>
+              </div>
+            </details>
+          </div>
+        ) : (
+          <span className="text-amber-300" title={runtimeProvenance.reason}>运行来源暂不可用</span>
+        )}
       </footer>
       <ModelHubModal
         open={modelHubOpen}

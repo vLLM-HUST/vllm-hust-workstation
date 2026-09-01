@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, PackageOpen, Bot } from "lucide-react";
+import { ChevronDown, PackageOpen, Bot, Gauge, Moon, Sun } from "lucide-react";
 
 interface HeaderProps {
   brandName: string;
@@ -12,6 +12,9 @@ interface HeaderProps {
   onModelChange: (m: string) => void;
   onOpenModelHub: () => void;
   onOpenAgentLab: () => void;
+  onOpenMetrics: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
   online: boolean;
 }
 
@@ -25,13 +28,13 @@ export default function Header({
   onModelChange,
   onOpenModelHub,
   onOpenAgentLab,
+  onOpenMetrics,
+  theme,
+  onToggleTheme,
   online,
 }: HeaderProps) {
   return (
-    <header
-      className="flex min-w-0 items-center justify-between gap-3 px-3 py-3 sm:px-6 border-b border-white/10"
-      style={{ background: `linear-gradient(135deg, ${accentColor}22 0%, #0f172a 100%)` }}
-    >
+    <header className="app-header flex min-w-0 items-center justify-between gap-2 border-b px-3 py-3 sm:gap-4 sm:px-6">
       {/* Brand */}
       <div className="flex min-w-0 items-center gap-3">
         {brandLogo ? (
@@ -45,60 +48,80 @@ export default function Header({
             AI
           </div>
         )}
-        <span className="truncate text-white font-semibold text-base sm:text-lg tracking-tight">
+        <span className="app-text truncate text-sm font-semibold tracking-tight min-[360px]:text-base sm:text-lg">
           {brandName}
         </span>
       </div>
 
-      {/* Keep the top bar operational: one health signal, no marketing copy. */}
-      <div className="hidden sm:flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <span
-          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${
+          className={`flex h-9 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium sm:px-3 ${
             online
-              ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
-              : "text-red-400 bg-red-400/10 border-red-400/20"
+              ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
+              : "border-red-400/25 bg-red-400/10 text-red-300"
           }`}
+          aria-label={online ? "推理服务在线" : "推理服务离线"}
+          title={online ? "推理服务在线" : "推理服务离线"}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${online ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`}
           />
-          {online ? "在线" : "离线"}
+          <span className="hidden sm:inline">{online ? "在线" : "离线"}</span>
         </span>
-      </div>
-
-      {/* Model selector */}
-      <div className="hidden sm:flex min-w-0 items-center gap-2 lg:gap-3">
         <button
           type="button"
           onClick={onOpenAgentLab}
-          className="hidden lg:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20 transition-colors text-sm"
+          className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm transition-colors lg:px-3"
+          aria-label="打开 EvoScientist 任务与日志"
+          title="EvoScientist 任务与日志"
         >
           <Bot size={14} />
-          EvoScientist
+          <span className="hidden lg:inline">EvoScientist</span>
         </button>
         <button
           type="button"
           onClick={onOpenModelHub}
-          className="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-colors text-sm"
+          className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm transition-colors md:px-3"
+          aria-label="打开模型库"
+          title="模型库"
         >
           <PackageOpen size={14} />
-          模型库
+          <span className="hidden md:inline">模型库</span>
         </button>
-        <div className="relative max-w-[44vw] lg:max-w-none">
+        <button
+          type="button"
+          onClick={onOpenMetrics}
+          className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm transition-colors xl:hidden"
+          aria-label="打开运行状态"
+          title="运行状态"
+        >
+          <Gauge size={14} />
+          <span className="hidden md:inline">运行状态</span>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="app-control inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors"
+          aria-label={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+          title={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+        >
+          {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+        <div className="relative hidden max-w-[36vw] sm:block lg:max-w-none">
           <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
             disabled={!liveModelSwitchSupported}
             title={liveModelSwitchSupported ? "在线切换当前请求使用的模型" : "当前后端是单模型服务，切换模型需重启后端"}
-            className="appearance-none bg-white/5 border border-white/10 text-white text-sm px-4 py-2 pr-8 rounded-lg cursor-pointer focus:outline-none focus:border-white/30 hover:bg-white/10 transition-colors max-w-[220px] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="app-control max-w-[220px] appearance-none rounded-lg border py-2 pl-4 pr-8 text-sm transition-colors focus:outline-none"
           >
             {models.map((m) => (
-              <option key={m} value={m} className="bg-slate-800">
+              <option key={m} value={m} className="app-surface-raised">
                 {m}
               </option>
             ))}
           </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
+          <ChevronDown size={14} className="app-text-muted pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
         </div>
       </div>
     </header>

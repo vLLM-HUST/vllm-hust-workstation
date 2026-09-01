@@ -101,7 +101,7 @@ export default function LocalServiceCard() {
   }, []);
 
   const statusTone = !status
-    ? "text-white/60"
+    ? "app-text-muted"
     : status.inferenceReady
       ? "text-emerald-300"
       : status.gatewayReachable
@@ -127,7 +127,7 @@ export default function LocalServiceCard() {
       : null;
   const evoStatus = status?.evoScientist;
   const evoStatusTone = !evoStatus
-    ? "text-white/55"
+    ? "app-text-muted"
     : evoStatus.ready && status?.inferenceReady
       ? "text-emerald-200"
       : evoStatus.commandMode === "unavailable"
@@ -135,10 +135,10 @@ export default function LocalServiceCard() {
         : "text-amber-200";
 
   return (
-    <div className="bg-white/5 rounded-xl p-4 border border-white/8 space-y-3">
+    <div className="app-card space-y-3 rounded-xl p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-white/55 text-xs font-medium uppercase tracking-wider">
+          <p className="app-text-muted text-[11px] font-medium uppercase tracking-wider">
             推理服务
           </p>
           <p className={`text-sm mt-1 ${statusTone}`}>{statusText}</p>
@@ -148,21 +148,22 @@ export default function LocalServiceCard() {
         </div>
       </div>
 
-      <div className="text-xs text-white/45 space-y-1">
-        <p>目标地址: {status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
-        <p>期望模型: {status?.desiredModel ?? "加载中"}</p>
-        <p>当前模型: {status?.currentModel ?? "未探测到"}</p>
+      <div className="app-text-muted space-y-1 text-xs">
+        <p>目标：{status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
+        <p className="truncate" title={status?.currentModel || undefined}>模型：{status?.currentModel ?? status?.desiredModel ?? "未探测到"}</p>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 space-y-1">
-        <p className={`font-medium ${evoStatusTone}`}>
-          EvoScientist: {!evoStatus ? "加载中" : evoStatus.ready && status?.inferenceReady ? "已绑定本地后端" : "链路待就绪"}
-        </p>
-        <p className="text-white/55">后端绑定: {status?.isLocalTarget === false ? "平台共享推理服务" : evoStatus?.baseUrl ?? "加载中"}</p>
-        <p className="text-white/55">Evo 模型: {evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测"}</p>
-        <p className="text-white/55">启动方式: {evoStatus?.commandMode === "binary" ? "EvoSci 可执行文件" : evoStatus?.commandMode === "python-module" ? "Python 模块回退" : "未找到可用命令"}</p>
-        <p className="text-white/55">搜索增强: {evoStatus?.searchEnabled ? "已启用，复用 workstation 联网搜索" : "已关闭"}</p>
-      </div>
+      <details className="app-card-flat rounded-xl p-3 text-xs leading-5">
+        <summary className={`cursor-pointer font-medium ${evoStatusTone}`}>
+          EvoScientist · {!evoStatus ? "加载中" : evoStatus.ready && status?.inferenceReady ? "链路就绪" : "链路待就绪"}
+        </summary>
+        <div className="app-text-muted mt-2 space-y-1">
+          <p>后端绑定：{status?.isLocalTarget === false ? "平台共享推理服务" : evoStatus?.baseUrl ?? "加载中"}</p>
+          <p>模型：{evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测"}</p>
+          <p>启动：{evoStatus?.commandMode === "binary" ? "EvoSci 可执行文件" : evoStatus?.commandMode === "python-module" ? "Python 模块回退" : "未找到可用命令"}</p>
+          <p>搜索：{evoStatus?.searchEnabled ? "已启用" : "已关闭"}</p>
+        </div>
+      </details>
 
       {message ? <p className="text-xs text-cyan-200/90 leading-5">{message}</p> : null}
   {mismatchHint ? <p className="text-xs text-amber-200/90 leading-5">{mismatchHint}</p> : null}
@@ -210,7 +211,7 @@ export default function LocalServiceCard() {
             <button
               type="button"
               onClick={enterAdminMode}
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-colors"
+              className="app-control inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors"
             >
               <Wrench size={14} />
               进入管理员模式

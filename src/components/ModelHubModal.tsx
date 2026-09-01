@@ -121,6 +121,7 @@ export default function ModelHubModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="关闭模型库"
             className="w-10 h-10 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/5"
           >
             <X size={18} />

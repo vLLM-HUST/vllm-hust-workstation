@@ -151,6 +151,22 @@ build_app() {
   fi
 }
 
+capture_runtime_provenance() {
+  local receipt_file
+  receipt_file="${WORKSTATION_RUNTIME_PROVENANCE_FILE:-$(deploy_home)/runtime-provenance.json}"
+
+  if [[ -n "${WORKSTATION_RUNTIME_CONTAINER:-}" ]]; then
+    echo "[deploy] capturing immutable runtime provenance from ${WORKSTATION_RUNTIME_CONTAINER}" >&2
+    WORKSTATION_RUNTIME_PROVENANCE_FILE="$receipt_file" \
+      "$SCRIPT_DIR/capture_runtime_provenance.sh" "$WORKSTATION_RUNTIME_CONTAINER" "$receipt_file"
+    return 0
+  fi
+
+  if [[ ! -f "$receipt_file" ]]; then
+    echo "[deploy] warning: no runtime provenance receipt; /api/versions will report unavailable" >&2
+  fi
+}
+
 stage_runtime() {
   local target_dir
   target_dir="$(runtime_dir)"
@@ -205,6 +221,7 @@ logs_service() {
 
 build_runtime() {
   load_env_file
+  capture_runtime_provenance
   ensure_node_runtime || true
   require_command node
   require_command npm
@@ -216,6 +233,7 @@ build_runtime() {
 
 ci_deploy() {
   load_env_file
+  capture_runtime_provenance
   ensure_node_runtime || true
   require_command node
   require_command npm

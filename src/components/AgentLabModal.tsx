@@ -1137,17 +1137,17 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-4">
-      <div className="w-full max-w-7xl max-h-[92vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-7xl max-h-[96vh] sm:max-h-[92vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col">
         <div
-          className="px-5 py-4 border-b border-white/10 flex items-center justify-between"
-          style={{ background: `linear-gradient(135deg, ${accentColor}24 0%, rgba(15,23,42,1) 100%)` }}
+          className="shrink-0 px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+          style={{ background: `linear-gradient(135deg, ${accentColor}24 0%, var(--surface) 100%)` }}
         >
-          <div>
+          <div className="min-w-0">
             <p className="text-white text-base font-semibold">EvoScientist 研究任务流</p>
             <p className="text-white/50 text-xs mt-1">直接呈现任务清单、会话恢复、用户交互与子代理执行过程</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
             <div className="rounded-xl border border-white/10 bg-black/15 p-1 flex items-center gap-1">
               <button
                 type="button"
@@ -1170,7 +1170,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
                 控制台
               </button>
             </div>
-            <button type="button" onClick={onClose} className="text-white/50 hover:text-white/90 transition-colors text-sm">
+            <button type="button" onClick={onClose} className="app-control inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm transition-colors" aria-label="关闭 EvoScientist">
               关闭
             </button>
           </div>
@@ -1186,8 +1186,8 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
             />
           </div>
         ) : (
-        <div className="grid grid-cols-12 gap-0 min-h-0 flex-1">
-          <section className="col-span-4 border-r border-white/10 p-5 space-y-4 overflow-y-auto">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-12 md:overflow-hidden">
+          <section className="space-y-4 border-b border-white/10 p-4 sm:p-5 md:col-span-4 md:overflow-y-auto md:border-b-0 md:border-r">
             <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60 leading-5">
               <p>当前模型：{currentModel}</p>
               <p>调用方式：workstation → EvoScientist 事件桥 → vllm-hust OpenAI 接口</p>
@@ -1346,7 +1346,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
             </form>
           </section>
 
-          <section className="col-span-8 p-5 overflow-y-auto space-y-4">
+          <section className="space-y-4 p-4 sm:p-5 md:col-span-8 md:overflow-y-auto">
             {runs.length === 0 && !running ? (
               <div className="h-full min-h-[360px] flex items-center justify-center text-center text-white/40 text-sm leading-7">
                 在左侧选择研究工作区或历史线程后输入任务，右侧会实时展示 todo、子代理执行流、审批/问答交互和最终研究结论

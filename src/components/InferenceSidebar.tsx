@@ -46,17 +46,17 @@ export default function InferenceSidebar({
   return (
     <aside
       className={clsx(
-        "border-r border-white/10 bg-slate-950/95 md:bg-slate-950/60 transition-all duration-300 ease-out overflow-hidden flex-shrink-0",
+        "app-surface app-border flex-shrink-0 overflow-hidden border-r transition-all duration-300 ease-out",
         open
           ? "w-80 min-w-[320px] max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,calc(100vw-2.5rem))] max-md:min-w-0 max-md:shadow-2xl"
-          : "w-12 max-md:w-10"
+          : "w-12 max-md:w-0 max-md:border-r-0"
       )}
     >
       <div className="h-full flex">
         <button
           type="button"
           onClick={onToggle}
-          className="w-12 max-md:w-10 border-r border-white/10 flex flex-col items-center justify-center gap-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="app-border app-text-muted flex w-12 flex-col items-center justify-center gap-2 border-r transition-colors hover:bg-white/5 hover:text-white max-md:hidden"
           title={open ? "收起推理面板" : "展开推理面板"}
         >
           <span className="text-base">🔭</span>
@@ -67,15 +67,15 @@ export default function InferenceSidebar({
 
         {open && (
           <div className="flex-1 min-w-0 flex flex-col">
-            <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
+            <div className="app-divider flex items-center justify-between border-b px-4 py-4">
               <div>
-                <p className="text-white/85 text-sm font-semibold">推理过程</p>
-                <p className="text-white/35 text-xs mt-1">处理流程 / 搜索来源 / 思考过程</p>
+                <p className="app-text text-sm font-semibold">推理过程</p>
+                <p className="app-text-muted mt-1 text-xs">处理流程 / 搜索来源 / 思考过程</p>
               </div>
               <button
                 type="button"
                 onClick={onToggle}
-                className="text-white/35 hover:text-white/70 transition-colors"
+                className="app-text-muted transition-colors hover:text-white"
                 title="收起"
               >
                 ✕
@@ -84,7 +84,7 @@ export default function InferenceSidebar({
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {!hasContent && (
-                <div className="h-full min-h-[240px] flex items-center justify-center text-center text-white/35 text-sm leading-7">
+                <div className="app-text-muted flex h-full min-h-[240px] items-center justify-center text-center text-sm leading-7">
                   <div>
                     发送消息后
                     <br />

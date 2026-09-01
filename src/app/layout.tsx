@@ -5,6 +5,20 @@ import { getAppConfig } from "@/lib/config";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const themeInitializer = `(() => {
+  try {
+    const stored = localStorage.getItem("vllm_hust_theme");
+    const theme = stored === "light" || stored === "dark"
+      ? stored
+      : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (_) {
+    document.documentElement.dataset.theme = "dark";
+    document.documentElement.style.colorScheme = "dark";
+  }
+})();`;
+
 export async function generateMetadata(): Promise<Metadata> {
   const cfg = getAppConfig();
   return {
@@ -20,11 +34,12 @@ export default function RootLayout({
 }) {
   const cfg = getAppConfig();
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" data-theme="dark" suppressHydrationWarning>
       <head>
         <style>{`:root { --accent: ${cfg.accentColor}; }`}</style>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
       </head>
-      <body className={`${inter.className} bg-slate-950 text-white antialiased`}>
+      <body className={`${inter.className} app-body antialiased`}>
         {children}
       </body>
     </html>

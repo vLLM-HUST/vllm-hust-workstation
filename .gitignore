@@ -12,6 +12,8 @@ dist/
 config.ini
 .workstation-deploy/
 .planning/
+.playwright-cli/
+/output/playwright/
 
 # Shell redirect artifact from conda $* expansion bug (see deploy_workstation.sh)
 =20,

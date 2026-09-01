@@ -12,6 +12,8 @@ import {
   CheckCheck,
   Globe,
   Lightbulb,
+  Gauge,
+  Telescope,
 } from "lucide-react";
 import type { Message } from "@/types";
 import clsx from "clsx";
@@ -28,6 +30,11 @@ interface ChatPanelProps {
   onClear: () => void;
   onToggleWebSearch: () => void;
   onToggleThinking: () => void;
+  onOpenInference: () => void;
+  onOpenMetrics: () => void;
+  online: boolean;
+  model: string;
+  hardware: { npu: string; cpu: string; memory: string };
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -144,6 +151,11 @@ export default function ChatPanel({
   onClear,
   onToggleWebSearch,
   onToggleThinking,
+  onOpenInference,
+  onOpenMetrics,
+  online,
+  model,
+  hardware,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -175,36 +187,62 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto max-w-4xl space-y-5">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-20">
+          <div className="flex min-h-[calc(100vh-15rem)] items-center justify-center py-6 sm:min-h-[32rem]">
+            <section className="app-card w-full max-w-2xl rounded-3xl p-5 text-left sm:p-8">
+              <div className="flex items-start gap-4">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14"
               style={{ background: `${accentColor}20` }}
             >
-              <Bot size={32} style={{ color: accentColor }} />
+                  <Bot size={26} style={{ color: accentColor }} />
             </div>
-            <div>
-              <p className="text-white/60 text-sm">私有 AI 工作站已就绪</p>
-              <p className="text-white/30 text-xs mt-1">所有对话均在本地推理，数据不出境</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="app-text-muted text-[11px] font-semibold uppercase tracking-[0.18em]">Private inference</span>
+                    <span className={online ? "text-emerald-300" : "text-red-300"}>● {online ? "服务在线" : "服务离线"}</span>
+                  </div>
+                  <h1 className="app-text mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+                    {online ? "推理工作区已就绪" : "推理服务暂时离线"}
+                  </h1>
+                  <p className="app-text-muted mt-2 text-sm leading-6">
+                    {online
+                      ? "对话在本地算力上完成；模型、硬件与运行来源均可核验。"
+                      : "页面仍保留模型、硬件与运行来源证据；可在运行状态中查看探测结果。"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="app-surface-muted app-border mt-5 rounded-2xl border p-4">
+                <p className="app-text-muted text-[11px] font-semibold uppercase tracking-wider">当前模型</p>
+                <p className="app-text-secondary mt-1 truncate font-mono text-sm" title={model}>{model}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[hardware.npu, hardware.cpu, hardware.memory].filter(Boolean).map((item) => (
+                    <span key={item} className="app-control rounded-full border px-2.5 py-1 text-[11px]">{item}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                {["分析当前推理服务的性能指标", "帮我排查一次请求的延迟瓶颈"].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => onSend(suggestion)}
+                    className="app-control rounded-xl border px-3 py-2.5 text-left text-xs transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={onOpenMetrics} className="app-text-secondary mt-4 inline-flex items-center gap-2 text-xs font-medium hover:underline xl:hidden">
+                <Gauge size={14} /> 查看模型、监控与运行来源
+              </button>
+            </section>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center max-w-md">
-              {[
-                "分析当前推理服务的性能指标",
-                "帮我排查一次请求的延迟瓶颈",
-              ].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => onSend(s)}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 text-xs rounded-full border border-white/8 transition-all"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
         )}
 
         {messages.map((msg) => (
@@ -229,11 +267,12 @@ export default function ChatPanel({
         )}
 
         <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Input */}
-      <div className="px-3 pb-3 pt-2 sm:px-6 sm:pb-6 border-t border-white/8">
-        <div className="flex items-end gap-2 sm:gap-3 bg-white/5 border border-white/10 rounded-2xl px-3 sm:px-4 py-3 focus-within:border-white/20 transition-colors">
+      <div className="app-divider border-t px-3 pb-3 pt-2 sm:px-6 sm:pb-5">
+        <div className="app-control mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:gap-3 sm:px-4">
           <button className="hidden sm:block text-white/30 hover:text-white/60 transition-colors flex-shrink-0 mb-0.5">
             <Paperclip size={18} />
           </button>
@@ -248,6 +287,15 @@ export default function ChatPanel({
             style={{ minHeight: "24px", maxHeight: "180px" }}
           />
           <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
+            <button
+              type="button"
+              onClick={onOpenInference}
+              className="app-control flex h-8 w-8 items-center justify-center rounded-xl border md:hidden"
+              title="查看推理过程"
+              aria-label="查看推理过程"
+            >
+              <Telescope size={14} />
+            </button>
             <button
               type="button"
               onClick={onToggleThinking}
@@ -288,7 +336,7 @@ export default function ChatPanel({
             <button
               onClick={loading ? onStop : handleSend}
               disabled={!loading && !input.trim()}
-              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
               style={
                 loading || input.trim()
                   ? { background: accentColor }
@@ -303,8 +351,8 @@ export default function ChatPanel({
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-3 mt-2 text-xs">
-          <p className="hidden sm:block text-white/15">平台私有推理 · 端到端加密 · 零数据上报</p>
+        <div className="app-text-muted mx-auto mt-2 flex max-w-4xl items-center justify-center gap-3 text-xs">
+          <p className="hidden sm:block">平台私有推理 · 端到端加密 · 零数据上报</p>
           {searchEnabled && webSearch && <span className="text-sky-300/80">🌐 联网搜索已开启</span>}
           {thinkingEnabled && <span className="text-violet-300/80">💡 深度思考已开启</span>}
         </div>
