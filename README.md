@@ -149,6 +149,31 @@ WORKSTATION_AUTO_HEAL_GATEWAY=false
 管理员 token 也支持对应的 `WORKSTATION_ADMIN_TOKEN_ENV_FILE` 和
 `WORKSTATION_ADMIN_TOKEN_ENV_NAME`，但建议使用与推理 API key 不同的凭据。
 
+### 可信运行来源与 receipt v2
+
+生产 Workstation 不应以单一 `v0.23.0` 标签概括共享后端。部署脚本会从
+`WORKSTATION_RUNTIME_CONTAINER` 指定的实际容器生成
+`.workstation-deploy/runtime-provenance.json`，`/api/versions` 和页面“可信运行来源”
+分别展示：
+
+- 官方兼容基座及基础 package 版本；
+- core/plugin 的仓库、完整 commit、源码 package version 和可点击链接；
+- 运行镜像 reference、不可变 image ID/digest 与构建时间；
+- production runtime lock schema 和采集时间。
+
+这是 Workstation runtime-provenance schema v2。镜像 tag 只用于阅读，回滚和
+复现必须使用 image ID/digest、core/plugin SHA 与对应 production lock。推荐部署：
+
+```bash
+WORKSTATION_RUNTIME_CONTAINER=managed-vllm-container \
+  ./scripts/deploy_workstation.sh ci-deploy
+curl -fsS http://127.0.0.1:${APP_PORT:-3000}/api/versions
+```
+
+切换前保留上一份 receipt 和旧 image ID。若新版本的 models/chat 或 UI 来源展示
+失败，恢复旧容器/镜像合同后重新执行 `ci-deploy`；不要手工修改生成的 JSON，也
+不要只改前端显示来掩盖后端身份不一致。
+
 ### EvoScientist 运行环境
 
 EvoScientist 要求 Python 3.11 或更高版本。建议在其仓库中使用锁文件创建独立
