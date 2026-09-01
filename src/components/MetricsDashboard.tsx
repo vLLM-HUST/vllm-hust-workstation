@@ -322,8 +322,12 @@ export default function MetricsDashboard({
             <dl className="mt-3 space-y-2 text-xs">
               <div><dt className="app-text-muted">镜像</dt><dd className="app-text-secondary mt-0.5 break-all">{runtimeProvenance.image.reference}</dd></div>
               <div><dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary mt-0.5 break-all font-mono">{runtimeProvenance.image.digest}</dd></div>
+              <div><dt className="app-text-muted">兼容基座</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.base}</dd></div>
+              <div><dt className="app-text-muted">构建时间</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.image.createdAt}</dd></div>
               <div><dt className="app-text-muted">Core SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.core.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.core.commit}</a></dd></div>
+              <div><dt className="app-text-muted">Core source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.core.version}</dd></div>
               <div><dt className="app-text-muted">Plugin SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.plugin.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.plugin.commit}</a></dd></div>
+              <div><dt className="app-text-muted">Plugin source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.plugin.version}</dd></div>
             </dl>
           </section>
         ) : (
