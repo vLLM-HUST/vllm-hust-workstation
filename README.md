@@ -3,6 +3,8 @@
 Runtime receipt verification, freshness policy, and independent UI audit:
 [2026-09-03 audit](docs/workstation-audit-20260903.md).
 
+模型库权限、数据盘配置与清理验收：[治理记录](docs/model-hub-governance-20260903.md)。
+
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。
 
 🛡️ 数据不出境 · 完全本地推理 · 零编程门槛
@@ -151,6 +153,29 @@ WORKSTATION_AUTO_HEAL_GATEWAY=false
 单个变量，不会把源文件中的其它 token 或部署参数导入 workstation。
 管理员 token 也支持对应的 `WORKSTATION_ADMIN_TOKEN_ENV_FILE` 和
 `WORKSTATION_ADMIN_TOKEN_ENV_NAME`，但建议使用与推理 API key 不同的凭据。
+
+### 模型库权限与存储
+
+模型目录默认只读。普通用户可以浏览模型和权重状态，不会收到服务器绝对路径或低层下载错误。
+模型库内的“管理员登录”使用现有 `WORKSTATION_ADMIN_TOKEN`，输入框为密码类型；
+令牌仅保存在弹窗内存，退出管理或关闭弹窗后清除，不写入浏览器持久化存储。
+下载 POST、取消 DELETE 和旧激活 POST 均在服务端鉴权，未授权返回 401。
+
+必须在部署 `.env` 中显式配置 `MODEL_HUB_DIR` 为已创建、可写的绝对目录；不再回退到
+账号 Downloads。目录留空、相对路径、文件系统根目录、不可用目录均禁用下载。
+本机使用 `/data/vllm-hust-workstation-shuhao/models`，与共享推理容器现有权重隔离。
+路径与剩余空间仅向验证后的管理员显示。
+
+下载前检查目录白名单、磁盘容量（模型预估大小 + 10% 余量 + 5 GiB 保留空间）和受限仓库
+授权；单个 standalone Workstation 一次只运行一个下载，含预检查并发保护。
+下载依赖服务环境中的 `python3` 和 `huggingface_hub`，受限仓库另需 `HF_TOKEN`。
+取消先发送 SIGTERM，最多等待 5 秒后 SIGKILL，保留已下载文件用于续传。
+权重就绪检测要求 config.json 和全部索引分片，不能因为出现第一个权重文件就标为完成。
+这不是权重内容哈希认证，也不代表模型已经适配或部署到 NPU。
+
+**下载不等于部署。** 已移除“设为当前”和修改 DEFAULT_MODEL 的伪激活逻辑；旧激活接口
+即使管理员调用也返回 409，不写配置、不重启服务。实际模型以在线推理接口为准，模型上线、
+切换和回滚由平台运维管理。
 
 ### 可信运行来源与 receipt v2
 

@@ -149,6 +149,7 @@ build_app() {
     echo "Next standalone build is missing .next/standalone/server.js" >&2
     exit 1
   fi
+  node "$SCRIPT_DIR/check_standalone.mjs"
 }
 
 capture_runtime_provenance() {

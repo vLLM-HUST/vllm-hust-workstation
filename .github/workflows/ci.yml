@@ -55,3 +55,6 @@ jobs:
           XDG_CACHE_HOME: ${{ github.workspace }}/.ci-home/.cache
           XDG_CONFIG_HOME: ${{ github.workspace }}/.ci-home/.config
         run: npm run build
+
+      - name: Boot standalone candidate before release
+        run: node scripts/check_standalone.mjs
