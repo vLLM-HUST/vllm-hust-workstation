@@ -249,3 +249,29 @@ rollback is claimed by this preparation evidence.
 Verification: 82 Vitest tests, 62 Python tests and zero-warning ESLint passed.
 The 25 deployment-transaction tests use a fake adapter; the image preparation
 above is real Docker execution with no devices or published ports.
+
+### Historical-baseline presentation acceptance, 2026-09-03
+
+Web revision `919f086` was published without changing any inference launch
+configuration. Historical declarations now live in a keyboard-operable disclosure,
+with current-instance qualification explicitly pending. This release does not
+claim new runtime compatibility or complete the instance integration above.
+
+- 84 Vitest tests, zero-warning lint, production build and standalone startup
+  passed. The build reported an outdated Browserslist dataset warning.
+- Local candidate and real public `/mods` passed the browser audit at 1440 and
+  390×844, light/dark: disclosure keyboard open/close, no horizontal overflow,
+  search/empty, invalid login and read-only access. Ten administrator **fixture**
+  actions were intercepted inside the browser, not sent to the real backend;
+  error recovery and the disabled runtime gate were checked.
+- Text contrast minimums: light 6.31:1, dark 6.92:1; no JavaScript page errors.
+  A pre-existing favicon 404 is unrelated to the Mod UI.
+- Before: `output/playwright/mod-qualification-before-desktop.png`.
+  Public after: `output/playwright/mod-qualification/1440-light-public.png`,
+  `1440-dark-public.png`, `390-light-public.png`, `390-dark-public.png`.
+  Local candidate evidence is retained in `output/playwright/mod-qualification-local/`.
+- Only `vllm-hust-workstation.service` was restarted. Sage Mate container
+  `5f3cae57a2c5` (started 05:23:58Z) and statecentric `39bfdfa09ebb`
+  (started 06:05:13Z) retained identical full identities and start times across
+  publication. Prior Web runtime is recoverable at
+  `/data/vllm-hust-workstation-shuhao/archive/pre-qualification-8d4ce87`.
