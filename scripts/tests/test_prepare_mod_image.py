@@ -36,6 +36,8 @@ class ImagePreparationTests(unittest.TestCase):
             file = wheels / filename
             with zipfile.ZipFile(file, "w") as wheel:
                 wheel.writestr(name.replace("-", "_") + "-0.2.0.dist-info/METADATA", f"Name: {name}\nVersion: 0.2.0\n")
+                if name == "vllm-diffspec":
+                    wheel.writestr("diffspec/proposer.py", b"# fake proposer\n")
             digest = hashlib.sha256(file.read_bytes()).hexdigest()
             hashes[filename] = digest
             self.packages[name] = {"version": "0.2.0", "wheelSha256": digest}
@@ -60,6 +62,8 @@ class ImagePreparationTests(unittest.TestCase):
             self.assertIn("--network=none", argv)
             self.assertNotIn(".env", [p.name for p in context.iterdir()])
             self.assertIn("--no-deps", (context / "Dockerfile").read_text())
+            witness = context / "wheels/workstation_mod_runtime-0.1.0-py3-none-any.whl"
+            self.packages["workstation-mod-runtime"] = {"version": "0.1.0", "wheelSha256": hashlib.sha256(witness.read_bytes()).hexdigest()}
             return "built"
         if argv[1:3] == ["image", "inspect"]:
             if argv[-1] == self.base:
@@ -73,6 +77,8 @@ class ImagePreparationTests(unittest.TestCase):
             self.assertIn("--entrypoint=/runtime/bin/python", argv)
             if "validate" in argv:
                 return json.dumps({"bundle_id": "org.vllm-hust.diffspec", "distribution": "vllm-diffspec", "distribution_version": "0.2.0", "host": {"version_range": ">=0.23,<0.24"}})
+            if module.WITNESS_PROBE in argv:
+                return json.dumps({"entrypoint": "workstation_mod_runtime", "defaultOff": self.failure != "observer", "artifact": {"modId": "diffspec", "sourceSha": "a" * 40, "wheelSha256": self.packages["vllm-diffspec"]["wheelSha256"], "version": "0.2.0", "componentFileSha256": hashlib.sha256(b"# fake proposer\n").hexdigest()}})
             if self.candidate in argv:
                 packages = {**self.baseline, **self.dependencies, **self.packages}
                 if packages["platformdirs"] is None:
@@ -94,7 +100,8 @@ class ImagePreparationTests(unittest.TestCase):
         self.assertEqual(result["imageId"], self.candidate)
         self.assertEqual(result["runtimePackages"], self.baseline)
         self.assertFalse(result["runtimeActivationVerified"])
-        self.assertEqual(len(result["artifacts"]), 2)
+        self.assertEqual(len(result["artifacts"]), 3)
+        self.assertTrue(result["workerWitness"]["defaultOff"])
         self.assertEqual(json.loads(Path(result["receiptPath"]).read_text())["status"], "prepared")
         self.assertTrue(all(command[1] in {"image", "run", "build"} for command in self.calls))
 
@@ -150,13 +157,13 @@ class ImagePreparationTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
 
     def test_engine_mutation_wrong_base_and_wrong_wheel_fail_closed(self):
-        for failure in ["engine", "base", "wheel", "build"]:
+        for failure in ["engine", "base", "wheel", "build", "observer"]:
             with self.subTest(failure=failure):
                 self.failure = failure
                 with self.assertRaises(ValueError):
                     self.prepare()
         receipts = list(self.output.glob("prepare-*/receipt.json"))
-        self.assertEqual(len(receipts), 4)
+        self.assertEqual(len(receipts), 5)
         self.assertTrue(all(json.loads(file.read_text())["status"] == "failed" for file in receipts))
 
     def test_missing_base_artifact_provenance_refused_before_build(self):
@@ -170,6 +177,7 @@ class ImagePreparationTests(unittest.TestCase):
         self.assertIn("--no-index --no-deps", source)
         self.assertNotIn("VLLM_PLUGINS", source)
         self.assertIn('ENV VLLMHUST_EXT_ENABLED_BUNDLES=""', source)
+        self.assertIn('ENV WORKSTATION_MOD_CONTEXT=""', source)
         self.assertNotIn("ENTRYPOINT", source)
         self.assertNotIn("CMD", source)
         with self.assertRaises(ValueError):
@@ -186,7 +194,7 @@ class ImagePreparationTests(unittest.TestCase):
         with patch.dict(module.SUPPORT, {"sha256": hashlib.sha256(payload).hexdigest()}), patch.object(module.urllib.request, "urlopen", return_value=io.BytesIO(payload)):
             result = self.prepare()
         self.assertEqual(result["status"], "prepared")
-        self.assertEqual(len(result["artifacts"]), 3)
+        self.assertEqual(len(result["artifacts"]), 4)
 
     def test_corrupt_download_never_reaches_docker_build(self):
         self.dependencies["platformdirs"] = None

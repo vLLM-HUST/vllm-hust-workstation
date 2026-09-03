@@ -223,7 +223,90 @@ Adapters are supplied by trusted server code and must implement the real owner
 launcher, exact transition ownership and bounded observation/verification. The
 coordinator's fake-adapter tests prove transaction behavior, **not** a production
 restart, rollback or Mod inference. Production adapter enrollment, HTTP/UI wiring,
-runtime proof collection and selected-instance acceptance remain unfinished.
+integration of worker evidence into owner observations and selected-instance
+acceptance remain unfinished.
+
+### Worker witness integration
+
+DiffSpec preparations now also contain a separate `workstation-mod-runtime` wheel,
+built deterministically from `scripts/runtime/workstation_mod_runtime/`. The wheel
+embeds the selected Mod source/wheel identity and the proposer file hash extracted
+from that exact wheel. Both installed metadata and the component file must match.
+The canonical Mod artifact is not rewritten. Other Mods do not yet have a witness
+implementation and must not inherit a DiffSpec qualification result.
+
+The approved owner launch must explicitly set all of the following (there is no
+production owner adapter enrolled yet):
+
+- Preserve the baseline `VLLM_PLUGINS` allowlist and append
+  `workstation_mod_runtime`. The witness calls the canonical DiffSpec registration
+  function and attaches a deferred observation hook; it does not implement the
+  optimization itself.
+- Set `VLLMHUST_EXT_ENABLED_BUNDLES=org.vllm-hust.diffspec` and the actual
+  speculative configuration's `draft_context_policy=diffspec`.
+- Provide `WORKSTATION_MOD_CONTEXT` as server-rendered JSON containing
+  `deploymentId`, `targetId`, `configurationHash`, `workerCount`, `targetModel`,
+  `draftModel` and `speculativeTokens`. These must derive from the reviewed target
+  plan, not arbitrary browser environment variables. Both enable/context variables
+  default to empty in the prepared image.
+
+Successful `AscendDiffSpecEagleProposer.load_model()` must create a non-null
+DiffSpec cache with matching actual model/policy/token configuration. Only then is
+a model-loaded record emitted. A subsequent successful `_run_merged_draft()` emits
+the first draft-executed record; later successful drafts do not write per-token
+logs. A failed reload removes the previous record before calling the original
+load method. Algorithm return values and original exceptions are preserved;
+failure to emit a record after a successful call leaves observation unverified.
+Failure to invalidate a prior record fails the reload rather than retaining a
+stale success.
+
+Records live inside the container at
+`/tmp/workstation-mod-evidence/<deployment-id>/<pid>-<start-ticks>.json`, with
+private directories and atomic mode-0600 files. The collector executes in the
+selected container's PID namespace and serving Python:
+
+```text
+<serving-python> -m workstation_mod_runtime
+# stdin: the exact server-owned context JSON
+```
+
+It imports no engine/device code, checks the complete rank set and live PID/start
+ticks/boot identity, rejects mismatched or malformed records, and rechecks worker
+liveness before returning. The adapter must additionally bracket collection with
+immutable container/image/owner-generation checks. Missing or stale evidence
+cannot authorize a transition.
+
+This is **process-owned materialization evidence**, not a cryptographic attestation
+against a malicious container or proof of all process-memory bytes. Source SHA is
+build provenance; the component file hash is checked against the prepared wheel.
+A successful draft can be startup/warmup activity. Collection therefore always
+returns `inferenceVerified: false`; the owner adapter must perform the separate
+bounded inference check and bind it to the same deployment before reporting an
+effective Mod. Worker fixtures do not count as real serving acceptance.
+
+#### Prepared witness image evidence, 2026-09-03
+
+- Prepared image:
+  `sha256:f5930232f4ffebcd666f4014da2685922c95d6e83039b862d50deb80bd00ddbb`.
+- Same selected base image `sha256:5e7f82c78a3b0bc786e0e994e71d012af2f667bff3dc3380c77353dd7493a1f9`
+  and serving Python `/usr/local/python3.12.13/bin/python`.
+- Observer wheel SHA256:
+  `ce40a6d9db4b09d064063ed0a65ec44f612f77e2749a66d613dc6c27bb1c201a`.
+- Pinned DiffSpec proposer file SHA256:
+  `1f06b7615f939470bf4b171962de1abe7bbde8d8d958fc08bbbdc483283895f2`.
+- Receipt:
+  `/data/vllm-hust-workstation-shuhao/mod-image-preparation.aXwQHQ/prepared/prepare-diffspec-riqd_dkm/receipt.json`.
+- Real Docker preparation passed: unchanged Core/Ascend wheel metadata, canonical
+  Manager validation, observer entrypoint and default-off/no-engine-import check.
+  A separate fresh CPU-only, network-disabled, read-only container collected no
+  workers and correctly returned materialization/execution/inference false.
+- 79 Python tests (including 17 worker-witness fixture tests), 84 Vitest tests,
+  zero-warning lint and diff checks passed. No NPU, model, serving port or
+  production transition was used. The selected Sage Mate container remained
+  `5f3cae57a2c5`, started 05:23:58Z.
+
+This image is prepared, not applied or qualified for actual serving. No new
+compatibility range or successful runtime rollback is claimed by these checks.
 
 ### Preparation evidence, 2026-09-03
 

@@ -21,6 +21,7 @@ import uuid
 import zipfile
 
 from mod_deployment import atomic_write
+from build_mod_observer import build as build_observer
 
 
 PACKAGES = {"bidkv": "bidkv", "diffspec": "vllm-diffspec", "latchmoe": "vllm-moe-offload-ascend"}
@@ -46,6 +47,20 @@ for name in sys.argv[1:]:
     direct = json.loads(dist.read_text("direct_url.json") or "{}")
     result[name] = {"version": dist.version, "wheelSha256": direct.get("archive_info", {}).get("hashes", {}).get("sha256")}
 print(json.dumps(result))
+'''
+WITNESS_PROBE = '''
+import importlib.metadata as m
+import json
+import os
+import sys
+import workstation_mod_runtime as witness
+assert not os.getenv(witness.CONTEXT_ENV)
+before = set(sys.modules)
+entries = [e for e in m.distribution("workstation-mod-runtime").entry_points if e.group == "vllm.general_plugins"]
+assert len(entries) == 1 and entries[0].name == "workstation_mod_runtime"
+entries[0].load()()
+assert not any(name.split(".")[0] in {"torch", "torch_npu", "vllm", "vllm_ascend", "diffspec"} for name in set(sys.modules) - before)
+print(json.dumps({"entrypoint": "workstation_mod_runtime", "defaultOff": True, "artifact": witness.installed_identity()}))
 '''
 
 
@@ -144,6 +159,7 @@ def dockerfile(image_id, prepared_id, python_bin):
 COPY wheels/ /opt/workstation-mod/artifacts/
 RUN {python_bin} -m pip install --no-index --no-deps --no-cache-dir --force-reinstall /opt/workstation-mod/artifacts/*.whl
 ENV VLLMHUST_EXT_ENABLED_BUNDLES=""
+ENV WORKSTATION_MOD_CONTEXT=""
 LABEL ai.vllm-hust.workstation.mod.preparation="{prepared_id}"
 '''
 
@@ -194,6 +210,13 @@ def prepare(library, output_root, mod_id, source_sha, manager_sha, base_image_id
         if needs_support:
             download_support(context / "wheels" / SUPPORT["filename"])
             validated.append(dict(SUPPORT))
+        observer_identity = None
+        if mod_id == "diffspec":
+            mod_artifact = next(item for item in validated if item["package"] == PACKAGES[mod_id])
+            observer_identity = {"modId": mod_id, "sourceSha": source_sha, "wheelSha256": mod_artifact["sha256"], "version": mod_artifact["version"]}
+            with zipfile.ZipFile(context / "wheels" / mod_artifact["filename"]) as wheel:
+                observer_identity["componentFileSha256"] = hashlib.sha256(wheel.read("diffspec/proposer.py")).hexdigest()
+            validated.append(build_observer(context / "wheels", observer_identity))
         (context / "Dockerfile").write_text(dockerfile(base_image_id, identifier, python_bin))
         # Only wheel bytes and the Dockerfile are sent to the daemon, never an
         # application checkout, deployment secrets, receipts or earlier releases.
@@ -217,6 +240,11 @@ def prepare(library, output_root, mod_id, source_sha, manager_sha, base_image_id
         bundle = json.loads(execute([*isolated_python(command, image_id, python_bin), "-c", "from vllm_hust_ext.cli import main; raise SystemExit(main())", "extension", "validate", "org.vllm-hust." + mod_id]))
         if bundle.get("bundle_id") != "org.vllm-hust." + mod_id or canonical(bundle.get("distribution", "")) != PACKAGES[mod_id]:
             raise ValueError("prepared bundle registration is invalid")
+        if observer_identity:
+            witness = json.loads(execute([*isolated_python(command, image_id, python_bin), "-c", WITNESS_PROBE]))
+            if witness != {"entrypoint": "workstation_mod_runtime", "defaultOff": True, "artifact": observer_identity}:
+                raise ValueError("worker witness artifact or default-off behavior differs")
+            result["workerWitness"] = witness
         result.update(status="prepared", imageId=image_id, runtimePackages=baseline, bundle={"id": bundle["bundle_id"], "version": bundle["distribution_version"], "declaredHost": bundle["host"]}, artifacts=[{key: value for key, value in item.items() if key != "path"} for item in validated])
         atomic_write(context / "receipt.json", result)
         return {**result, "receiptPath": str(context / "receipt.json")}
