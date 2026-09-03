@@ -144,3 +144,82 @@ import order before drawing a compatibility conclusion.
   mobile/light/dark, errors/loading, no false effective state.
 - Delivery: separate reviewed commits, Web/control-plane-only release until a
   particular serving-instance transition has been explicitly approved.
+
+## Implemented preparation and transaction primitives
+
+`scripts/prepare_mod_image.py` moves reviewed library wheels into a derived
+runtime image, using the explicitly specified serving interpreter. It does not
+use the library venv as the inference environment. It verifies wheel hashes and
+distribution names before building, disables Docker build/probe network and pip dependency resolution,
+checks base-layer ancestry and unchanged Core/Ascend wheel metadata afterwards,
+and validates installed bundle registration in the same interpreter. Prepared
+images default the Manager enable list to empty; activation belongs to the
+approved launch configuration. No model/device/port is used by these checks.
+
+```bash
+python3 scripts/prepare_mod_image.py --sudo \
+  --library /absolute/operator-owned/mod-library \
+  --output-root /absolute/private/prepared-images \
+  --mod diffspec --source-sha <reviewed-40-character-sha> \
+  --manager-sha <reviewed-40-character-manager-sha> \
+  --base-image-id sha256:<full-local-image-id> \
+  --python-bin /absolute/serving/interpreter/python
+```
+
+Build contexts contain only the Dockerfile and reviewed wheel archives. A missing
+Manager `platformdirs` dependency is downloaded separately from a fixed official
+PyPI wheel URL and verified against its pinned SHA256 before entering the build.
+Existing `packaging` and `platformdirs` packages are preserved when supported;
+unsupported installed versions fail instead of being silently upgraded/downgraded.
+Receipts
+record source pins, image IDs, serving Python and verified package hashes, and
+always retain `runtimeActivationVerified: false`. Failed preparation keeps a
+failed receipt and its context. Tags are local preparation handles; deployments
+must consume the resulting immutable image ID, never the tag.
+
+`scripts/mod_deployment.py` implements the target-scoped transaction coordinator:
+
+- Pure preparation issues an expiring, one-use approval for a complete plan hash.
+- Apply rechecks target identity, baseline health and admission, then durably
+  consumes approval before the first adapter mutation.
+- Only fresh target-specific activation and inference observations produce an
+  effective result. Historical transaction success is not a live status API.
+- `ownerGeneration` must identify the actual supervisor/process launch generation,
+  not a configuration file hash. A changed revision with an unchanged process
+  identity is rejected, even when the adapter claims successful verification.
+- Failure attempts restoration only while the adapter proves transition ownership.
+  A foreign takeover never authorizes stopping or overwriting that target.
+- Crash recovery is explicit rollback, not automatic retry/re-application.
+- Disable and manual rollback are revision transitions with their own approvals;
+  neither is a package-removal shortcut.
+
+Adapters are supplied by trusted server code and must implement the real owner
+launcher, exact transition ownership and bounded observation/verification. The
+coordinator's fake-adapter tests prove transaction behavior, **not** a production
+restart, rollback or Mod inference. Production adapter enrollment, HTTP/UI wiring,
+runtime proof collection and selected-instance acceptance remain unfinished.
+
+### Preparation evidence, 2026-09-03
+
+The full real DiffSpec image preparation passed on the selected baseline:
+
+- Base image: `sha256:5e7f82c78a3b0bc786e0e994e71d012af2f667bff3dc3380c77353dd7493a1f9`.
+- Prepared image: `sha256:a8ba4d9270d52d3e0217ad734e8d7bdecceafe2e0ac49e7a2bf5d1e4f0a92bfd`.
+- Serving interpreter: `/usr/local/python3.12.13/bin/python` (from owner launch configuration).
+- DiffSpec wheel SHA256: `298509ae3376ba711e3ad2732a0595338702d3c2db2ff5ab2a56cce2c995178f`.
+- Manager wheel SHA256: `ab5da81c7612045d459ad7cd29df5155efa622573fd0670dbfb6e4eabe4983d2`.
+- Missing support dependency: `platformdirs==4.3.6`, wheel SHA256
+  `73e575e1408ab8103900836b97580d5307456908a03e92031bab39e4554cc3fb`.
+- Core/Ascend wheel metadata unchanged; existing `packaging==26.3` preserved;
+  installed bundle validation passed without loading the engine or a model.
+- Receipt and build context:
+  `/data/vllm-hust-workstation-shuhao/mod-image-preparation.aXwQHQ/prepared/prepare-diffspec-s0o6g1dp/receipt.json`.
+
+An earlier metadata-only preparation and the failed missing-dependency preparation
+remain preserved under the same private output root. The prepared image was not
+applied to the shared instance. No inference, accelerator access or actual service
+rollback is claimed by this preparation evidence.
+
+Verification: 82 Vitest tests, 62 Python tests and zero-warning ESLint passed.
+The 25 deployment-transaction tests use a fake adapter; the image preparation
+above is real Docker execution with no devices or published ports.
