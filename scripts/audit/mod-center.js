@@ -17,13 +17,22 @@ async (page) => {
       if (/目标绑定、兼容性验收与重启审批|Sage Mate|Extension Manager 0\.2/.test(await page.locator('main').innerText())) throw new Error('Internal implementation copy visible');
       if (await page.evaluate(() => document.documentElement.dataset.theme) !== theme) await page.getByRole('button', {name: /切换到.*主题/}).click();
       if (await page.getByRole('button', {name: '安装到 Mod 库', exact: true}).count()) throw new Error('Public mutation visible');
+      const adaptation = page.locator('article').filter({has: page.getByRole('heading', {name: 'DiffSpec', exact: true})}).locator('details').first();
+      if (await adaptation.getAttribute('open') !== null) throw new Error('Adaptation details should start collapsed');
+      await adaptation.locator('summary').focus();
+      await page.keyboard.press('Enter');
+      await adaptation.getByText('历史声明基线', {exact: true}).waitFor();
+      await adaptation.getByText('新版本可重新适配，验收后更新支持范围。旧基线不代表当前实例不兼容。', {exact: true}).waitFor();
+      if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Adaptation disclosure overflow');
+      await page.keyboard.press('Enter');
+      if (await adaptation.getAttribute('open') !== null) throw new Error('Keyboard disclosure close failed');
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('installed');
       await page.getByText('Mod 库中还没有已安装的扩展。', {exact: true}).waitFor();
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('all');
       await page.getByLabel('搜索 Mod', {exact: true}).fill('DiffSpec');
       if (await page.locator('article').count() !== 1) throw new Error('Search filter');
       await page.getByLabel('搜索 Mod', {exact: true}).fill('');
-      await page.screenshot({path: `output/playwright/mod-center/${width}-${theme}-public.png`, fullPage: true});
+      await page.screenshot({path: `output/playwright/mod-qualification/${width}-${theme}-public.png`, fullPage: true});
       if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Overflow');
       const contrast = await page.evaluate(() => {
         const luminance = value => {
@@ -72,13 +81,13 @@ async (page) => {
     await page.keyboard.press('Escape');
     if (await page.getByRole('dialog').count()) throw new Error('Escape failed');
     for (const label of ['安装到 Mod 库', '保存配置', '启用意图', '停用意图', '卸载']) {
-      if (label === '保存配置') await card.locator('summary').click();
+      if (label === '保存配置') await card.locator('summary').filter({hasText: /^配置 ·/}).click();
       await card.getByRole('button', {name: label, exact: true}).click();
       await page.getByRole('dialog').getByRole('button', {name: '确认操作', exact: true}).click();
       await page.getByRole('dialog').waitFor({state: 'detached'});
     }
     if (!await card.getByRole('button', {name: '运行 · 暂未开放', exact: true}).isDisabled()) throw new Error('Unsafe run');
-    await page.screenshot({path: `output/playwright/mod-center/390-${theme}-admin-fixture.png`, fullPage: true});
+    await page.screenshot({path: `output/playwright/mod-qualification/390-${theme}-admin-fixture.png`, fullPage: true});
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Admin overflow');
     await page.reload();
     await page.getByText('只读浏览', {exact: true}).waitFor();
@@ -88,7 +97,7 @@ async (page) => {
   await page.getByRole('button', {name: '刷新', exact: true}).click();
   await page.getByRole('alert').filter({hasText: '验收模拟'}).waitFor();
   if (await page.locator('article').count()) throw new Error('Stale actions after failure');
-  await page.screenshot({path: 'output/playwright/mod-center/error-fixture.png'});
+  await page.screenshot({path: 'output/playwright/mod-qualification/error-fixture.png'});
   if (errors.length) throw new Error(JSON.stringify(errors));
   return {checks, actions, errors, runtime: 'not exercised; disabled gate checked'};
 }

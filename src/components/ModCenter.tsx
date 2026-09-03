@@ -114,8 +114,14 @@ export default function ModCenter() {
         {visible.map(mod => <article key={mod.id} className="app-surface flex min-w-0 flex-col rounded-2xl border app-border p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3"><div><p className="app-text-muted mb-2 text-xs">{mod.kind}</p><h2 className="text-xl font-semibold">{mod.name}</h2></div><a href={mod.repository} target="_blank" rel="noreferrer" className="app-control rounded-lg border p-2.5" aria-label={`${mod.name} 源码`}><ExternalLink size={16} /></a></div>
           <p className="app-text-secondary mt-3 text-sm leading-6">{mod.description}</p>
-          <p className="app-text-secondary mt-4 text-sm leading-6">{mod.compatibility}</p>
-          <p className="app-text-muted mt-2 text-xs leading-5">{mod.requirements}</p>
+          {mod.sha ? <details className="mt-4 text-sm">
+            <summary className="app-text-secondary cursor-pointer py-2">适配说明 · 当前实例待验收</summary>
+            <dl className="mt-2 space-y-3 text-xs leading-5">
+              <div><dt className="app-text-secondary font-medium">历史声明基线</dt><dd className="app-text-muted mt-1">{mod.compatibility}</dd></div>
+              <div><dt className="app-text-secondary font-medium">基线依赖与配置</dt><dd className="app-text-muted mt-1">{mod.requirements}</dd></div>
+            </dl>
+            <p className="app-text-muted mt-3 text-xs leading-5">新版本可重新适配，验收后更新支持范围。旧基线不代表当前实例不兼容。</p>
+          </details> : <><p className="app-text-secondary mt-4 text-sm leading-6">{mod.compatibility}</p><p className="app-text-muted mt-2 text-xs leading-5">{mod.requirements}</p></>}
           {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.installed ? `已安装到库 · ${mod.state.version}` : "未安装到库"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">运行未核验</span></div>
           <a href={`${mod.repository}/commit/${mod.sha}`} target="_blank" rel="noreferrer" className="app-text-muted mt-3 text-xs underline underline-offset-4">固定源码 {mod.sha.slice(0, 12)}</a></>}
           {mod.stateError && <p role="alert" className="mt-3 text-sm" style={{ color: "var(--danger)" }}>{mod.stateError}</p>}

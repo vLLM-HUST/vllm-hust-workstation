@@ -93,6 +93,32 @@ Requalify exact versions and update declarations with the adaptation code and
 acceptance evidence; never widen ranges just to bypass validation or silently
 downgrade the shared service. Restart approval is a separate gate.
 
+### Updating compatibility declarations
+
+The catalog presents the pinned manifest as a **historical declaration baseline**,
+not as a negative verdict on a newer runtime. Current-instance qualification is
+separate and remains pending. Detailed baseline dependencies are collapsed in the
+UI; changing this presentation does not change the executable manifest or bypass
+any admission check.
+
+For an update, record the exact Mod source/wheel, Core and Ascend source/wheels,
+immutable image, model/draft model, hardware topology and launch options. Review
+the required interfaces and port the Mod or host integration when they changed.
+Keep each level of evidence distinct:
+
+| Evidence | What it establishes | What it does not establish |
+| --- | --- | --- |
+| Manifest / AST inspection | Declared assumptions and candidate interfaces | Working registration or algorithm behavior |
+| Same-image preparation / import | Reproducible artifacts and exercised import paths | Worker materialization or successful inference |
+| Selected-instance acceptance | Actual load, bounded inference and tested rollback for the exact tuple | All intervening releases, models or device layouts |
+
+Only the last level, together with interface/behavior regression checks, supports
+a new qualified tuple. Update the source manifest and adaptation documentation
+together with the relevant code and evidence. A single successful tuple does not
+justify an open-ended version range. Preserve older evidence as historical and
+keep runtime activation separate: a previously qualified Mod may not be active in
+the current process.
+
 The static inventory found no `vllm/plugins/contracts.py` for BidKV. Seven sampled
 DiffSpec patch targets are present, which warrants further signature and behavior
 review but is not proof of compatibility. Latest reviewed-source candidates:
