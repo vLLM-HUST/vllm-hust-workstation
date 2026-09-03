@@ -8,7 +8,8 @@ import {
   Tooltip,
   YAxis,
 } from "recharts";
-import { Zap, Clock, Activity, HardDrive, Database, Server, X, ShieldCheck } from "lucide-react";
+import { Zap, Clock, Activity, HardDrive, Database, Server, X } from "lucide-react";
+import RuntimeStackCard from "@/components/RuntimeStackCard";
 import clsx from "clsx";
 import { useDialogFocus } from "@/components/useDialogFocus";
 import LocalServiceCard from "@/components/LocalServiceCard";
@@ -321,33 +322,7 @@ export default function MetricsDashboard({
           </div>
         )}
 
-        {runtimeProvenance.available && runtimeProvenance.image && runtimeProvenance.components ? (
-          <section className="app-card rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={15} className="text-emerald-300" />
-              <h3 className="app-text text-sm font-semibold">运行来源 · 容器身份已核验</h3>
-            </div>
-            <p className="app-text-muted mt-2 text-xs leading-5">{runtimeProvenance.verification?.message}</p>
-            <p className="app-text-muted mt-1 text-xs leading-5">源码为构建时冻结快照；通道名不代表当前 latest main。</p>
-            <dl className="mt-3 space-y-2 text-xs">
-              <div><dt className="app-text-muted">凭据采集 / 身份核验时间</dt><dd className="app-text-secondary break-all">{runtimeProvenance.capturedAt}<br />{runtimeProvenance.verification?.checkedAt}</dd></div>
-              <div><dt className="app-text-muted">镜像</dt><dd className="app-text-secondary mt-0.5 break-all">{runtimeProvenance.image.reference}</dd></div>
-              <div><dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary mt-0.5 break-all font-mono">{runtimeProvenance.image.digest}</dd></div>
-              <div><dt className="app-text-muted">稳定兼容基线</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.stableRelease}</dd></div>
-              <div><dt className="app-text-muted">兼容说明</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.base}</dd></div>
-              <div><dt className="app-text-muted">活跃源码通道</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.sourceProfile}</dd></div>
-              <div><dt className="app-text-muted">构建时间</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.image.createdAt}</dd></div>
-              <div><dt className="app-text-muted">Core SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.core.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.core.commit}</a></dd></div>
-              <div><dt className="app-text-muted">Core source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.core.version}</dd></div>
-              <div><dt className="app-text-muted">Core package</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.compatibility?.vllmPackage}</dd></div>
-              <div><dt className="app-text-muted">Plugin SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.plugin.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.plugin.commit}</a></dd></div>
-              <div><dt className="app-text-muted">Plugin source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.plugin.version}</dd></div>
-              <div><dt className="app-text-muted">Plugin package</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.compatibility?.vllmAscendPackage}</dd></div>
-            </dl>
-          </section>
-        ) : (
-          <div className="rounded-xl border border-amber-300/30 bg-amber-300/10 p-3 text-xs text-amber-200">运行来源暂不可用：{runtimeProvenance.reason || "未生成 receipt"}</div>
-        )}
+        <RuntimeStackCard provenance={runtimeProvenance} />
       </div>
     </aside>
     </>
