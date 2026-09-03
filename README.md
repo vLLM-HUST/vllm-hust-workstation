@@ -1,5 +1,8 @@
 # vllm-hust-workstation
 
+Runtime receipt verification, freshness policy, and independent UI audit:
+[2026-09-03 audit](docs/workstation-audit-20260903.md).
+
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。
 
 🛡️ 数据不出境 · 完全本地推理 · 零编程门槛
@@ -111,7 +114,7 @@ APP_BRAND_NAME="vLLM-HUST 工作站"
 APP_BRAND_LOGO=
 APP_ACCENT_COLOR=#6366f1
 # 若需要让 website 以 iframe 嵌入此页面，可限制允许嵌入的来源域名
-# APP_FRAME_ANCESTORS=https://intellistream.github.io https://vllm-hust.example.com
+# APP_FRAME_ANCESTORS=https://vllm-hust.sage.org.ai https://vllm-hust.example.com
 ```
 
 ### 复用平台共享后端
@@ -156,12 +159,15 @@ WORKSTATION_AUTO_HEAL_GATEWAY=false
 `.workstation-deploy/runtime-provenance.json`，`/api/versions` 和页面“可信运行来源”
 分别展示：
 
-- 官方兼容基座及基础 package 版本；
-- core/plugin 的仓库、完整 commit、源码 package version 和可点击链接；
+- 官方稳定兼容基线（当前为 `v0.23.0`）及其“仅提供文件系统/CANN”的角色；
+- 活跃源码通道（`latest-main-snapshot`），不能与稳定兼容基线混为一个版本；
+- core/plugin 的仓库、完整 commit、源码版本、实际安装 package version 和可点击链接；
 - 运行镜像 reference、不可变 image ID/digest 与构建时间；
 - production runtime lock schema 和采集时间。
 
-这是 Workstation runtime-provenance schema v2。镜像 tag 只用于阅读，回滚和
+采集器只接受 production runtime lock v2 的新分层 OCI labels；旧 v1 receipt、
+缺少活跃 package 标签或只给出单一 `v0.23.0` 的镜像会 fail closed，而不会在 UI
+中冒充当前源码。这里仍是 Workstation runtime-provenance schema v2。镜像 tag 只用于阅读，回滚和
 复现必须使用 image ID/digest、core/plugin SHA 与对应 production lock。推荐部署：
 
 ```bash
@@ -238,7 +244,7 @@ WORKSTATION_EVOSCI_MODEL=Qwen/Qwen2.5-7B-Instruct
 ```dotenv
 VLLM_HUST_BASE_URL=https://ACCELERATOR_HOST:8080
 APP_BRAND_NAME=vLLM-HUST Accelerator Workstation
-APP_FRAME_ANCESTORS=https://intellistream.github.io https://your-website-domain
+APP_FRAME_ANCESTORS=https://vllm-hust.sage.org.ai https://your-website-domain
 ```
 
 4. 确保 workstation 以 HTTPS 对外暴露，再把该 URL 写入 `vllm-hust-website/data/workstation_embed.json`
