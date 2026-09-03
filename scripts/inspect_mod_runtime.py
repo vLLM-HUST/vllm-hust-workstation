@@ -12,7 +12,7 @@ import re
 import subprocess
 
 
-COLLECTOR = r'''
+COLLECTOR = Path(__file__).with_name("mod_launch_inventory.py").read_text() + r'''
 import ast
 import hashlib
 import importlib.metadata as metadata
@@ -79,7 +79,7 @@ if lock_path.is_file():
                 lock_status = "mismatch"
     except (KeyError, TypeError, ValueError):
         lock_status = "invalid"
-print(json.dumps({"packages": packages, "lockStatus": lock_status, "surfaces": inventory}))
+print(json.dumps({"packages": packages, "lockStatus": lock_status, "surfaces": inventory, "launch": collect_launch()}))
 '''
 
 
@@ -121,6 +121,7 @@ def inspect(name, command, run=invoke, *, python_bin="python3"):
         "packages": data["packages"],
         "lockStatus": data["lockStatus"],
         "surfaces": data["surfaces"],
+        "launch": data.get("launch", {"available": False}),
     }
 
 
@@ -128,10 +129,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("container")
     parser.add_argument("--sudo", action="store_true", help="Use non-interactive sudo for Docker read access")
+    parser.add_argument("--python-bin", default="python3", help="Exact serving Python path from the enrolled owner configuration")
     parser.add_argument("--output", type=Path, help="Create a new evidence file; never overwrite existing evidence")
     args = parser.parse_args()
     try:
-        rendered = json.dumps(inspect(args.container, ["sudo", "-n", "docker"] if args.sudo else ["docker"]), indent=2)
+        rendered = json.dumps(inspect(args.container, ["sudo", "-n", "docker"] if args.sudo else ["docker"], python_bin=args.python_bin), indent=2)
         if args.output:
             with args.output.open("x", encoding="utf-8") as stream:
                 stream.write(rendered + "\n")

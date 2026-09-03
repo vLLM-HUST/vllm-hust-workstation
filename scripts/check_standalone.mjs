@@ -10,7 +10,7 @@ if (!(await lstat(candidate)).isDirectory() || !(await lstat(resolve(candidate, 
   throw new Error("Expected a generated standalone directory and server entrypoint");
 }
 if (!(await lstat(resolve(candidate, "scripts/mod_worker.py"))).isFile()) throw new Error("Standalone Mod worker is missing");
-for (const file of ["mod_runtime_worker.py", "mod_deployment.py", "prepare_mod_image.py", "inspect_mod_runtime.py", "build_mod_observer.py", "runtime/workstation_mod_runtime/__init__.py", "runtime/workstation_mod_runtime/__main__.py"]) {
+for (const file of ["mod_runtime_worker.py", "mod_deployment.py", "prepare_mod_image.py", "inspect_mod_runtime.py", "mod_launch_inventory.py", "mod_compatibility.py", "build_mod_observer.py", "runtime/workstation_mod_runtime/__init__.py", "runtime/workstation_mod_runtime/__main__.py"]) {
   if (!(await lstat(resolve(candidate, "scripts", file))).isFile()) throw new Error("Standalone runtime preparation helper is missing: " + file);
 }
 for (const name of [".env", ".env.local", ".env.production", ".env.production.local"]) {

@@ -5,7 +5,7 @@ const nextConfig = {
   output: "standalone",
   outputFileTracingIncludes: {
     "/api/mods": ["./scripts/mod_worker.py"],
-    "/api/mod-runtime": ["./scripts/mod_runtime_worker.py", "./scripts/mod_worker.py", "./scripts/mod_deployment.py", "./scripts/inspect_mod_runtime.py", "./scripts/prepare_mod_image.py", "./scripts/build_mod_observer.py", "./scripts/runtime/workstation_mod_runtime/*.py"],
+    "/api/mod-runtime": ["./scripts/mod_runtime_worker.py", "./scripts/mod_worker.py", "./scripts/mod_deployment.py", "./scripts/inspect_mod_runtime.py", "./scripts/mod_launch_inventory.py", "./scripts/mod_compatibility.py", "./scripts/prepare_mod_image.py", "./scripts/build_mod_observer.py", "./scripts/runtime/workstation_mod_runtime/*.py"],
   },
   // Runtime state is read from explicit deployment paths, never bundled into
   // the next release (which would recursively copy prior releases and secrets).

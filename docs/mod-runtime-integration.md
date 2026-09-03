@@ -133,6 +133,9 @@ Reproduce the read-only inventory with:
 python3 scripts/inspect_mod_runtime.py --sudo <selected-container-name>
 ```
 
+Supply `--python-bin /absolute/serving/python` from the enrolled owner configuration
+when the container's default Python is not its serving interpreter.
+
 It reads installed metadata, the embedded artifact lock and selected source ASTs
 without importing vLLM, Torch or device code. Collection uses immutable container
 ID and rejects replacement/restart during inspection. It never reports a Mod
@@ -482,3 +485,57 @@ Remaining integration: cooperative owner-generation fencing, source/model
 qualification, owner-bound worker and inference observation, approved real
 apply/disable/rollback, and their UI controls. This release is not completion of
 the full runtime integration goal.
+
+### Source-pinned launch preflight, 2026-09-03
+
+`mod_compatibility.py` and the preparation worker now compare explicit live-process
+launch options with the reviewed DiffSpec validator. The comparison is bound to
+source `762959978514cdd01407b58f1015a75f2ae2c936` and `diffspec/runtime.py`
+SHA256 `54dead6dc7acd16b3fe573dfefb31b82f654382b2624c73c0612d61bfe4dc0fc`
+inside a hash-verified library wheel. A different source or validator requires
+review; it cannot silently inherit these checks.
+
+The inspector brackets collection with immutable container identity checks and
+projects only selected options from one stable serving PID/start identity. It
+never returns raw argv, API keys or model paths. Missing, repeated or ambiguous
+options are unknown rather than inferred defaults. CLI evidence is not the
+engine's resolved configuration or runtime qualification. Preparation additionally
+rejects a changed serving PID/start/options across the build, even if the container
+itself remains unchanged.
+
+Read-only collection at `2026-09-03T07:15:51.001220+00:00` observed PID465,
+start ticks744175286, in the previously recorded container5f3cae57:
+
+| Explicit launch option | Observed | Fixed source requirement |
+| --- | --- | --- |
+| Tensor parallelism | 4 | 1 |
+| max-num-seqs | 8 | 1 |
+| Async scheduling | on | off |
+| Prefix caching | off | off |
+| dtype | bfloat16 | bfloat16 |
+
+PP, eager mode and quantization remain unknown in this projection because their
+flags were absent. The source also requires target/draft eager, single-layer
+Eagle3 draft, BF16, padded drafter and non-M-RoPE/non-MLA models. Do not enable eager
+or reduce the shared service's parallelism/concurrency to hide these gaps; port
+and qualify the intended target configuration. None of these checks changes the
+historical manifest range, and all reports keep `ready` and `runtimeQualified`
+false. Preparation may still build the artifact and record adaptation requirements.
+
+Receipt: `/data/vllm-hust-workstation-shuhao/mod-runtime/preflight-diffspec-20260903.json`.
+Reproduction (no model execution or service transition):
+
+```bash
+python3 scripts/mod_compatibility.py \
+  --library /operator/private/mod-library --mod diffspec \
+  --source-sha 762959978514cdd01407b58f1015a75f2ae2c936 \
+  --manager-sha 9fb467447e95d753f7002b28575d6802f4347181 \
+  --container operator-enrolled-container \
+  --python-bin /absolute/serving/python --sudo
+```
+
+The actual Sage Mate owner unit remains active without a cooperative generation
+or mutation-lock interface. A default-off owner integration has been requested
+from the user; no owner code, unit, launch configuration or running service has
+been changed by this preflight work. That authorization and later transition
+approval are distinct from image preparation.

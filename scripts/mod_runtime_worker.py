@@ -12,6 +12,7 @@ from mod_deployment import atomic_write
 from mod_worker import execute as library_execute
 from inspect_mod_runtime import inspect
 from prepare_mod_image import prepare, validate_python
+from mod_compatibility import preflight
 
 
 def now():
@@ -35,7 +36,7 @@ def check_target(task, target, snapshot):
         raise ValueError("target changed since preparation was requested")
 
 
-def execute(root, task, spec, report, *, inventory=inspect, build=prepare, install=library_execute):
+def execute(root, task, spec, report, *, inventory=inspect, build=prepare, install=library_execute, assess=preflight):
     target = spec["target"]
     mod = spec["mod"]
     if task["modId"] != mod["id"] or task["sourceSha"] != mod["sha"] or task["managerSha"] != spec["managerSha"]:
@@ -56,6 +57,11 @@ def execute(root, task, spec, report, *, inventory=inspect, build=prepare, insta
         if not target_library.exists():
             report("获取固定源码并构建制品；不安装或替换推理引擎。")
             install(library, {"action": "install"}, {"mod": mod, "managerSha": spec["managerSha"]}, report)
+        task["preflight"] = assess(library, mod["id"], mod["sha"], spec["managerSha"], snapshot)
+        for check in task["preflight"]["checks"]:
+            if check["status"] == "adaptation-required":
+                report("适配预检：" + check["message"] + "；当前参数=" + str(check["observed"]))
+        report("预检仅核对固定源码与显式启动参数；未声明运行兼容，也不会自动修改服务参数。")
         output = root / "images"
         output.mkdir(mode=0o700, exist_ok=True)
         private_root(output)
@@ -64,7 +70,10 @@ def execute(root, task, spec, report, *, inventory=inspect, build=prepare, insta
         task["imageId"] = result["imageId"]
         task["receiptPath"] = result["receiptPath"]
         try:
-            check_target(task, target, inventory(target["containerName"], command, python_bin=target["pythonBin"]))
+            latest = inventory(target["containerName"], command, python_bin=target["pythonBin"])
+            check_target(task, target, latest)
+            if snapshot.get("launch") != latest.get("launch"):
+                raise ValueError("serving process or launch options changed during preparation")
         except Exception:
             task["status"] = "superseded"
             report("候选镜像已保留，但目标实例已变化或无法复核；需重新评估。")

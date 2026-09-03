@@ -34,9 +34,10 @@ class RuntimePreparationWorkerTests(unittest.TestCase):
         self.build = Mock(return_value={"imageId": "sha256:" + "e" * 64, "receiptPath": "/private/prepared/receipt.json"})
         self.install = Mock()
         self.logs = []
+        self.assess = Mock(return_value={"ready": False, "runtimeQualified": False, "checks": []})
 
     def execute(self):
-        worker.execute(self.root, self.task, self.spec, self.logs.append, inventory=self.inventory, build=self.build, install=self.install)
+        worker.execute(self.root, self.task, self.spec, self.logs.append, inventory=self.inventory, build=self.build, install=self.install, assess=self.assess)
 
     def test_prepares_current_target_with_exact_interpreter_and_no_serving_action(self):
         self.execute()
@@ -47,6 +48,19 @@ class RuntimePreparationWorkerTests(unittest.TestCase):
         self.assertEqual(self.inventory.call_args.kwargs, {"python_bin": "/serving/bin/python"})
         self.assertEqual(self.build.call_args.args[5], self.identity["imageId"])
         self.assertEqual(self.build.call_args.kwargs, {"python_bin": "/serving/bin/python"})
+        self.assertFalse(self.task["preflight"]["ready"])
+
+    def test_known_launch_conflict_is_logged_without_preventing_artifact_preparation(self):
+        self.assess.return_value["checks"] = [{"status": "adaptation-required", "message": "TP=1 required", "observed": 4}]
+        self.execute()
+        self.assertEqual(self.task["status"], "prepared")
+        self.assertTrue(any("TP=1 required" in line for line in self.logs))
+
+    def test_same_container_process_replacement_supersedes_preparation(self):
+        self.snapshot["launch"] = {"available": True, "pid": 1}
+        self.inventory.side_effect = [self.snapshot, {**self.snapshot, "launch": {"available": True, "pid": 2}}]
+        self.execute()
+        self.assertEqual(self.task["status"], "superseded")
 
     def test_reuses_library_without_overwriting_existing_artifacts(self):
         (self.library / "diffspec").mkdir()
