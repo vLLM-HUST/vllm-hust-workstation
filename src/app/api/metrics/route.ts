@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL_ID, SERVER_CONFIG } from "@/lib/config";
+import { DEFAULT_MODEL_ID } from "@/lib/config";
 import {
   getInternalMetricsSnapshot,
   recordApiRequest,

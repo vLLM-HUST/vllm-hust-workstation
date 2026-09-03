@@ -14,7 +14,6 @@ import type { SearchResult } from "@/types";
 
 export const runtime = "nodejs";
 
-const SEARCH_TIMEOUT_MS = Number(process.env.SEARCH_TIMEOUT_MS || "8000");
 const DEFAULT_CHAT_MAX_TOKENS = Number(process.env.WORKSTATION_DEFAULT_MAX_TOKENS || "4096");
 
 /** System prompt to keep Qwen3 thinking concise on resource-constrained NPU hardware */

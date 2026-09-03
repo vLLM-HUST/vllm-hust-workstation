@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import {
   Cable,
@@ -13,7 +13,6 @@ import {
   Settings2,
   Shield,
   Trash2,
-  Wrench,
 } from "lucide-react";
 import type {
   EvoScientistAdminSnapshot,
@@ -47,11 +46,6 @@ function asString(value: unknown): string {
 
 function asBoolean(value: unknown, fallback = false): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-function asNumber(value: unknown, fallback = 0): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export default function EvoScientistControlPlane({
@@ -102,7 +96,7 @@ export default function EvoScientistControlPlane({
     [snapshot]
   );
 
-  const loadSnapshot = async () => {
+  const loadSnapshot = useCallback(async () => {
     setLoading(true);
     try {
       const query = selectedWorkspacePath ? `?workspaceDir=${encodeURIComponent(selectedWorkspacePath)}` : "";
@@ -119,14 +113,14 @@ export default function EvoScientistControlPlane({
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedWorkspacePath]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
     void loadSnapshot();
-  }, [open, selectedWorkspacePath]);
+  }, [open, loadSnapshot]);
 
   useEffect(() => {
     if (!snapshot) {

@@ -1,3 +1,5 @@
+// Playwright CLI run-code consumes this file as a function expression.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 async (page) => {
   const base=page.url().split('/').slice(0,3).join('/');
   const prefix=base.includes('127.0.0.1')?'candidate':'after';

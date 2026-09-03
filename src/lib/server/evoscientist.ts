@@ -30,11 +30,9 @@ import type {
 import {
   canRunEvoScientistModule,
   DEFAULT_EVOSCI_BIN,
-  DEFAULT_EVOSCI_WORKDIR,
   findExecutableInPath,
   getEvoScientistSpawnEnv,
   probeEvoScientistRuntime,
-  PYTHON_FALLBACK_CANDIDATES,
   resolveEvoScientistWorkdir,
   resolvePythonBinary,
 } from "./evoscientist/runtime";

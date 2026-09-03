@@ -66,7 +66,7 @@ function simulateStreamingResponse(sseChunks) {
           var parsed = parseThinkContent(rawContent);
           fullContent = parsed.main.trimStart() || parsed.main;
         }
-      } catch (e) { /* skip malformed */ }
+      } catch { /* skip malformed */ }
     }
   }
 

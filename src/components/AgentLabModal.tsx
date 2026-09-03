@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import clsx from "clsx";
 import { useDialogFocus } from "@/components/useDialogFocus";
 import {
@@ -888,7 +888,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
     }
   };
 
-  const loadContext = async () => {
+  const loadContext = useCallback(async () => {
     const response = await fetch("/api/evoscientist/context", { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -914,7 +914,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
       }
       return payload.sessions.find((item) => item.threadId === previous.threadId) || previous;
     });
-  };
+  }, [selectedSession?.workspaceDir, selectedWorkspacePath]);
 
   useEffect(() => {
     if (!open) {
@@ -949,7 +949,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [open]);
+  }, [open, loadContext]);
 
   useEffect(() => {
     if (!selectedWorkspacePath || typeof window === "undefined") {
