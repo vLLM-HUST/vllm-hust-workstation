@@ -1,0 +1,3 @@
+[submodule "deps/vllm-hust-dev-hub"]
+	path = deps/vllm-hust-dev-hub
+	url = https://github.com/vLLM-HUST/vllm-hust-dev-hub.git

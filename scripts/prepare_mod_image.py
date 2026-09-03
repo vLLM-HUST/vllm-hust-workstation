@@ -20,7 +20,7 @@ import urllib.request
 import uuid
 import zipfile
 
-from mod_deployment import atomic_write
+from mod_artifact_io import atomic_write
 from build_mod_observer import build as build_observer
 
 

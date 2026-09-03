@@ -1,0 +1,13 @@
+{
+  "protocol": "vllm-hust.instance-control/v1",
+  "sourceSha": "b6e56e1f7f1ae58ea15aa9994852f48290827a55",
+  "entrypoint": "scripts/instance_control_entry.py",
+  "files": {
+    "config/instance-control-contract.json": "29b1d1399daf5c76ddc7c17e2a7d24e789e8113c11b881136e3b5f5ca9bf0307",
+    "scripts/instance_control_entry.py": "eceb6c6d9d2eeedaa706b065f19d98be56b27492a8c8ad0cbd1ff05f024d8869",
+    "scripts/instance_control/__init__.py": "2827f71e084c77bd5adeb2220b0fa7c79e1da32d51658398741aeb69c81db98e",
+    "scripts/instance_control/controller.py": "f9de7c81fba292a341dc0d4af1fdb871777d9d4390bc52cd004462fdaec813f2",
+    "scripts/instance_control/schema.py": "a8f21e7df69514dc9e66ffc9d91b23ce6d3238c4911465f12b7b12a0cf80191b",
+    "scripts/instance_control/store.py": "a86d72e48f38eb19e5e9a90fcbed3fd5b61a3363578c9e91628bcbbe940a25d4"
+  }
+}

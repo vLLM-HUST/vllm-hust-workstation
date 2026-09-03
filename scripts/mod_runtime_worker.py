@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 
-from mod_deployment import atomic_write
+from mod_artifact_io import atomic_write
 from mod_worker import execute as library_execute
 from inspect_mod_runtime import inspect
 from prepare_mod_image import prepare, validate_python

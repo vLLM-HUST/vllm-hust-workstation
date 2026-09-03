@@ -263,7 +263,13 @@ always retain `runtimeActivationVerified: false`. Failed preparation keeps a
 failed receipt and its context. Tags are local preparation handles; deployments
 must consume the resulting immutable image ID, never the tag.
 
-`scripts/mod_deployment.py` implements the target-scoped transaction coordinator:
+The historical `scripts/mod_deployment.py` prototype has now been removed. The
+single implementation lives in the pinned dev-hub dependency under
+`scripts/instance_control/`; its strict complete `DeploymentSpec` intentionally
+does not accept the prototype's `imageId/configurationHash`-only revisions.
+`scripts/instance_control_client.py` is the Workstation thin transport client,
+and `mod_artifact_io.py` retains only atomic preparation/task receipt writes.
+Historical prototype behavior and tests informed the new dev-hub tests:
 
 - Pure preparation issues an expiring, one-use approval for a complete plan hash.
 - Apply rechecks target identity, baseline health and admission, then durably
@@ -285,6 +291,30 @@ coordinator's fake-adapter tests prove transaction behavior, **not** a productio
 restart, rollback or Mod inference. Production adapter enrollment, HTTP/UI wiring,
 integration of worker evidence into owner observations and selected-instance
 acceptance remain unfinished.
+
+### Default-off dev-hub extraction milestone
+
+Initialize the reproducible dependency after cloning:
+
+```bash
+git submodule update --init deps/vllm-hust-dev-hub
+```
+
+The parent gitlink and `deploy/instance-control-source-lock.json` pin the producer.
+The source lock verifies packaged producer files when Next standalone has no Git
+metadata. This verifies code provenance, not deployment or administrator authority.
+The client starts no process and reads no store while disabled. With the local
+diagnostic gate enabled it can inspect the pinned producer, which currently reports
+`authorityAvailable=false`; all mutating requests remain rejected. The Web runtime
+API still has `applicationAvailable=false` and does not consume Web login as host
+approval. No live config or service is changed by this extraction.
+
+There is no automatic migration of old prototype approvals/journals, and existing
+preparation receipts remain intact. Future enrollment requires capturing a complete
+new baseline and newly approved plans; an old successful fake transaction must not
+be converted into a production deployment. The dev-hub contract documents pending
+production backend, owner OS permission/fencing, foreground supervision, Manager
+render integration and UI approval wiring. Actual enablement remains separate.
 
 ### Worker witness integration
 
