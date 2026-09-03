@@ -62,8 +62,8 @@ class ImagePreparationTests(unittest.TestCase):
             self.assertIn("--network=none", argv)
             self.assertNotIn(".env", [p.name for p in context.iterdir()])
             self.assertIn("--no-deps", (context / "Dockerfile").read_text())
-            witness = context / "wheels/workstation_mod_runtime-0.1.0-py3-none-any.whl"
-            self.packages["workstation-mod-runtime"] = {"version": "0.1.0", "wheelSha256": hashlib.sha256(witness.read_bytes()).hexdigest()}
+            witness = context / "wheels/workstation_mod_runtime-0.1.1-py3-none-any.whl"
+            self.packages["workstation-mod-runtime"] = {"version": "0.1.1", "wheelSha256": hashlib.sha256(witness.read_bytes()).hexdigest()}
             return "built"
         if argv[1:3] == ["image", "inspect"]:
             if argv[-1] == self.base:

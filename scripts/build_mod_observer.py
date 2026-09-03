@@ -9,8 +9,8 @@ import re
 import zipfile
 
 PACKAGE = "workstation-mod-runtime"
-VERSION = "0.1.0"
-FILENAME = "workstation_mod_runtime-0.1.0-py3-none-any.whl"
+VERSION = "0.1.1"
+FILENAME = f"workstation_mod_runtime-{VERSION}-py3-none-any.whl"
 
 
 def build(destination, identity):
@@ -19,10 +19,10 @@ def build(destination, identity):
     if not re.fullmatch(r"[a-f0-9]{40}", identity["sourceSha"]) or not re.fullmatch(r"[a-f0-9]{64}", identity["wheelSha256"]) or not re.fullmatch(r"[a-f0-9]{64}", identity["componentFileSha256"]):
         raise ValueError("immutable observer artifact identity required")
     source = Path(__file__).parent / "runtime/workstation_mod_runtime"
-    dist = "workstation_mod_runtime-0.1.0.dist-info"
+    dist = f"workstation_mod_runtime-{VERSION}.dist-info"
     files = {"workstation_mod_runtime/" + name: (source / name).read_bytes() for name in ("__init__.py", "__main__.py")}
     files["workstation_mod_runtime/identity.json"] = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
-    files[dist + "/METADATA"] = b"Metadata-Version: 2.1\nName: workstation-mod-runtime\nVersion: 0.1.0\nRequires-Python: >=3.10\n"
+    files[dist + "/METADATA"] = f"Metadata-Version: 2.1\nName: {PACKAGE}\nVersion: {VERSION}\nRequires-Python: >=3.10\n".encode()
     files[dist + "/WHEEL"] = b"Wheel-Version: 1.0\nGenerator: workstation-mod-image\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
     files[dist + "/entry_points.txt"] = b"[vllm.general_plugins]\nworkstation_mod_runtime = workstation_mod_runtime:register\n"
     records = io.StringIO(newline="")

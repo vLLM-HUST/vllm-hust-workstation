@@ -1,7 +1,9 @@
 # Instance-oriented Mod integration
 
 Status: implementation in progress. This document is an acceptance contract, not
-a claim that runtime application is delivered.
+a claim that runtime application is delivered. The current plugin boundary audit
+is [the BidKV guide alignment review](mod-plugin-guide-alignment.md); dated
+preparation evidence below describes historical artifacts, not current acceptance.
 
 ## Product goal
 
@@ -296,12 +298,15 @@ implementation and must not inherit a DiffSpec qualification result.
 The approved owner launch must explicitly set all of the following (there is no
 production owner adapter enrolled yet):
 
-- Preserve the baseline `VLLM_PLUGINS` allowlist and append
-  `workstation_mod_runtime`. The witness calls the canonical DiffSpec registration
-  function and attaches a deferred observation hook; it does not implement the
-  optimization itself.
-- Set `VLLMHUST_EXT_ENABLED_BUNDLES=org.vllm-hust.diffspec` and the actual
-  speculative configuration's `draft_context_policy=diffspec`.
+- Use canonical Manager/Provider admission and rendering. Preserve the baseline
+  `VLLM_PLUGINS` allowlist and include both the canonical `diffspec` entrypoint and
+  `workstation_mod_runtime` in the frozen, reviewed host configuration. The witness
+  only attaches an observation hook; it never calls the Mod registration function.
+  The host owns the canonical call. Allowlist/intent strings alone prove neither
+  admission nor execution.
+- Let Manager emit `VLLMHUST_EXT_ENABLED_BUNDLES`; do not fabricate this variable
+  as a substitute for Manager admission. Configure the actual speculative
+  `draft_context_policy=diffspec` through Provider `launch_options`.
 - Provide `WORKSTATION_MOD_CONTEXT` as server-rendered JSON containing
   `deploymentId`, `targetId`, `configurationHash`, `workerCount`, `targetModel`,
   `draftModel` and `speculativeTokens`. These must derive from the reviewed target

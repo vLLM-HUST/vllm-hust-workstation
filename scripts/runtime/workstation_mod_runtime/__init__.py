@@ -185,17 +185,19 @@ def register():
     enabled = {item.strip() for item in os.getenv("VLLMHUST_EXT_ENABLED_BUNDLES", "").split(",") if item.strip()}
     if enabled != {BUNDLE}:
         raise ValueError("witness requires one explicitly enabled reviewed Mod")
-    plugins = os.getenv("VLLM_PLUGINS", "").split(",")
-    if "workstation_mod_runtime" not in plugins:
-        raise ValueError("witness requires an explicit plugin allowlist")
+    plugins = {item.strip() for item in os.getenv("VLLM_PLUGINS", "").split(",") if item.strip()}
+    if not {"workstation_mod_runtime", "diffspec"} <= plugins:
+        raise ValueError("witness requires the canonical Mod and observer in the explicit plugin allowlist")
     if _REGISTERED:
         return
     artifact = installed_identity()
     from diffspec.lazy_patch import patch_after_import
-    from diffspec.plugin import register as register_diffspec
 
+    # The Manager/host owns activation and calls the canonical `diffspec` entry
+    # point. Observers must never bypass that path or register a Mod themselves.
+    # This hook works whether the host has imported the proposer already or not;
+    # attaching it proves neither admission nor execution.
     patch_after_import("diffspec.proposer", lambda: instrument(sys.modules["diffspec.proposer"].AscendDiffSpecEagleProposer, context, artifact))
-    register_diffspec()
     _REGISTERED = True
 
 

@@ -177,26 +177,36 @@ class WorkerWitnessTests(unittest.TestCase):
                 witness.register()
         witness.installed_identity.assert_not_called()
 
-    def test_explicit_entrypoint_registers_canonical_mod_and_deferred_observer_once(self):
+    def test_explicit_entrypoint_observes_but_never_registers_canonical_mod(self):
         lazy = ModuleType("diffspec.lazy_patch")
         lazy.patch_after_import = Mock()
         plugin = ModuleType("diffspec.plugin")
         plugin.register = Mock()
         environment = {witness.CONTEXT_ENV: json.dumps(self.context), "VLLMHUST_EXT_ENABLED_BUNDLES": witness.BUNDLE,
-                       "VLLM_PLUGINS": "ascend,workstation_mod_runtime"}
+                       "VLLM_PLUGINS": "ascend,diffspec,workstation_mod_runtime"}
         with patch.dict(os.environ, environment, clear=True), patch.object(witness, "_REGISTERED", False), patch.dict(sys.modules, {"diffspec.lazy_patch": lazy, "diffspec.plugin": plugin}):
             witness.register()
             witness.register()
-            plugin.register.assert_called_once_with()
+            plugin.register.assert_not_called()
             lazy.patch_after_import.assert_called_once()
             name, callback = lazy.patch_after_import.call_args.args
             self.assertEqual(name, "diffspec.proposer")
             callback()
         self.assertFalse(self.collect()["materializationVerified"])
 
+    def test_observer_cannot_bypass_canonical_host_allowlist(self):
+        for plugins in ("ascend,workstation_mod_runtime", "ascend,diffspec", ""):
+            environment = {witness.CONTEXT_ENV: json.dumps(self.context),
+                           "VLLMHUST_EXT_ENABLED_BUNDLES": witness.BUNDLE,
+                           "VLLM_PLUGINS": plugins}
+            with self.subTest(plugins=plugins), patch.dict(os.environ, environment, clear=True):
+                with self.assertRaisesRegex(ValueError, "canonical Mod"):
+                    witness.register()
+        witness.installed_identity.assert_not_called()
+
     def test_tampered_artifact_cannot_register_hooks(self):
         environment = {witness.CONTEXT_ENV: json.dumps(self.context), "VLLMHUST_EXT_ENABLED_BUNDLES": witness.BUNDLE,
-                       "VLLM_PLUGINS": "ascend,workstation_mod_runtime"}
+                       "VLLM_PLUGINS": "ascend,diffspec,workstation_mod_runtime"}
         with patch.dict(os.environ, environment, clear=True), patch.object(witness, "_REGISTERED", False), patch.object(witness, "installed_identity", side_effect=ValueError("artifact mismatch")):
             with self.assertRaisesRegex(ValueError, "artifact mismatch"):
                 witness.register()
@@ -225,8 +235,10 @@ class WorkerWitnessTests(unittest.TestCase):
         self.assertEqual(first, second)
         with zipfile.ZipFile(self.root / first["filename"]) as wheel:
             self.assertEqual(json.loads(wheel.read("workstation_mod_runtime/identity.json")), self.artifact)
-            self.assertTrue(all(name.startswith(("workstation_mod_runtime/", "workstation_mod_runtime-0.1.0.dist-info/")) for name in wheel.namelist()))
-            self.assertIn(b"workstation_mod_runtime:register", wheel.read("workstation_mod_runtime-0.1.0.dist-info/entry_points.txt"))
+            self.assertTrue(all(name.startswith(("workstation_mod_runtime/", f"workstation_mod_runtime-{builder.VERSION}.dist-info/")) for name in wheel.namelist()))
+            metadata = wheel.read(f"workstation_mod_runtime-{builder.VERSION}.dist-info/METADATA")
+            self.assertIn(f"Version: {builder.VERSION}\n".encode(), metadata)
+            self.assertIn(b"workstation_mod_runtime:register", wheel.read(f"workstation_mod_runtime-{builder.VERSION}.dist-info/entry_points.txt"))
         with self.assertRaises(FileExistsError):
             builder.build(self.root, self.artifact)
         with self.assertRaisesRegex(ValueError, "no reviewed"):
