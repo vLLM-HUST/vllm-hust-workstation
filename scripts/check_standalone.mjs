@@ -9,6 +9,7 @@ const candidate = resolve(".next/standalone");
 if (!(await lstat(candidate)).isDirectory() || !(await lstat(resolve(candidate, "server.js"))).isFile()) {
   throw new Error("Expected a generated standalone directory and server entrypoint");
 }
+if (!(await lstat(resolve(candidate, "scripts/mod_worker.py"))).isFile()) throw new Error("Standalone Mod worker is missing");
 for (const name of [".env", ".env.local", ".env.production", ".env.production.local"]) {
   await rm(resolve(candidate, name), { force: true });
 }
@@ -40,6 +41,9 @@ try {
     await new Promise(resolve => setTimeout(resolve, 250));
   }
   if (!passed) throw new Error("Standalone catalog probe timed out: " + output);
+  const mods = await fetch(`http://127.0.0.1:${port}/api/mods`);
+  const modCatalog = await mods.json();
+  if (!mods.ok || !Array.isArray(modCatalog.catalog) || modCatalog.administrator) throw new Error("Standalone Mod catalog failed");
   console.log("Standalone startup and read-only catalog probe passed");
 } finally {
   if (child.exitCode === null && !spawnError) {

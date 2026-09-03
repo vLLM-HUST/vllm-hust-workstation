@@ -5,6 +5,8 @@ Runtime receipt verification, freshness policy, and independent UI audit:
 
 模型库权限、数据盘配置与清理验收：[治理记录](docs/model-hub-governance-20260903.md)。
 
+独立 [Mod 中心](docs/mod-center.md)：固定版本安装、管理员配置/启停意图、可恢复卸载与任务日志。运行实例接入尚未开放，安装不代表推理生效。
+
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。
 
 🛡️ 数据不出境 · 完全本地推理 · 零编程门槛
@@ -18,7 +20,7 @@ Runtime receipt verification, freshness policy, and independent UI audit:
 - **EvoScientist Embedded Chat** — 直接在工作站里调用 EvoScientist CLI，会话化执行自动科研任务
 - **Prometheus 监控端点** — 内置 `/metrics`，可直接接入 Prometheus 抓取
 - **白牌化** — 品牌名 / Logo / 主题色可通过 `.env` 配置
-- **Node 单运行时** — 前后端统一收敛到 Next.js Route Handlers，避免 Python + Node 双依赖栈
+- **Node Web 运行时** — 前后端统一使用 Next.js Route Handlers；可选 Mod 安装功能另需 Python 3.10+ / venv / pip
 
 ---
 

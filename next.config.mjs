@@ -3,6 +3,7 @@ const frameAncestors = (process.env.APP_FRAME_ANCESTORS || "").trim();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: { "/api/mods": ["./scripts/mod_worker.py"] },
   // Runtime state is read from explicit deployment paths, never bundled into
   // the next release (which would recursively copy prior releases and secrets).
   outputFileTracingExcludes: {
