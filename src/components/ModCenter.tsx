@@ -93,7 +93,7 @@ export default function ModCenter() {
     </header>
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
       <section className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">按需扩展推理能力。独立安装，显式配置，运行状态由真实证据确认。</p></div>
+        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">发现推理优化扩展，管理安装与配置。</p></div>
         <a href={MOD_CATALOG_SOURCE} target="_blank" rel="noreferrer" className="app-text-secondary inline-flex items-center gap-2 text-sm underline underline-offset-4">官方插件目录<ExternalLink size={14} /></a>
       </section>
       {loginOpen && !administrator && <form onSubmit={login} className="app-surface rounded-xl border app-border p-4 flex flex-wrap items-end gap-3">
@@ -101,11 +101,6 @@ export default function ModCenter() {
         <button type="submit" className="app-control rounded-lg border px-4 py-2 text-sm" disabled={loading || !password.trim()}>进入管理员模式</button>
         <p className="app-text-muted w-full text-xs">密码仅保存在当前页面内存，离开或刷新页面后清除。</p>
       </form>}
-      <section className="app-surface rounded-2xl border app-border p-5 text-sm leading-6" aria-label="运行边界">
-        <h2 className="font-medium">安装在 Mod 库，运行由实例负责</h2>
-        <p className="app-text-secondary mt-2">{payload?.runtime.message || "运行状态尚未核验。Mod 库与当前共享推理服务相互独立。"}</p>
-        <p className="mt-2" style={{ color: "var(--warning)" }}>当前不提供一键运行：目标绑定、兼容性验收与重启审批尚未接入。不会自动重启 Sage Mate 或其他共享任务。</p>
-      </section>
       {error && <div role="alert" className="rounded-xl border p-4 text-sm" style={{ color: "var(--danger)", borderColor: "var(--danger)" }}>{error}</div>}
       {payload && !payload.storageReady && <p className="app-text-secondary text-sm">Mod 安装存储未就绪，目前只能浏览目录。</p>}
       <div className="flex flex-wrap items-center gap-3">
@@ -113,7 +108,7 @@ export default function ModCenter() {
         <label><span className="sr-only">筛选 Mod</span><select value={filter} onChange={event => setFilter(event.target.value)} className="app-control rounded-xl border px-3 py-2.5 text-sm"><option value="all">全部 Mod</option><option value="installed">已安装到库</option><option value="external">外部服务</option></select></label>
         <button type="button" onClick={() => { setError(""); void load(token); }} disabled={loading || pending} className="app-control rounded-xl border px-3 py-2.5 text-sm">刷新</button>
       </div>
-      {loading && !payload && <p role="status" className="app-text-muted">正在读取 Mod 目录与安装凭据…</p>}
+      {loading && !payload && <p role="status" className="app-text-muted">正在加载 Mod…</p>}
       {payload && visible.length === 0 && <p className="app-surface rounded-xl p-8 text-center app-text-muted">{filter === "installed" ? "Mod 库中还没有已安装的扩展。" : "没有符合条件的 Mod。"}</p>}
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Mod 目录">
         {visible.map(mod => <article key={mod.id} className="app-surface flex min-w-0 flex-col rounded-2xl border app-border p-5 sm:p-6">
@@ -135,7 +130,7 @@ export default function ModCenter() {
                 <button type="button" disabled={busy || pending || (!mod.state.enabled && !mod.state.configured)} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.state.enabled ? "disable" : "enable"})}>{mod.state.enabled ? "停用意图" : "启用意图"}</button>
                 <button type="button" disabled={busy || pending || mod.state.enabled} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "uninstall"})}>卸载</button>
               </>}
-              <button type="button" disabled className="app-control rounded-lg border px-3 py-2" title="尚未绑定兼容的专属推理实例">运行 · 尚未接入</button>
+              <button type="button" disabled className="app-control rounded-lg border px-3 py-2" title="运行功能暂未开放">运行 · 暂未开放</button>
             </div>
           </div>}
         </article>)}
@@ -146,7 +141,7 @@ export default function ModCenter() {
         <div className="mt-4 flex gap-3"><button type="button" className="app-control rounded-lg border px-4 py-2 text-sm" disabled={pending || busy} onClick={() => void runAction()}>{pending ? "提交中…" : "确认操作"}</button><button type="button" className="app-control rounded-lg border px-4 py-2 text-sm" disabled={pending} onClick={() => setConfirmation(null)}>取消</button></div>
       </section></div>}
       {administrator && <section aria-label="Mod 任务日志" className="space-y-3"><h2 className="text-lg font-semibold">任务与日志</h2>{!payload?.tasks.length && <p className="app-text-muted text-sm">暂无 Mod 管理任务。</p>}{payload?.tasks.map(task => <details key={task.id} className="app-surface rounded-xl border app-border p-4" open={task.status === "running" || task.status === "failed"}><summary className="cursor-pointer text-sm">{task.modId} · {labels[task.action]} · {labels[task.status]}<span className="app-text-muted ml-2 text-xs">{new Date(task.createdAt).toLocaleString()}</span></summary><pre className="app-text-secondary mt-3 whitespace-pre-wrap break-all text-xs leading-5">{task.logs.join("\n")}</pre></details>)}</section>}
-      <footer className="app-text-muted border-t app-border pt-5 text-xs leading-6">目录采用审核快照，安装源固定到提交，不会自动跟随 main。Extension Manager 0.2 为实验协议。普通用户只读；无任意命令执行或共享服务控制入口。</footer>
+      <footer className="app-text-muted border-t app-border pt-5 text-xs leading-6">安装与配置需管理员权限。各扩展的版本与兼容要求见详情。</footer>
     </div>
   </main>;
 }
