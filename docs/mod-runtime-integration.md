@@ -413,3 +413,72 @@ claim new runtime compatibility or complete the instance integration above.
   (started 06:05:13Z) retained identical full identities and start times across
   publication. Prior Web runtime is recoverable at
   `/data/vllm-hust-workstation-shuhao/archive/pre-qualification-8d4ce87`.
+
+### Instance preparation API and UI acceptance, 2026-09-03
+
+Web revision `9d66437` adds the operator-enrolled current-instance panel and
+administrator image preparation. The public view reports the actual upstream
+model (`Qwen/Qwen3.8-27B` at acceptance), verified image/source identity and unknown
+effective Mods. It does not infer activation from library flags. Image/source
+details and historical compatibility declarations remain in disclosures.
+
+The private target registration must match Workstation's configured container
+and upstream. The authenticated API accepts only fixed catalog/target IDs, not
+commands or arbitrary image/source paths. Preparation rechecks immutable target
+identity before and after building; drift supersedes the candidate. Application
+remains fail-closed pending the real owner adapter and separate restart approval.
+
+The **real authenticated HTTP** preparation completed successfully:
+
+- Task: `f32e2a62-67c2-469e-9ce2-bc4c70463646`, completed
+  `2026-09-03T07:02:51.721539+00:00`.
+- Base: `sha256:5e7f82c78a3b0bc786e0e994e71d012af2f667bff3dc3380c77353dd7493a1f9`.
+- Candidate: `sha256:80071bd13353b1b11f6f0a3eef13de0ae8cf1dfc1b2a0c527eac1718f9876437`.
+- Exact serving Python: `/usr/local/python3.12.13/bin/python`.
+- DiffSpec source: `762959978514cdd01407b58f1015a75f2ae2c936`;
+  wheel SHA256 `1714fd1d0e00b649bdd29e13193deee32c8a57ee4e2205178be8129e2e4f041d`.
+- Manager source: `9fb467447e95d753f7002b28575d6802f4347181`;
+  wheel SHA256 `ab5da81c7612045d459ad7cd29df5155efa622573fd0670dbfb6e4eabe4983d2`.
+- Observer wheel SHA256:
+  `79f4442d28474db25d06c5eab19eb6dfb65b8de4397c5d0fb668eb9ad2197bb1`.
+- Core and Ascend installed wheel metadata hashes remain respectively
+  `ac0c941e6c076198f9c97c45f878188030f7319cb3d5b1d20b60e8f7168eb51d` and
+  `dded797dc0e1fcc967d20dcbb9cfa356827cffa35e48dd616bfac44223c049ba`.
+- Private receipt:
+  `/data/vllm-hust-workstation-shuhao/mod-runtime/images/prepare-diffspec-a4rtvl_l/receipt.json`.
+
+This is a prepared image, **not applied, runtime-qualified or active**. The
+receipt retains the historical manifest declaration and explicitly records
+`runtimeActivationVerified: false`. Updating that declaration is permitted after
+code adaptation and target-specific qualification; an old range is not a
+permanent exclusion, and widening it alone is not acceptance.
+
+Verification: 93 Vitest tests, 87 Python tests, 16 fallback assertions,
+zero-warning lint, production build and standalone bundle startup passed.
+Real public and local candidate browser audits passed at 1440 and 390×844 in
+light/dark themes: read-only access, search/filter/empty states, invalid auth,
+keyboard disclosures, no horizontal overflow, and error cleanup. Ten library
+actions and two administrator preparation flows were **browser-only intercepted
+fixtures**, distinct from the real HTTP task above. Text contrast minimums were
+6.31:1 light and 6.92:1 dark; no JavaScript page errors. Visual inspection caught
+and corrected a squeezed mobile Mod selector; the audit now asserts its width.
+
+- Before: `output/playwright/mod-instance-before.png`.
+- Public after: `output/playwright/mod-instance/1440-light-public.png`,
+  `1440-dark-public.png`, `390-light-public.png`, `390-dark-public.png`.
+- Administrator fixture: `output/playwright/mod-instance/390-light-admin-fixture.png`
+  and `390-dark-admin-fixture.png`; local evidence is in `mod-instance-local/`.
+
+Only the Web service was restarted, before preparation began. Sage Mate retained
+container `5f3cae57a2c54e3645892b72a0cf91c0c86a1d1594d368bcab205fe88971f80f`
+and start time `2026-09-03T05:23:58.405394962Z` at the post-task check. No Sage Mate
+or statecentric control commands were issued. Previous Web runtime is recoverable
+at `/data/vllm-hust-workstation-shuhao/archive/pre-mod-instance-919f086`.
+Do not restart the Web service while a preparation worker is active: detached
+workers still belong to its systemd cgroup. Unresolved tasks block retries rather
+than being declared stopped solely from elapsed time.
+
+Remaining integration: cooperative owner-generation fencing, source/model
+qualification, owner-bound worker and inference observation, approved real
+apply/disable/rollback, and their UI controls. This release is not completion of
+the full runtime integration goal.

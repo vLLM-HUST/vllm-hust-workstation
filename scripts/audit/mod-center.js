@@ -28,8 +28,10 @@ async (page) => {
       if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Adaptation disclosure overflow');
       await page.keyboard.press('Enter');
       if (await adaptation.getAttribute('open') !== null) throw new Error('Keyboard disclosure close failed');
+      // Compare with this rendered catalog; a real preparation can finish while
+      // the multi-viewport audit runs, so its initial API snapshot can be older.
+      const installedCount = await page.locator('article').filter({has: page.getByText(/^已安装到库 ·/)}).count();
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('installed');
-      const installedCount = original.catalog.filter(mod => mod.state.installed).length;
       if (!installedCount) await page.getByText('Mod 库中还没有已安装的扩展。', {exact: true}).waitFor();
       else if (await page.locator('article').count() !== installedCount) throw new Error('Installed filter differs from actual catalog');
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('all');
