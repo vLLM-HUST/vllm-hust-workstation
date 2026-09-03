@@ -64,7 +64,8 @@ export default function Header({
           title={online ? "推理服务在线" : "推理服务离线"}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${online ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`}
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: online ? "var(--success)" : "var(--danger)" }}
           />
           <span className="hidden sm:inline">{online ? "在线" : "离线"}</span>
         </span>

@@ -165,10 +165,14 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   // Fetch immutable runtime provenance captured from the serving container.
   useEffect(() => {
-    fetch("/api/versions")
+    let cancelled = false;
+    const refresh = () => fetch("/api/versions", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: RuntimeProvenance) => setRuntimeProvenance(d))
-      .catch(() => setRuntimeProvenance(unavailableProvenance));
+      .then((d: RuntimeProvenance) => { if (!cancelled) setRuntimeProvenance(d); })
+      .catch(() => { if (!cancelled) setRuntimeProvenance(unavailableProvenance); });
+    void refresh();
+    const timer = window.setInterval(refresh, 30000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
   // Fetch hardware info for the footer
@@ -594,27 +598,34 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
             <a href={runtimeProvenance.components.plugin.commitUrl} target="_blank" rel="noopener noreferrer" className="app-text-secondary whitespace-nowrap hover:underline">
               plugin <code>{shortSha(runtimeProvenance.components.plugin.commit)}</code>
             </a>
-            <details className="runtime-details">
+            <details className="runtime-details" onKeyDown={(event) => { if (event.key === "Escape") event.currentTarget.open = false; }}>
               <summary className="app-text-secondary cursor-pointer whitespace-nowrap">image {shortDigest(runtimeProvenance.image.digest)}</summary>
-              <div className="app-card absolute bottom-[calc(100%+0.6rem)] right-3 z-50 w-[min(44rem,calc(100vw-1.5rem))] rounded-xl p-4 text-left shadow-2xl">
-                <p className="app-text text-sm font-semibold">实际推理运行来源</p>
+              <div className="app-card absolute bottom-[calc(100%+0.6rem)] right-3 z-50 max-h-[75vh] overflow-y-auto w-[min(44rem,calc(100vw-1.5rem))] rounded-xl p-4 text-left shadow-2xl">
+                <p className="app-text text-sm font-semibold">运行来源 · 容器身份已核验</p>
+                <p className="app-text-muted mt-2 text-xs leading-5">{runtimeProvenance.verification?.message}</p>
+                <p className="app-text-muted mt-1 text-xs">源码为构建时冻结快照；通道名不代表当前 latest main。</p>
                 <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-[7rem_1fr]">
                   <dt className="app-text-muted">容器</dt><dd className="app-text-secondary break-all">{runtimeProvenance.container?.name}</dd>
                   <dt className="app-text-muted">镜像</dt><dd className="app-text-secondary break-all">{runtimeProvenance.image.reference}</dd>
-                  <dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.image.digest}</dd>
-                  <dt className="app-text-muted">兼容基座</dt><dd className="app-text-secondary">{runtimeProvenance.compatibility?.base}</dd>
+                  <dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.image.digest}<br />{runtimeProvenance.image.digestKind === "image-config" ? "本地 image ID；非 registry manifest" : "registry manifest"}</dd>
+                  <dt className="app-text-muted">稳定兼容基线</dt><dd className="app-text-secondary">{runtimeProvenance.compatibility?.stableRelease}</dd>
+                  <dt className="app-text-muted">兼容说明</dt><dd className="app-text-secondary">{runtimeProvenance.compatibility?.base}</dd>
+                  <dt className="app-text-muted">活跃源码通道</dt><dd className="app-text-secondary">{runtimeProvenance.compatibility?.sourceProfile}</dd>
                   <dt className="app-text-muted">构建时间</dt><dd className="app-text-secondary">{runtimeProvenance.image.createdAt}</dd>
                   <dt className="app-text-muted">Core SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.core.commit}</dd>
                   <dt className="app-text-muted">Core source</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.core.version}</dd>
+                  <dt className="app-text-muted">Core package</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.compatibility?.vllmPackage}</dd>
                   <dt className="app-text-muted">Plugin SHA</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.plugin.commit}</dd>
                   <dt className="app-text-muted">Plugin source</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.components.plugin.version}</dd>
+                  <dt className="app-text-muted">Plugin package</dt><dd className="app-text-secondary break-all font-mono">{runtimeProvenance.compatibility?.vllmAscendPackage}</dd>
                   <dt className="app-text-muted">证据时间</dt><dd className="app-text-secondary">{runtimeProvenance.capturedAt}</dd>
+                  <dt className="app-text-muted">身份核验时间</dt><dd className="app-text-secondary">{runtimeProvenance.verification?.checkedAt}</dd>
                 </dl>
               </div>
             </details>
           </div>
         ) : (
-          <span className="text-amber-300" title={runtimeProvenance.reason}>运行来源暂不可用</span>
+          <span className="text-amber-300" role="status">运行来源未核验：{runtimeProvenance.reason || "正在读取凭据"}</span>
         )}
       </footer>
       <ModelHubModal

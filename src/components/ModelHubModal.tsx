@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, LoaderCircle, PackageOpen, X } from "lucide-react";
 import clsx from "clsx";
+import { useDialogFocus } from "@/components/useDialogFocus";
 import type { ModelHubModel } from "@/types";
 
 interface CatalogPayload {
@@ -23,6 +24,7 @@ export default function ModelHubModal({
   onClose,
   onActivate,
 }: ModelHubModalProps) {
+  const dialogRef = useDialogFocus(open, onClose);
   const [catalog, setCatalog] = useState<ModelHubModel[]>([]);
   const [modelsDir, setModelsDir] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,7 +114,7 @@ export default function ModelHubModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="w-full max-w-6xl max-h-[88vh] overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/40 flex flex-col">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="模型库" tabIndex={-1} className="w-full max-w-6xl max-h-[88vh] overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/40 flex flex-col">
         <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
           <div>
             <h2 className="text-white text-xl font-semibold">模型库</h2>
@@ -122,7 +124,7 @@ export default function ModelHubModal({
             type="button"
             onClick={onClose}
             aria-label="关闭模型库"
-            className="w-10 h-10 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/5"
+            className="app-control shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center"
           >
             <X size={18} />
           </button>
@@ -133,7 +135,7 @@ export default function ModelHubModal({
           <button
             type="button"
             onClick={() => void loadCatalog()}
-            className="text-sky-300 hover:text-sky-200"
+            className="text-sky-300 hover:text-sky-200 shrink-0 ml-3"
           >
             刷新列表
           </button>
@@ -154,10 +156,13 @@ export default function ModelHubModal({
             </div>
           )}
 
+          {!loading && !error && catalog.length === 0 && (
+            <p className="app-text-muted rounded-xl border app-border p-6 text-sm" role="status">模型目录为空，请刷新列表或检查目录配置。</p>
+          )}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {catalog.map((item) => {
               const download = item.download;
-              const isCurrent = item.id === currentModel || item.active;
+              const isCurrent = item.id === currentModel;
               const isDownloading = download?.status === "downloading";
               const progress = download?.pct ?? 0;
 
@@ -169,8 +174,8 @@ export default function ModelHubModal({
                     isCurrent ? "border-sky-400/35" : "border-white/10"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
+                    <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-white text-lg font-semibold">{item.name}</h3>
                         <span className="text-xs px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/60">
@@ -189,7 +194,7 @@ export default function ModelHubModal({
                       </div>
                       <p className="text-white/40 text-xs mt-2">{item.repoId}</p>
                     </div>
-                    <div className="text-right text-xs text-white/45 space-y-1">
+                    <div className="shrink-0 text-xs text-white/45 space-y-1 sm:text-right">
                       <div>权重约 {item.sizeGb} GB</div>
                       <div>建议显存 {item.vramGb} GB</div>
                     </div>
@@ -201,8 +206,7 @@ export default function ModelHubModal({
                     {item.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="text-xs px-2.5 py-1 rounded-full border"
-                        style={{ borderColor: `${item.color}55`, color: item.color, background: `${item.color}15` }}
+                        className="app-text-secondary app-surface-muted app-border text-xs px-2.5 py-1 rounded-full border"
                       >
                         {tag}
                       </span>

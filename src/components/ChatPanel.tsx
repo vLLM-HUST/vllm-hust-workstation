@@ -273,7 +273,7 @@ export default function ChatPanel({
       {/* Input */}
       <div className="app-divider border-t px-3 pb-3 pt-2 sm:px-6 sm:pb-5">
         <div className="app-control mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:gap-3 sm:px-4">
-          <button className="hidden sm:block text-white/30 hover:text-white/60 transition-colors flex-shrink-0 mb-0.5">
+          <button disabled aria-label="附件功能暂不可用" title="附件功能暂不可用" className="hidden sm:block text-white/30 transition-colors flex-shrink-0 mb-0.5">
             <Paperclip size={18} />
           </button>
           <textarea
@@ -335,6 +335,7 @@ export default function ChatPanel({
             )}
             <button
               onClick={loading ? onStop : handleSend}
+              aria-label={loading ? "停止生成" : "发送消息"}
               disabled={!loading && !input.trim()}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
               style={
@@ -352,7 +353,7 @@ export default function ChatPanel({
           </div>
         </div>
         <div className="app-text-muted mx-auto mt-2 flex max-w-4xl items-center justify-center gap-3 text-xs">
-          <p className="hidden sm:block">平台私有推理 · 端到端加密 · 零数据上报</p>
+          <p className="hidden sm:block">本地算力推理 · 请求经工作站转发</p>
           {searchEnabled && webSearch && <span className="text-sky-300/80">🌐 联网搜索已开启</span>}
           {thinkingEnabled && <span className="text-violet-300/80">💡 深度思考已开启</span>}
         </div>

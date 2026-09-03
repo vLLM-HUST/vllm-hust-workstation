@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import clsx from "clsx";
+import { useDialogFocus } from "@/components/useDialogFocus";
 import {
   Bot,
   ClipboardList,
@@ -851,6 +852,7 @@ function ResearchRunCard({
 }
 
 export default function AgentLabModal({ open, currentModel, accentColor, onClose }: AgentLabModalProps) {
+  const dialogRef = useDialogFocus(open, onClose);
   const [prompt, setPrompt] = useState("请设计一个用于评估 vllm-hust 在自动科研场景稳定性的实验计划，给出步骤、指标与判定标准。");
   const [runs, setRuns] = useState<ResearchRun[]>([]);
   const [runningRunId, setRunningRunId] = useState<string | null>(null);
@@ -1137,7 +1139,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="EvoScientist 任务与日志" tabIndex={-1} className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4">
       <div className="w-full max-w-7xl max-h-[96vh] sm:max-h-[92vh] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col">
         <div
           className="shrink-0 px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -1154,7 +1156,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
                 onClick={() => setViewMode("runs")}
                 className={clsx(
                   "rounded-lg px-3 py-1.5 text-xs transition-colors",
-                  viewMode === "runs" ? "bg-white/15 text-white" : "text-white/50"
+                  viewMode === "runs" ? "app-control app-text" : "app-text-secondary"
                 )}
               >
                 研究流
@@ -1164,7 +1166,7 @@ export default function AgentLabModal({ open, currentModel, accentColor, onClose
                 onClick={() => setViewMode("control")}
                 className={clsx(
                   "rounded-lg px-3 py-1.5 text-xs transition-colors",
-                  viewMode === "control" ? "bg-white/15 text-white" : "text-white/50"
+                  viewMode === "control" ? "app-control app-text" : "app-text-secondary"
                 )}
               >
                 控制台

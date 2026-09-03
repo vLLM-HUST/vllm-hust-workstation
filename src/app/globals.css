@@ -25,6 +25,13 @@
   --warning: #fcd34d;
   --danger: #fca5a5;
   --info: #7dd3fc;
+  --focus: #a5b4fc;
+  --chart-purple: #a78bfa;
+  --chart-blue: #38bdf8;
+  --chart-green: #34d399;
+  --chart-orange: #fb923c;
+  --chart-pink: #f472b6;
+  --chart-teal: #2dd4bf;
 }
 
 [data-theme="light"] {
@@ -49,6 +56,13 @@
   --warning: #a16207;
   --danger: #b91c1c;
   --info: #0369a1;
+  --focus: #4338ca;
+  --chart-purple: #6d28d9;
+  --chart-blue: #0369a1;
+  --chart-green: #047857;
+  --chart-orange: #9a3412;
+  --chart-pink: #a21caf;
+  --chart-teal: #0f766e;
 }
 
 * {
@@ -108,9 +122,10 @@ html {
 }
 
 .app-divider { border-color: var(--border); }
+.runtime-details > div { background: var(--surface-raised); }
 
 :where(button, a, select, textarea, input, summary):focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 78%, white);
+  outline: 2px solid var(--focus) !important;
   outline-offset: 2px;
 }
 
@@ -127,6 +142,10 @@ html {
 }
 
 /* Thin scrollbar */
+[data-theme="dark"] :is(.text-white\/50, .text-white\/45, .text-white\/40, .text-white\/35, .text-white\/30, .text-white\/25, .text-white\/20, .text-white\/15) { color: var(--text-muted); }
+button.bg-sky-500.text-white { background-color: #0369a1; color: #ffffff; }
+button.bg-sky-500.text-white:hover { background-color: #075985; }
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -159,6 +178,8 @@ html {
 [data-theme="light"] :is(.text-sky-100, .text-sky-200, .text-sky-300) { color: #0369a1; }
 [data-theme="light"] :is(.text-cyan-50\/85, .text-cyan-100, .text-cyan-100\/70, .text-cyan-100\/75, .text-cyan-100\/90, .text-cyan-200) { color: #0e7490; }
 [data-theme="light"] :is(.text-violet-100, .text-violet-200, .text-violet-300) { color: #6d28d9; }
+[data-theme="light"] .text-violet-300\/80 { color: #6d28d9; }
+[data-theme="light"] .text-sky-300\/80 { color: #0369a1; }
 [data-theme="light"] :is(.text-amber-100, .text-amber-100\/85, .text-amber-200, .text-amber-300) { color: #a16207; }
 [data-theme="light"] :is(.text-red-100, .text-red-200, .text-red-300, .text-red-400) { color: #b91c1c; }
 [data-theme="light"] :is(.text-fuchsia-50\/85, .text-fuchsia-100\/70) { color: #a21caf; }

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Zap, Clock, Activity, HardDrive, Database, Server, X, ShieldCheck } from "lucide-react";
 import clsx from "clsx";
+import { useDialogFocus } from "@/components/useDialogFocus";
 import LocalServiceCard from "@/components/LocalServiceCard";
 import type { MetricsSnapshot } from "@/types";
 import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
@@ -46,7 +47,7 @@ function StatCard({
   return (
     <div className="app-card-flat rounded-xl p-3 transition-colors">
       <div className="mb-2 flex items-center gap-2">
-        <div className="p-1.5 rounded-lg" style={{ background: `${color}20` }}>
+        <div className="p-1.5 rounded-lg" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
           <div style={{ color }}>{icon}</div>
         </div>
         <span className="app-text-muted text-[11px] font-medium uppercase tracking-wider">
@@ -123,7 +124,7 @@ function GpuBar({ used, total, color }: { used: number; total: number; color: st
   return (
     <div className="app-card-flat rounded-xl p-3">
       <div className="flex items-center gap-2 mb-3">
-        <div className="p-1.5 rounded-lg" style={{ background: `${color}20` }}>
+        <div className="p-1.5 rounded-lg" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
           <HardDrive size={14} style={{ color }} />
         </div>
         <span className="app-text-muted text-[11px] font-medium uppercase tracking-wider">
@@ -162,6 +163,7 @@ export default function MetricsDashboard({
 }: MetricsDashboardProps) {
   const s = snapshot;
   const [desktopRail, setDesktopRail] = useState(false);
+  const dialogRef = useDialogFocus<HTMLElement>(open && !desktopRail, onClose);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1280px)");
@@ -177,6 +179,11 @@ export default function MetricsDashboard({
     <>
       {open ? <button type="button" aria-label="关闭运行状态" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm xl:hidden" /> : null}
       <aside
+        ref={dialogRef}
+        role={open && !desktopRail ? "dialog" : undefined}
+        aria-modal={open && !desktopRail ? true : undefined}
+        aria-label="运行状态"
+        tabIndex={-1}
         aria-hidden={!panelInteractive}
         inert={panelInteractive ? undefined : true}
         className={clsx(
@@ -237,34 +244,35 @@ export default function MetricsDashboard({
           label="吞吐率"
           value={s ? s.tokensPerSecond.toFixed(1) : "—"}
           unit="tok/s"
-          color="#a78bfa"
+          color="var(--chart-purple)"
         />
         <StatCard
           icon={<Clock size={14} />}
-          label="平均延迟"
+          label="首 token 延迟"
           value={s ? s.avgLatencyMs.toFixed(0) : "—"}
           unit="ms"
-          sub="P50 首 token 延迟"
-          color="#38bdf8"
+          sub="P50 · 未采集时为 0"
+          color="var(--chart-blue)"
         />
         <StatCard
           icon={<Activity size={14} />}
-          label="GPU 利用率"
-          value={s ? s.gpuUtilPct.toFixed(0) : "—"}
+          label="加速器利用率"
+          value={s && s.gpuMemTotalGb > 0 ? s.gpuUtilPct.toFixed(0) : "—"}
+          sub={s && s.gpuMemTotalGb > 0 ? undefined : "未提供设备遥测"}
           unit="%"
-          color="#34d399"
+          color="var(--chart-green)"
         />
 
         <StatCard
           icon={<Database size={14} />}
           label="已服务"
           value={s ? s.totalRequestsServed : "—"}
-          color="#fb923c"
+          color="var(--chart-orange)"
         />
         </div>
 
-        {/* GPU memory bar */}
-        {s && (
+        {/* Only display device memory when a real capacity was reported. */}
+        {s && s.gpuMemTotalGb > 0 && (
           <GpuBar
             used={s.gpuMemUsedGb}
             total={s.gpuMemTotalGb}
@@ -273,8 +281,8 @@ export default function MetricsDashboard({
         )}
 
         <div className="grid grid-cols-2 gap-2">
-          <MiniChart data={history} dataKey="tps" color="#a78bfa" label="吞吐趋势" />
-          <MiniChart data={history} dataKey="latency" color="#38bdf8" label="延迟趋势" />
+          <MiniChart data={history} dataKey="tps" color="var(--chart-purple)" label="吞吐趋势" />
+          <MiniChart data={history} dataKey="latency" color="var(--chart-blue)" label="延迟趋势" />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -282,14 +290,14 @@ export default function MetricsDashboard({
             icon={<Server size={14} />}
             label="排队中"
             value={s ? s.pendingRequests : "—"}
-            color="#f472b6"
+            color="var(--chart-pink)"
           />
           <StatCard
             icon={<Clock size={14} />}
             label="运行时长"
             value={s ? Math.floor(s.uptimeSeconds / 3600) : "—"}
             unit="h"
-            color="#2dd4bf"
+            color="var(--chart-teal)"
           />
         </div>
 
@@ -308,7 +316,7 @@ export default function MetricsDashboard({
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">状态</span>
-              <span className="text-emerald-400 font-medium">持续服务中</span>
+              <span className={online ? "text-emerald-400 font-medium" : "text-red-300 font-medium"}>{online ? "服务在线" : "服务离线"}</span>
             </div>
           </div>
         )}
@@ -317,17 +325,24 @@ export default function MetricsDashboard({
           <section className="app-card rounded-xl p-4">
             <div className="flex items-center gap-2">
               <ShieldCheck size={15} className="text-emerald-300" />
-              <h3 className="app-text text-sm font-semibold">可信运行来源</h3>
+              <h3 className="app-text text-sm font-semibold">运行来源 · 容器身份已核验</h3>
             </div>
+            <p className="app-text-muted mt-2 text-xs leading-5">{runtimeProvenance.verification?.message}</p>
+            <p className="app-text-muted mt-1 text-xs leading-5">源码为构建时冻结快照；通道名不代表当前 latest main。</p>
             <dl className="mt-3 space-y-2 text-xs">
+              <div><dt className="app-text-muted">凭据采集 / 身份核验时间</dt><dd className="app-text-secondary break-all">{runtimeProvenance.capturedAt}<br />{runtimeProvenance.verification?.checkedAt}</dd></div>
               <div><dt className="app-text-muted">镜像</dt><dd className="app-text-secondary mt-0.5 break-all">{runtimeProvenance.image.reference}</dd></div>
               <div><dt className="app-text-muted">Image digest</dt><dd className="app-text-secondary mt-0.5 break-all font-mono">{runtimeProvenance.image.digest}</dd></div>
-              <div><dt className="app-text-muted">兼容基座</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.base}</dd></div>
+              <div><dt className="app-text-muted">稳定兼容基线</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.stableRelease}</dd></div>
+              <div><dt className="app-text-muted">兼容说明</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.base}</dd></div>
+              <div><dt className="app-text-muted">活跃源码通道</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.compatibility?.sourceProfile}</dd></div>
               <div><dt className="app-text-muted">构建时间</dt><dd className="app-text-secondary mt-0.5">{runtimeProvenance.image.createdAt}</dd></div>
               <div><dt className="app-text-muted">Core SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.core.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.core.commit}</a></dd></div>
               <div><dt className="app-text-muted">Core source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.core.version}</dd></div>
+              <div><dt className="app-text-muted">Core package</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.compatibility?.vllmPackage}</dd></div>
               <div><dt className="app-text-muted">Plugin SHA</dt><dd className="mt-0.5"><a className="text-sky-300 hover:underline font-mono" href={runtimeProvenance.components.plugin.commitUrl} target="_blank" rel="noreferrer">{runtimeProvenance.components.plugin.commit}</a></dd></div>
               <div><dt className="app-text-muted">Plugin source</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.components.plugin.version}</dd></div>
+              <div><dt className="app-text-muted">Plugin package</dt><dd className="app-text-secondary mt-0.5 font-mono">{runtimeProvenance.compatibility?.vllmAscendPackage}</dd></div>
             </dl>
           </section>
         ) : (

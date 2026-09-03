@@ -10,8 +10,8 @@ export const MODEL_CATALOG: ModelHubModel[] = [
     params: "32B",
     sizeGb: 65.6,
     vramGb: 40,
-    description: "Qwen3 旗舰指令模型，中英文与代码推理能力极强，当前已部署在本机 NPU 上。",
-    tags: ["中文", "推理", "当前部署"],
+    description: "Qwen3 指令模型，支持中英文与代码推理。目录收录不代表当前服务已加载；运行模型以在线接口为准。",
+    tags: ["中文", "推理"],
     color: "#10b981",
   },
   {
