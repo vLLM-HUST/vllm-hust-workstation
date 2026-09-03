@@ -1,4 +1,3 @@
-import { DEFAULT_MODEL_ID } from "@/lib/config";
 import {
   getInternalMetricsSnapshot,
   recordApiRequest,
@@ -52,12 +51,14 @@ export async function GET() {
   const internal = getInternalMetricsSnapshot();
   const live = metricsProbe.snapshot;
   const stats = statsProbe.snapshot;
-  setWorkstationInfo(
-    internal.modelName || process.env.DEFAULT_MODEL || DEFAULT_MODEL_ID,
-    internal.backendType || process.env.BACKEND_TYPE || "CPU"
-  );
-
   const merged = { ...compactMetrics(internal), ...live, ...stats };
+  // Configured defaults and historical metric labels are not current model
+  // identity. Use the same healthy-engine preference as /api/models, and never
+  // present a stale label when live discovery cannot verify a model.
+  const observedModelIds = engineProbe.state === "healthy"
+    ? engineProbe.modelIds
+    : engineProbe.state !== "unhealthy" && modelsProbe.reachable ? modelsProbe.ids : [];
+  const modelName = observedModelIds.length ? [...new Set(observedModelIds)].join(" · ") : "未核验";
   const gatewayAvailable =
     engineProbe.state === "healthy" ||
     modelsProbe.ids.length > 0 ||
@@ -72,15 +73,12 @@ export async function GET() {
     uptimeSeconds: merged.uptimeSeconds ?? 0,
     totalRequestsServed: merged.totalRequestsServed ?? 0,
     avgLatencyMs: merged.avgLatencyMs ?? 0,
-    modelName:
-      merged.modelName ??
-      modelsProbe.ids[0] ??
-      engineProbe.modelIds[0] ??
-      (process.env.DEFAULT_MODEL || DEFAULT_MODEL_ID),
+    modelName,
     backendType: merged.backendType ?? (process.env.BACKEND_TYPE || "CPU"),
     gatewayAvailable,
   };
+  setWorkstationInfo(snapshot.modelName!, snapshot.backendType!);
 
   recordApiRequest("/api/metrics", "GET", 200, (performance.now() - start) / 1000);
-  return Response.json(snapshot);
+  return Response.json(snapshot, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

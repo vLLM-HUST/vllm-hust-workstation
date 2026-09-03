@@ -305,9 +305,9 @@ export default function MetricsDashboard({
         {/* Model info */}
         {s && (
           <div className="app-card-flat rounded-xl p-4 text-xs space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <span className="text-white/40">模型</span>
-              <span className="text-white/80 font-mono truncate max-w-[140px]">
+              <span className="text-white/80 min-w-0 max-w-[75%] break-all text-right font-mono" title={s.modelName}>
                 {s.modelName}
               </span>
             </div>
