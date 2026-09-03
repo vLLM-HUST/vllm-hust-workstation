@@ -94,14 +94,16 @@ def identity(container):
     return (container["Id"], container["Image"], container["State"]["StartedAt"], container["State"]["Running"])
 
 
-def inspect(name, command, run=invoke):
+def inspect(name, command, run=invoke, *, python_bin="python3"):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", name):
         raise ValueError("invalid container name")
+    if python_bin != "python3" and (not re.fullmatch(r"/[A-Za-z0-9_./-]+/python[0-9.]*", python_bin) or "/../" in python_bin):
+        raise ValueError("invalid serving interpreter")
     before = json.loads(run([*command, "inspect", "--type", "container", name]))[0]
     if not before["State"]["Running"]:
         raise ValueError("target container is not running")
     # Always collect through the immutable ID, not a name that can be reassigned.
-    data = json.loads(run([*command, "exec", "-i", before["Id"], "python3", "-"], input_text=COLLECTOR))
+    data = json.loads(run([*command, "exec", "-i", before["Id"], python_bin, "-"], input_text=COLLECTOR))
     after = json.loads(run([*command, "inspect", "--type", "container", name]))[0]
     if identity(before) != identity(after):
         raise ValueError("target changed during inspection; discard this inventory")

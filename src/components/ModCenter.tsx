@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { ArrowLeft, ExternalLink, Moon, Puzzle, Sun } from "lucide-react";
 import { MOD_CATALOG_SOURCE, type ModAction, type ModCatalogPayload } from "@/lib/modCatalog";
 import { useDialogFocus } from "./useDialogFocus";
+import ModRuntimePanel from "./ModRuntimePanel";
 
 const labels: Record<string, string> = { install: "安装", configure: "保存配置", enable: "启用意图", disable: "停用意图", uninstall: "卸载", queued: "排队中", running: "执行中", succeeded: "已完成", failed: "失败", interrupted: "已中断" };
 export default function ModCenter() {
@@ -53,6 +54,8 @@ export default function ModCenter() {
     return () => window.clearInterval(timer);
   }, [busy, pending, load, token]);
   const administrator = Boolean(token && payload?.administrator);
+  const expireAuthorization = useCallback(() => { ++epoch.current; setToken(""); setPayload(null); void load(""); }, [load]);
+  const refreshLibrary = useCallback(() => { void load(token); }, [load, token]);
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next); document.documentElement.dataset.theme = next; document.documentElement.style.colorScheme = next;
@@ -93,7 +96,7 @@ export default function ModCenter() {
     </header>
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
       <section className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">发现推理优化扩展，管理安装与配置。</p></div>
+        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">面向推理实例管理优化扩展。</p></div>
         <a href={MOD_CATALOG_SOURCE} target="_blank" rel="noreferrer" className="app-text-secondary inline-flex items-center gap-2 text-sm underline underline-offset-4">官方插件目录<ExternalLink size={14} /></a>
       </section>
       {loginOpen && !administrator && <form onSubmit={login} className="app-surface rounded-xl border app-border p-4 flex flex-wrap items-end gap-3">
@@ -103,6 +106,7 @@ export default function ModCenter() {
       </form>}
       {error && <div role="alert" className="rounded-xl border p-4 text-sm" style={{ color: "var(--danger)", borderColor: "var(--danger)" }}>{error}</div>}
       {payload && !payload.storageReady && <p className="app-text-secondary text-sm">Mod 安装存储未就绪，目前只能浏览目录。</p>}
+      <ModRuntimePanel token={token} onAuthorizationExpired={expireAuthorization} onLibraryChanged={refreshLibrary} />
       <div className="flex flex-wrap items-center gap-3">
         <label className="min-w-0 flex-1"><span className="sr-only">搜索 Mod</span><input type="search" placeholder="搜索 Mod 或能力…" value={query} onChange={event => setQuery(event.target.value)} className="app-control w-full rounded-xl border px-4 py-2.5 text-sm" /></label>
         <label><span className="sr-only">筛选 Mod</span><select value={filter} onChange={event => setFilter(event.target.value)} className="app-control rounded-xl border px-3 py-2.5 text-sm"><option value="all">全部 Mod</option><option value="installed">已安装到库</option><option value="external">外部服务</option></select></label>
@@ -125,7 +129,7 @@ export default function ModCenter() {
           {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.installed ? `已安装到库 · ${mod.state.version}` : "未安装到库"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">运行未核验</span></div>
           <a href={`${mod.repository}/commit/${mod.sha}`} target="_blank" rel="noreferrer" className="app-text-muted mt-3 text-xs underline underline-offset-4">固定源码 {mod.sha.slice(0, 12)}</a></>}
           {mod.stateError && <p role="alert" className="mt-3 text-sm" style={{ color: "var(--danger)" }}>{mod.stateError}</p>}
-          {administrator && mod.sha && <div className="mt-auto pt-5">
+          {administrator && mod.sha && <details className="mt-auto pt-5"><summary className="app-text-secondary cursor-pointer py-2 text-sm">制品与配置</summary><div className="pt-3">
             {mod.state.installed && <details className="mb-4 text-sm"><summary className="cursor-pointer app-text-secondary py-2">配置 · {mod.state.configured ? "已保存" : "未配置"}</summary>
               <p className="app-text-muted my-2 text-xs leading-5">仅接受 launch_options。BidKV / LatchMoE 可先保存空对象；DiffSpec 需要 speculative_config.model。配置不代表宿主兼容。</p>
               <label className="block"><span className="sr-only">{mod.name} 配置 JSON</span><textarea rows={5} value={configs[mod.id] ?? (mod.id === "diffspec" ? '{"launch_options":{"speculative_config":{"model":"","method":"eagle3"}}}' : "{}")} onChange={event => setConfigs(value => ({...value, [mod.id]: event.target.value}))} className="app-control w-full rounded-lg border p-3 font-mono text-xs" /></label>
@@ -136,9 +140,8 @@ export default function ModCenter() {
                 <button type="button" disabled={busy || pending || (!mod.state.enabled && !mod.state.configured)} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.state.enabled ? "disable" : "enable"})}>{mod.state.enabled ? "停用意图" : "启用意图"}</button>
                 <button type="button" disabled={busy || pending || mod.state.enabled} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "uninstall"})}>卸载</button>
               </>}
-              <button type="button" disabled className="app-control rounded-lg border px-3 py-2" title="运行功能暂未开放">运行 · 暂未开放</button>
             </div>
-          </div>}
+          </div></details>}
         </article>)}
       </section>
       {administrator && confirmation && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "var(--overlay)" }}><section ref={confirmationRef} role="dialog" aria-modal="true" tabIndex={-1} className="app-surface-raised w-full max-w-lg rounded-xl border app-border p-5" aria-label="操作确认">

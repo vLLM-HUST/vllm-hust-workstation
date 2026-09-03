@@ -10,6 +10,9 @@ if (!(await lstat(candidate)).isDirectory() || !(await lstat(resolve(candidate, 
   throw new Error("Expected a generated standalone directory and server entrypoint");
 }
 if (!(await lstat(resolve(candidate, "scripts/mod_worker.py"))).isFile()) throw new Error("Standalone Mod worker is missing");
+for (const file of ["mod_runtime_worker.py", "mod_deployment.py", "prepare_mod_image.py", "inspect_mod_runtime.py", "build_mod_observer.py", "runtime/workstation_mod_runtime/__init__.py", "runtime/workstation_mod_runtime/__main__.py"]) {
+  if (!(await lstat(resolve(candidate, "scripts", file))).isFile()) throw new Error("Standalone runtime preparation helper is missing: " + file);
+}
 for (const name of [".env", ".env.local", ".env.production", ".env.production.local"]) {
   await rm(resolve(candidate, name), { force: true });
 }
@@ -44,6 +47,9 @@ try {
   const mods = await fetch(`http://127.0.0.1:${port}/api/mods`);
   const modCatalog = await mods.json();
   if (!mods.ok || !Array.isArray(modCatalog.catalog) || modCatalog.administrator) throw new Error("Standalone Mod catalog failed");
+  const instance = await fetch(`http://127.0.0.1:${port}/api/mod-runtime`);
+  const instanceData = await instance.json();
+  if (!instance.ok || instanceData.administrator || instanceData.applicationAvailable !== false || instanceData.tasks.length) throw new Error("Standalone runtime catalog failed");
   console.log("Standalone startup and read-only catalog probe passed");
 } finally {
   if (child.exitCode === null && !spawnError) {

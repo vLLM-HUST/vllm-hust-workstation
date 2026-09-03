@@ -44,6 +44,6 @@ it("does not turn historical-range presentation into activation or public mutati
   expect(host.textContent).not.toContain("官方 vLLM 暂不支持");
   expect(host.textContent).not.toContain("已兼容");
   expect([...host.querySelectorAll("button")].some(button => /安装到|启用意图|卸载/.test(button.textContent || ""))).toBe(false);
-  expect(fetchMock.mock.calls).toHaveLength(1);
-  expect(fetchMock.mock.calls[0][1].method).toBeUndefined();
+  expect(fetchMock.mock.calls.filter(([url]) => url === "/api/mods")).toHaveLength(1);
+  expect(fetchMock.mock.calls.every(([, options]) => options.method === undefined)).toBe(true);
 });

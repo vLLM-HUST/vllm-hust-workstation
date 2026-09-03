@@ -173,6 +173,61 @@ import order before drawing a compatibility conclusion.
 
 ## Implemented preparation and transaction primitives
 
+### Instance control-plane preparation
+
+`GET /api/mod-runtime` projects the explicitly enrolled current Workstation target:
+verified container/image/source identity, live upstream model IDs, and an **unknown**
+effective-Mod observation. Public callers see no task logs or private launcher
+paths. A container provenance receipt does not become worker/inference proof.
+
+The operator supplies `WORKSTATION_MOD_RUNTIME_CONFIG`, a private mode-0600 JSON
+file with schema `workstation.mod-runtime-config/v1` and a `target` object:
+
+```json
+{
+  "schema": "workstation.mod-runtime-config/v1",
+  "target": {
+    "id": "workstation-current",
+    "label": "Current Workstation inference",
+    "ownership": "shared",
+    "containerName": "operator-selected-container",
+    "pythonBin": "/absolute/serving/python",
+    "upstreamUrl": "http://127.0.0.1:18001"
+  }
+}
+```
+
+The container and normalized upstream must match the existing deployment's
+`WORKSTATION_RUNTIME_CONTAINER` and `VLLM_HUST_BASE_URL`. The registry is not
+editable through the API. `WORKSTATION_MOD_RUNTIME_DIR` is a separate private,
+operator-owned directory for task journals and derived image contexts. The
+existing `WORKSTATION_MOD_DIR` remains the artifact library. This enrollment
+permits observation/preparation only, **not serving lifecycle control**.
+
+Authenticated `POST /api/mod-runtime` accepts exactly
+`{"action":"prepare","targetId":"...","modId":"..."}`. Source pins, interpreter,
+container and paths come from reviewed server data, never browser launch fields.
+The durable worker:
+
+1. Rechecks immutable container identity and installed artifact lock in the exact
+   registered serving Python.
+2. Acquires a preparation lock and the same library lock used by installation and
+   removal. Missing Mod artifacts are built from the catalog's fixed sources.
+3. Prepares a derived immutable image without NPU/model/port access or serving
+   transitions, then rechecks the target.
+4. Records prepared-but-unapplied, or superseded if the target changed/cannot be
+   reverified. Candidate evidence is retained in either case.
+
+Confirmed abnormal executor exit is marked interrupted; it does not prove a
+daemon-side build stopped. Unresolved queued/preparing/interrupted journals block
+new submissions until examined. Neither age nor a UI polling timeout causes an
+automatic retry. Application/disable/rollback API requests still fail closed:
+the real owner adapter, generation fencing and serving qualification are not yet
+implemented. The existing transaction coordinator alone is not that adapter.
+
+The page makes the target and runtime preparation primary. Legacy library controls
+are secondary disclosures; their saved enable intent is not runtime activation.
+
 `scripts/prepare_mod_image.py` moves reviewed library wheels into a derived
 runtime image, using the explicitly specified serving interpreter. It does not
 use the library venv as the inference environment. It verifies wheel hashes and
