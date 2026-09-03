@@ -35,6 +35,11 @@ class ClientTests(unittest.TestCase):
                                 cwd=ROOT, check=True, text=True, capture_output=True).stdout.split()
         self.assertEqual(staged[0], "160000")
         self.assertEqual(staged[1], lock["sourceSha"])
+        module = ROOT / "deps/vllm-hust-dev-hub"
+        expected = {client.ENTRY, "config/instance-control-contract.json"}
+        expected.update(str(path.relative_to(module))
+                        for path in (module / "scripts/instance_control").glob("*.py"))
+        self.assertEqual(set(lock["files"]), expected)
         self.assertEqual(client.producer(), ROOT / "deps/vllm-hust-dev-hub" / client.ENTRY)
 
     def test_caller_owner_or_command_never_grants_authority(self):

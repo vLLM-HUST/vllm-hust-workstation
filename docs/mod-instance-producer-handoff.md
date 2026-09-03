@@ -1,6 +1,7 @@
 # Sage Mate handoff: dev-hub default-off transaction milestone
 
-Producer main: `b6e56e1f7f1ae58ea15aa9994852f48290827a55`.
+Current producer main: `bfcc0d5c2c083d6b633d2f0657a09c7f7712c74c`.
+Initial transaction milestone: `b6e56e1f7f1ae58ea15aa9994852f48290827a55`.
 Workstation explicitly accepts Sage Mate `d310686`'s single-writer division and
 exact owner-entry/v1 request/manifest. No consumer schema change is requested.
 
@@ -49,6 +50,41 @@ Manager/Provider still own discovery, compatibility and rendering; do not inject
 native manifests or call Mod registration directly. Keep model, TP4 and graph
 unchanged. No plugin range widening without adaptation/evidence.
 
-Cross-task send was attempted after producer push, but the app returned its
-decommissioned-tool error; the message was **not delivered**. This document is the
-handoff artifact, not an assertion that Sage Mate has reviewed or repinned it.
+The coordinating task delivered the initial handoff. Sage Mate `405ff08` has now
+accepted/pinned `b6e56e1`, with 168 Sage checks and39 producer checks reported in its
+committed `docs/mod-producer-acceptance.md`. This task read that document and did
+not edit Sage files. Newer `bfcc0d5` consumer acceptance is not yet claimed.
+
+## Follow-up: generic foreground helper (`bfcc0d5`)
+
+- Added a structural Python Backend protocol using the existing six method
+  signatures and closed/redacted failure codes. No product adapter or registry.
+- Added opt-in direct-child supervision with explicit frozen command/environment,
+  TERM/INT/HUP forwarding, bounded escalation, reaping and handler restoration.
+  Every spawn/signal re-enters a trusted owner guard; loss of the guard reports
+  unconfirmed cleanup and never permits an emergency kill bypass. No restart.
+- Linux non-reaping wait prevents ordinary PID reuse during signalling; caller
+  must exclusively own child waiting. This is not descendant/cgroup isolation,
+  authenticated transport or daemon fencing. Neither production CLI imports it.
+- Full producer checks: **52 passed,37 subtests passed**, Ruff passed. The13 new
+  foreground tests/15 subtests passed in two additional consecutive repetitions.
+  Only disposable Python child processes were signalled, never shared services.
+- Workstation source-lock now includes all eight packaged producer files and
+  the exact new gitlink. No UI lifecycle availability or deployment gates changed.
+- Workstation follow-up regression: **76 Python tests/13 subtests**, **100 Vitest**,
+  zero-warning ESLint and focused Ruff passed. The client test now requires the
+  lock to cover every packaged control module. No new browser/build/deployment
+  acceptance is claimed for this dependency-only change; prior build results
+  above belong to the initial extraction milestone.
+
+Contract and fixture details: `deps/vllm-hust-dev-hub/docs/instance-backend-contract-proposal.md`.
+Sage feedback agrees with existing signatures but confirms no trusted executor
+identity, qualified synchronous deployment or old-writer exclusion proof. A
+generic authenticated broker/durable launch grant still needs a separate reviewed
+contract. Product adapter remains Sage-owned; generic producer remains this task's.
+
+Cross-task send of this follow-up again returned the decommissioned-tool error;
+it was **not delivered** by this task. This committed artifact is available to the
+coordinating task for delivery; the user is not asked to forward messages.
+No online deployment, permissions installation, service restart, NPU use, model/
+TP4/graph change or Sage gitlink edit was performed by this task.
