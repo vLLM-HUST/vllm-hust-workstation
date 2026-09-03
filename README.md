@@ -180,6 +180,52 @@ curl -fsS http://127.0.0.1:${APP_PORT:-3000}/api/versions
 失败，恢复旧容器/镜像合同后重新执行 `ci-deploy`；不要手工修改生成的 JSON，也
 不要只改前端显示来掩盖后端身份不一致。
 
+#### 每小时自动刷新与失败检查
+
+将 `WORKSTATION_RUNTIME_CONTAINER`（以及自定义 receipt 路径，如有）持久化在
+Workstation 的 `.env` 中。配置运行容器的 `ci-deploy` 会自动安装并启用
+`vllm-hust-workstation-provenance.timer`；已有部署也可单独安装，无需重启应用或推理服务：
+
+```bash
+bash scripts/install_runtime_provenance_timer.sh
+systemctl list-timers vllm-hust-workstation-provenance.timer
+systemctl show vllm-hust-workstation-provenance.service -p Result -p ExecMainStatus
+sudo journalctl -u vllm-hust-workstation-provenance.service --since today
+```
+
+这是系统级 timer，由部署账号（本机为 `shuhao`）执行，只需安装和 Docker 读取所需的
+非交互式 sudo。它不依赖用户登录或 linger，不启停 Docker、推理容器或其他任务。
+每小时采集一次，随机延迟不超过 120 秒（另有 30 秒调度精度），启动后约两分钟也会触发；
+`Persistent=true` 会补执行关机期间错过的日历触发。安装时立即采集一次。
+
+采集命令限时 60 秒，超时后最多等待 5 秒强制结束，systemd 另设 90 秒上限。
+同一路径的采集用文件锁串行化，成功才原子替换 receipt。失败不刷新旧凭据的时间：
+`/api/versions` 仍拒绝超过 24 小时的 receipt，并继续核验当前容器身份。
+失败退出码写入 systemd/journal，另外原子记录在 receipt 旁的
+`runtime-provenance.refresh-status.json`，保留 `lastSuccessAt` 供监控读取。
+这里提供本机可观测的失败状态，未配置邮件或聊天推送渠道。
+
+暂停自动采集只需 `sudo systemctl disable --now vllm-hust-workstation-provenance.timer`；
+不会停止正在运行的推理容器。恢复可重跑安装脚本。定时器停用后 receipt 仍会正常过期，
+不得通过手改时间规避验证。
+
+#### Lint 与回归门禁
+
+`npm run lint` 使用仓库内的 ESLint flat config，检查 Next.js Core Web Vitals 和
+TypeScript 规则，非交互运行且不允许 warning。CI 和部署构建都执行此门禁。
+本地验收命令：
+
+```bash
+npm run lint
+npm test
+python3 -m unittest discover -s scripts/tests -v
+npx tsc --noEmit
+npm run build
+```
+
+采集集成测试只使用临时目录中的 fake Docker，覆盖成功、失败保留旧凭据、容器更换或停止、
+锁与标签不一致、超时、非法容器名和并发原子写入，不访问真实推理服务。
+
 ### EvoScientist 运行环境
 
 EvoScientist 要求 Python 3.11 或更高版本。建议在其仓库中使用锁文件创建独立

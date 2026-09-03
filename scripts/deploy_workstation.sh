@@ -226,6 +226,7 @@ build_runtime() {
   require_command node
   require_command npm
   npm_install
+  npm run lint
   build_app
   stage_runtime
   write_systemd_env
@@ -240,7 +241,11 @@ ci_deploy() {
   require_command systemctl
   ensure_systemd_user
   npm_install
+  npm run lint
   build_app
+  if [[ -n "${WORKSTATION_RUNTIME_CONTAINER:-}" ]]; then
+    bash "$SCRIPT_DIR/install_runtime_provenance_timer.sh"
+  fi
   stage_runtime
   write_systemd_env
   install_service_unit

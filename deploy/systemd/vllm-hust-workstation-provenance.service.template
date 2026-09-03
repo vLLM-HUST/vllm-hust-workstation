@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh Workstation runtime provenance (read-only container inspection)
+After=docker.service
+RequiresMountsFor=__REPO_DIR__
+
+[Service]
+Type=oneshot
+User=__USER__
+WorkingDirectory=__REPO_DIR__
+ExecStart=/usr/bin/bash "__REPO_DIR__/scripts/refresh_runtime_provenance.sh"
+TimeoutStartSec=90
+TimeoutStopSec=10
+Nice=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=workstation-provenance

@@ -12,6 +12,17 @@ if [[ -z "$CONTAINER_NAME" ]]; then
   exit 1
 fi
 
+if [[ ! "$CONTAINER_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
+  echo "Invalid serving container name" >&2
+  exit 1
+fi
+
+# Serialize deployment and timer captures of the same receipt. Failed captures
+# never replace the last successful receipt; the API still enforces its age.
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+exec 9>"$OUTPUT_FILE.lock"
+flock -w 10 9
+
 DOCKER_CMD=(docker)
 if ! docker inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
   DOCKER_CMD=(sudo -n docker)

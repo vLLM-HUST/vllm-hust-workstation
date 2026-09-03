@@ -1,0 +1,13 @@
+[Unit]
+Description=Keep Workstation runtime receipt fresh every hour
+
+[Timer]
+OnBootSec=2min
+OnCalendar=hourly
+RandomizedDelaySec=120
+AccuracySec=30s
+Persistent=true
+Unit=vllm-hust-workstation-provenance.service
+
+[Install]
+WantedBy=timers.target

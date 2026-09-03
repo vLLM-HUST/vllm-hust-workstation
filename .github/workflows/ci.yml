@@ -31,7 +31,20 @@ jobs:
         run: npm ci
 
       - name: Validate shell helper syntax
-        run: bash -n quickstart.sh
+        run: |
+          bash -n quickstart.sh
+          for script in scripts/*.sh; do bash -n "$script"; done
+
+      - name: Lint (non-interactive, zero warnings)
+        run: npm run lint
+
+      - name: Unit and contract tests
+        run: |
+          npm test
+          node --test src/components/WorkstationClient.fallback.test.js
+
+      - name: Receipt refresh integration tests (fake Docker only)
+        run: python3 -m unittest discover -s scripts/tests -v
 
       - name: Validate Python helper syntax
         run: python3 -m py_compile server.py

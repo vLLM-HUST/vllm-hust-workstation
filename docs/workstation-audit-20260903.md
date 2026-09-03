@@ -88,9 +88,9 @@ untrusted schema/repository fails closed with `available: false` and a visible
 reason. A captured receipt alone is no longer live proof.
 
 Operators must recapture at least every 24 hours while the Workstation remains
-deployed; until a refresh is scheduled, expiry intentionally degrades provenance
-display without affecting inference. No timer or runtime-manager mutation was
-silently installed by this audit.
+deployed. The initial audit did not install a timer; the explicitly requested
+follow-up below now installs hourly refresh. Expiry still intentionally degrades
+provenance display without affecting inference.
 
 ## UI and verification
 
@@ -208,7 +208,7 @@ Docker checks confirm the Sage Mate and statecentric container IDs and StartedAt
 values above are unchanged. The old Workstation build and receipt remain
 recoverable at `.workstation-deploy/rollback-20260903.7yLNa4/`.
 
-### Not passed / not verified
+### Initial audit limitations (before the follow-up below)
 
 - Standalone `npm run lint` is **not passed**: this repository has no ESLint
   configuration/dependency, so deprecated `next lint` opens its first-run
@@ -221,3 +221,56 @@ recoverable at `.workstation-deploy/rollback-20260903.7yLNa4/`.
 - Provenance refresh scheduling is an operational follow-up: without recapture,
   the 24-hour expiry deliberately hides unverified version claims. No inference
   service will be restarted by expiry or the read-only collector.
+
+## Requested lint and receipt-scheduling closure — 2026-09-03
+
+The two operational follow-ups above are now closed:
+
+- ESLint flat configuration uses Next.js Core Web Vitals and TypeScript rules.
+  `npm run lint` is noninteractive and exits on any warning. Removed unused
+  declarations, stabilized React callback dependencies, and narrowly documented
+  the two Playwright CLI function-expression files. No broad rule suppression.
+  Lint code/config commit: `42659de`. Existing runtime dependency versions did
+  not change; ESLint 9 matches the current Next 15 configuration's peer range.
+- CI checks lint, 50 Vitest tests, 16 streaming fallback assertions, eight
+  fake-Docker collector integration tests, shell syntax and production build.
+  The existing deployment workflow also gates builds on lint and ensures the
+  receipt timer is installed before replacing the Web runtime.
+- System-level `vllm-hust-workstation-provenance.timer` is enabled and active.
+  Its oneshot service runs as `shuhao`; no linger change was made. Hourly
+  calendar, boot trigger, persistent catch-up and up-to-120-second jitter keep
+  receipts inside the existing 24-hour freshness limit while the host is up.
+- Actual timer trigger: `2026-09-03 10:45:09 CST`; journal records successful
+  collection, `Result=success`, `ExecMainStatus=0`. Reinstallation during deploy
+  also passed immediate collection at `10:50:13 CST`. Next calendar trigger at
+  acceptance was `11:01:03 CST` (jitter may change on timer reload).
+- Collector captures serialize through a file lock; verified receipt replacement
+  is atomic. The wrapper applies a 60-second timeout (5-second kill grace), with
+  a separate 90-second systemd limit. Failure preserves the previous receipt and
+  last-success timestamp. Expired receipts are still rejected by the public API.
+  Failure visibility is local systemd/journal plus the atomic refresh-status
+  JSON; no email/chat delivery is configured or claimed.
+- Local acceptance: lint zero errors/warnings; 50/50 Vitest, 16/16 fallback and
+  8/8 collector checks; `tsc --noEmit`, shell syntax, `git diff --check` and
+  production build passed. Failure tests used temporary fake Docker binaries,
+  including replaced/stopped containers, artifact failure, conflicting commit,
+  timeout, invalid name and concurrent receipt writers; no production fault was
+  injected.
+- Existing `ci-deploy` restarted only Workstation at `10:50:16 CST`, PID
+  `3296090`. Rollback Web build is retained at
+  `.workstation-deploy/rollback-lint-timer.irWfYG/runtime/`.
+- Public `/api/versions` at `02:51:33 UTC`: `available=true`, `verified`, receipt
+  captured `02:50:13.935173 UTC`, age 80 seconds. Serving container/image/core/
+  plugin identities match the earlier runtime findings; both Sage Mate and
+  statecentric IDs and StartedAt values remain unchanged.
+- Public Playwright regression: 1440x1000 and 390x844, light/dark, homepage and
+  research/control views, keyboard theme persistence, Escape/focus restoration;
+  eight screenshots in `output/playwright/lint-receipt-20260903/`. No page
+  errors or horizontal overflow, zero mutation requests. Each modal bootstrap
+  made two context and two admin GETs, with no request loop during observation.
+  A font-preload warning was the only browser console warning.
+
+Operational commands and pause/resume behavior are documented in README's
+“每小时自动刷新与失败检查”. The registry-pullability and in-memory attestation
+limitations above are unchanged; this follow-up does not modify the inference
+runtime or the separate website.
