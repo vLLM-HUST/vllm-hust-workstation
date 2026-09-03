@@ -1,61 +1,69 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, LoaderCircle, PackageOpen, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Download, LoaderCircle, X } from "lucide-react";
 import clsx from "clsx";
 import { useDialogFocus } from "@/components/useDialogFocus";
-import type { ModelHubModel } from "@/types";
-
-interface CatalogPayload {
-  modelsDir: string;
-  catalog: ModelHubModel[];
-}
+import type { ModelHubCatalog, ModelHubModel } from "@/types";
 
 interface ModelHubModalProps {
   open: boolean;
   currentModel: string;
   onClose: () => void;
-  onActivate: (modelId: string) => void;
 }
 
 export default function ModelHubModal({
   open,
   currentModel,
   onClose,
-  onActivate,
 }: ModelHubModalProps) {
   const dialogRef = useDialogFocus(open, onClose);
   const [catalog, setCatalog] = useState<ModelHubModel[]>([]);
-  const [modelsDir, setModelsDir] = useState("");
+  const [payload, setPayload] = useState<ModelHubCatalog | null>(null);
+  const [adminToken, setAdminToken] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+  const [pendingModel, setPendingModel] = useState("");
+  const epoch = useRef(0);
+  const invalidateRequests = useCallback(() => { ++epoch.current; }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
-  const loadCatalog = useCallback(async () => {
+  const loadCatalog = useCallback(async (token = "") => {
+    const requestEpoch = ++epoch.current;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/hub/catalog", { cache: "no-store" });
+      const res = await fetch("/api/hub/catalog", { cache: "no-store", headers: token ? { "X-Workstation-Admin-Token": token } : {} });
+      if (requestEpoch !== epoch.current) return;
       if (!res.ok) {
+        if (res.status === 401) { setAdminToken(""); setPayload(null); }
+        if (res.status === 401) throw new Error("管理员令牌无效或已失效。");
         throw new Error(`HTTP ${res.status}`);
       }
-      const data: CatalogPayload = await res.json();
+      const data: ModelHubCatalog = await res.json();
+      if (requestEpoch !== epoch.current) return;
       setCatalog(data.catalog || []);
-      setModelsDir(data.modelsDir || "");
+      setPayload(data);
+      if (token && data.permissions?.administrator) { setAdminToken(token); setTokenInput(""); setShowLogin(false); }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "模型库加载失败");
+      if (requestEpoch === epoch.current) setError(err instanceof Error ? err.message : "模型库加载失败");
     } finally {
-      setLoading(false);
+      if (requestEpoch === epoch.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     if (!open) {
+      ++epoch.current;
+      setAdminToken(""); setTokenInput(""); setShowLogin(false); setPayload(null); setCatalog([]);
       return;
     }
     setActionMessage("");
-    void loadCatalog();
-  }, [open, loadCatalog]);
+    void loadCatalog(adminToken);
+    return invalidateRequests;
+  }, [open, loadCatalog, adminToken, invalidateRequests]);
 
   const hasDownloading = useMemo(
     () => catalog.some((item) => item.download?.status === "downloading"),
@@ -63,50 +71,40 @@ export default function ModelHubModal({
   );
 
   useEffect(() => {
-    if (!open || !hasDownloading) {
+    if (!open || !hasDownloading || pendingModel) {
       return;
     }
     const id = window.setInterval(() => {
-      void loadCatalog();
+      void loadCatalog(adminToken);
     }, 1500);
     return () => window.clearInterval(id);
-  }, [open, hasDownloading, loadCatalog]);
+  }, [open, hasDownloading, loadCatalog, adminToken, pendingModel]);
 
-  const startDownload = async (modelId: string) => {
+  const runAction = async (modelId: string, method: "POST" | "DELETE") => {
+    if (!adminToken || pendingModel) return;
+    const actionEpoch = epoch.current;
+    setPendingModel(modelId);
     setActionMessage("");
-    const res = await fetch(`/api/hub/download/${encodeURIComponent(modelId)}`, { method: "POST" });
-    if (!res.ok) {
-      const text = await res.text();
-      setActionMessage(`启动下载失败：${text.slice(0, 160)}`);
-      return;
+    try {
+      const res = await fetch(`/api/hub/download/${encodeURIComponent(modelId)}`, { method, headers: { "X-Workstation-Admin-Token": adminToken } });
+      const data = await res.json();
+      if (actionEpoch !== epoch.current) return;
+      if (res.status === 401) { setAdminToken(""); setPayload(null); }
+      if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      setActionMessage(method === "DELETE" ? "已请求取消，保留已下载文件以便续传。" : data.message);
+      await loadCatalog(adminToken);
+    } catch (err) {
+      if (actionEpoch === epoch.current) setActionMessage(err instanceof Error ? err.message : "操作失败，请稍后重试。");
+    } finally {
+      setPendingModel("");
     }
-    const data = await res.json();
-    setActionMessage(data.message === "started" ? "已开始下载，请等待进度刷新。" : "下载任务已存在，正在刷新状态。");
-    await loadCatalog();
   };
 
-  const cancelDownload = async (modelId: string) => {
-    setActionMessage("");
-    const res = await fetch(`/api/hub/download/${encodeURIComponent(modelId)}`, { method: "DELETE" });
-    if (!res.ok) {
-      setActionMessage("取消下载失败，请稍后重试。");
-      return;
-    }
-    setActionMessage("已取消下载任务。");
-    await loadCatalog();
+  const login = (event: FormEvent) => {
+    event.preventDefault();
+    void loadCatalog(tokenInput.trim());
   };
-
-  const activateModel = async (modelId: string) => {
-    setActionMessage("");
-    const res = await fetch(`/api/hub/activate/${encodeURIComponent(modelId)}`, { method: "POST" });
-    if (res.ok) {
-      onActivate(modelId);
-      setActionMessage(`已切换默认模型为 ${modelId}。重启 Gateway 后生效。`);
-      await loadCatalog();
-      return;
-    }
-    setActionMessage("设置当前模型失败，请稍后重试。");
-  };
+  const isAdmin = Boolean(adminToken && payload?.permissions?.administrator);
 
   if (!open) {
     return null;
@@ -118,7 +116,7 @@ export default function ModelHubModal({
         <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
           <div>
             <h2 className="text-white text-xl font-semibold">模型库</h2>
-            <p className="text-white/40 text-sm mt-1">主流大模型目录 · 一键下载 · 下载后可设为当前模型</p>
+            <p className="app-text-muted text-sm mt-1">浏览模型与权重状态 · 下载不等于部署，不会切换当前推理服务</p>
           </div>
           <button
             type="button"
@@ -130,15 +128,35 @@ export default function ModelHubModal({
           </button>
         </div>
 
-        <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between text-sm">
-          <div className="text-white/35 break-all">保存目录：{modelsDir || "—"}</div>
+        <div className="px-6 py-3 border-b app-border text-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="app-text-secondary">{isAdmin ? "管理员 · 下载管理" : "只读浏览"}</span>
+          <div className="flex flex-wrap gap-3">
+          {isAdmin ? <button type="button" className="app-control rounded-lg border px-3 py-2" onClick={() => { ++epoch.current; setAdminToken(""); setPayload(null); setCatalog([]); setActionMessage(""); }}>退出管理</button>
+            : <button type="button" className="app-control rounded-lg border px-3 py-2" onClick={() => setShowLogin(value => !value)}>管理员登录</button>}
           <button
             type="button"
-            onClick={() => void loadCatalog()}
-            className="text-sky-300 hover:text-sky-200 shrink-0 ml-3"
+            onClick={() => void loadCatalog(adminToken)}
+            disabled={loading}
+            className="app-control rounded-lg border px-3 py-2"
           >
             刷新列表
           </button>
+          </div>
+          </div>
+          {showLogin && !isAdmin && <form onSubmit={login} className="flex flex-wrap items-end gap-2">
+            <label className="app-text-secondary flex-1 min-w-0">管理员令牌
+              <input type="password" autoComplete="off" value={tokenInput} onChange={event => setTokenInput(event.target.value)} className="app-control mt-1 block w-full rounded-lg border px-3 py-2" />
+            </label>
+            <button type="submit" disabled={loading || !tokenInput.trim()} className="app-control rounded-lg border px-3 py-2">验证令牌</button>
+            <p className="app-text-muted w-full text-xs">令牌仅保存在本次弹窗内存，关闭后清除。</p>
+          </form>}
+          {isAdmin && <div className="app-text-secondary space-y-1 break-all">
+            <p>{payload?.storage.message}</p>
+            {payload?.storage.path && <p>模型存储：{payload.storage.path}</p>}
+            {payload?.storage.freeBytes !== undefined && <p>可用空间：{(payload.storage.freeBytes / 1024 ** 3).toFixed(1)} GiB</p>}
+          </div>}
+          <p className="app-text-muted text-xs">权重下载由管理员管理；模型上线、切换和回滚由平台运维执行。</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -162,9 +180,10 @@ export default function ModelHubModal({
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {catalog.map((item) => {
               const download = item.download;
-              const isCurrent = item.id === currentModel;
+              const isCurrent = item.id === currentModel || item.repoId === currentModel;
               const isDownloading = download?.status === "downloading";
               const progress = download?.pct ?? 0;
+              const enoughSpace = (payload?.storage.freeBytes ?? 0) >= item.sizeGb * 1e9 * 1.1 + 5 * 1024 ** 3;
 
               return (
                 <article
@@ -188,7 +207,7 @@ export default function ModelHubModal({
                         )}
                         {item.installed && !isCurrent && (
                           <span className="text-xs px-2 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/20 text-emerald-200">
-                            已下载
+                            权重就绪 · 未部署
                           </span>
                         )}
                       </div>
@@ -240,47 +259,38 @@ export default function ModelHubModal({
                   )}
 
                   <div className="mt-5 flex items-center gap-3">
-                    {!item.installed && !isDownloading && (
+                    {isAdmin && !item.installed && !isDownloading && (
                       <button
                         type="button"
-                        onClick={() => void startDownload(item.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm"
+                        onClick={() => void runAction(item.id, "POST")}
+                        disabled={!payload?.permissions.canDownload || !enoughSpace || Boolean(pendingModel) || hasDownloading}
+                        className="app-control inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm"
                       >
                         <Download size={15} />
-                        一键下载
+                        {!payload?.permissions.canDownload ? "存储未就绪" : !enoughSpace ? "空间不足" : pendingModel === item.id ? "正在提交…" : "下载权重"}
                       </button>
                     )}
 
                     {isDownloading && (
                       <>
-                        <button
-                          type="button"
-                          disabled
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/80 text-white text-sm cursor-default"
+                        <span
+                          className="app-text-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
                         >
                           <LoaderCircle size={15} className="animate-spin" />
                           下载中
-                        </button>
-                        <button
+                        </span>
+                        {isAdmin && <button
                           type="button"
-                          onClick={() => void cancelDownload(item.id)}
-                          className="px-4 py-2 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 text-sm"
+                          onClick={() => void runAction(item.id, "DELETE")}
+                          disabled={Boolean(pendingModel)}
+                          className="app-control px-4 py-2 rounded-xl border text-sm"
                         >
                           取消
-                        </button>
+                        </button>}
                       </>
                     )}
 
-                    {item.installed && !isCurrent && (
-                      <button
-                        type="button"
-                        onClick={() => void activateModel(item.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm"
-                      >
-                        <PackageOpen size={15} />
-                        设为当前
-                      </button>
-                    )}
+                    {!isAdmin && !isCurrent && <span className="app-text-muted text-sm">{item.installed ? "权重已下载，部署由平台管理" : "未下载 · 由管理员管理"}</span>}
 
                     {isCurrent && (
                       <div className="text-sm text-emerald-200">当前已选中该模型</div>

@@ -129,6 +129,12 @@ export interface ModelHubModel {
   download?: ModelHubDownloadState;
 }
 
+export interface ModelHubCatalog {
+  catalog: ModelHubModel[];
+  permissions: { administrator: boolean; canDownload: boolean; canActivate: false };
+  storage: { configured: boolean; available: boolean; path?: string; freeBytes?: number; message: string };
+}
+
 export interface MetricsSnapshot {
   tokensPerSecond: number;
   pendingRequests: number;

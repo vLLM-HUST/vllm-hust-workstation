@@ -93,8 +93,10 @@ describe("shared backend safety", () => {
       path.join(process.cwd(), "src/app/api/local-service/route.ts"),
       "utf8"
     );
-    expect(route).toContain("timingSafeEqual");
-    expect(route).toContain("x-workstation-admin-token");
+    expect(route).toContain("hasValidAdminToken(request)");
+    const auth = fs.readFileSync(path.join(process.cwd(), "src/lib/adminAuth.ts"), "utf8");
+    expect(auth).toContain("timingSafeEqual");
+    expect(auth).toContain("x-workstation-admin-token");
     expect(route).toContain("WORKSTATION_EXTERNAL_BACKEND_SYSTEMD_SERVICE");
   });
 });

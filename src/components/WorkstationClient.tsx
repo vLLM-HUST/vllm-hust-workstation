@@ -517,12 +517,6 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   const handleClear = useCallback(() => setMessages([]), []);
 
-  const handleActivateModel = useCallback((modelId: string) => {
-    setModel(modelId);
-    setModels((prev) => (prev.includes(modelId) ? prev : [modelId, ...prev]));
-    setModelHubOpen(false);
-  }, []);
-
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden">
       <Header
@@ -632,7 +626,6 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         open={modelHubOpen}
         currentModel={model}
         onClose={() => setModelHubOpen(false)}
-        onActivate={handleActivateModel}
       />
       <AgentLabModal
         open={agentLabOpen}

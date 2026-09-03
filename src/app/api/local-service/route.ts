@@ -1,6 +1,6 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { timingSafeEqual } from "node:crypto";
+import { hasValidAdminToken } from "@/lib/adminAuth";
 import {
   DEFAULT_MODEL_ID,
   SERVER_CONFIG,
@@ -27,15 +27,6 @@ const ENFORCE_BOOTSTRAP_MODEL = process.env.WORKSTATION_ENFORCE_BOOTSTRAP_MODEL_
 function managedBackendUnit(): string | null {
   const unit = (process.env.WORKSTATION_EXTERNAL_BACKEND_SYSTEMD_SERVICE || "").trim();
   return unit && /^[A-Za-z0-9_.@-]+$/.test(unit) ? unit : null;
-}
-
-function hasValidAdminToken(request: Request): boolean {
-  const expected = (process.env.WORKSTATION_ADMIN_TOKEN || "").trim();
-  const provided = (request.headers.get("x-workstation-admin-token") || "").trim();
-  if (!expected || !provided) return false;
-  const expectedBuffer = Buffer.from(expected);
-  const providedBuffer = Buffer.from(provided);
-  return expectedBuffer.length === providedBuffer.length && timingSafeEqual(expectedBuffer, providedBuffer);
 }
 
 function isLocalTarget(baseUrl: string): boolean {

@@ -1,4 +1,3 @@
-import os from "node:os";
 import path from "node:path";
 import type { ModelHubDownloadState, ModelHubModel } from "@/types";
 
@@ -83,8 +82,10 @@ export const MODEL_CATALOG: ModelHubModel[] = [
   },
 ];
 
-export function getModelHubDir(): string {
-  return process.env.MODEL_HUB_DIR || path.join(os.homedir(), "Downloads", "vllm-hust-models");
+export function getModelHubDir(): string | null {
+  const configured = (process.env.MODEL_HUB_DIR || "").trim();
+  if (!configured || !path.isAbsolute(configured) || path.resolve(configured) === path.parse(configured).root) return null;
+  return path.resolve(configured);
 }
 
 export function idleDownloadState(): ModelHubDownloadState {
