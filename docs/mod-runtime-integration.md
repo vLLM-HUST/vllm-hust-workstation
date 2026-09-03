@@ -539,3 +539,10 @@ or mutation-lock interface. A default-off owner integration has been requested
 from the user; no owner code, unit, launch configuration or running service has
 been changed by this preflight work. That authorization and later transition
 approval are distinct from image preparation.
+
+Revision `180518c` was published as a Web/control-plane-only update after 102 Python
+tests, 93 Vitest tests, lint, production build and standalone helper/startup checks
+passed. The deployed CLI repeated the same real read-only preflight at07:19:08Z;
+container and PID/start identities were unchanged. No new image build or inference
+transition was performed. The preceding Web bundle is recoverable at
+`/data/vllm-hust-workstation-shuhao/archive/pre-preflight-9d66437`.
