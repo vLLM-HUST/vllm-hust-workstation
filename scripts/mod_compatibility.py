@@ -13,7 +13,7 @@ import zipfile
 from prepare_mod_image import artifacts
 
 
-DIFFSPEC_SOURCE = "af00892c8858f28f672e5812f32ed70eaaaafe27"
+DIFFSPEC_SOURCE = "96188b9923928b3d51bbf7f81d38fcd1144e3fb9"
 DIFFSPEC_VALIDATOR = "8e9bf7f38aab3a2d5aec7d99fa42f1368b9424086c9970f6e65e95105239252b"
 
 

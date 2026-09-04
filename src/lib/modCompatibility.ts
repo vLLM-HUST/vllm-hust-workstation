@@ -68,7 +68,7 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     if (!exactTarget || minor(runtime.components.core.version) !== "0.28") {
       return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 / 0.28.1rc1.dev319 与 Ascend 4e57439e；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "源码已迁移到 preemption-policy API v1；尚缺独立 NPU 上的 TP4 graph 调用日志、指标、回滚和输出正确性证据。", runtime);
+    return result("unverified", "Qwen3.8-27B TP4 graph 的候选制品已通过调用、指标、回滚和输出门禁；但当前容器只证明宿主基线，未证明安装的是候选 463f798b，也未提供本实例 runtime-effective 见证。", runtime);
   }
 
   if (modId === "diffspec") {
@@ -82,7 +82,7 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     if (!exactTarget) {
       return result("incompatible", "候选 compatibility.lock 仅面向 Core 762f85b3 与 Ascend 4e57439e 加 MoE seam v2；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "Qwen3.8-27B 是 dense 模型，LatchMoE 对该模型不适用；Qwen3-30B-A3B 的 TP4 graph、专家映射、换入换出和地址稳定性仍待独立 NPU 实跑。", runtime);
+    return result("unverified", "Qwen3.8-27B 是 dense 模型，LatchMoE 不适用；Qwen3-30B-A3B 候选已通过 TP4 graph 功能门禁但性能退化。当前容器未证明候选 63781f3d、模型身份和 runtime-effective 见证，不能继承该结论。", runtime);
   }
 
   return result("unverified", "该扩展由外部运维方管理，Workstation 没有其生命周期兼容性证据。", runtime);
