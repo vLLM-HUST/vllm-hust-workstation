@@ -46,6 +46,7 @@ it("never reports a verified container or prepared image as an effective Mod", a
   expect(data.target?.identityVerified).toBe(true);
   expect(data.target?.observedMods).toBeNull();
   expect(data.applicationAvailable).toBe(false);
+  expect(data.lifecycle).toMatchObject({ instanceRegistered: false, identityLive: true, rollbackReady: false, oneUseAuthorization: false });
   expect(data.tasks).toEqual([]);
   expect(JSON.stringify(data)).not.toContain("/runtime/bin");
   expect(JSON.stringify(data)).not.toContain("actual-container");
@@ -61,10 +62,13 @@ it("hides stale identity and refuses preparation when provenance is not verified
 });
 
 it("authenticates all mutations before parsing and does not accept browser launch parameters", async () => {
-  for (const action of ["prepare", "apply", "disable", "rollback"]) expect((await POST(request({ targetId: "current", modId: "diffspec", action }, "wrong"))).status).toBe(401);
+  for (const action of ["prepare", "apply", "disable", "rollback", "start", "stop", "restart"]) expect((await POST(request({ targetId: "current", modId: "diffspec", action }, "wrong"))).status).toBe(401);
   expect((await GET(new Request("http://localhost/api/mod-runtime", { headers: { "x-workstation-admin-token": "wrong" } }))).status).toBe(401);
   expect((await POST(request({ action: "prepare", targetId: "current", modId: "diffspec", imageId: "evil:latest" }))).status).toBe(400);
   expect((await POST(request({ action: "apply", targetId: "current", modId: "diffspec" }))).status).toBe(409);
+  expect((await POST(request({ action: "start", targetId: "current", modId: "diffspec" }))).status).toBe(400);
+  expect((await POST(request({ action: "start", targetId: "current", modId: "diffspec", confirmation: "wrong" }))).status).toBe(401);
+  expect((await POST(request({ action: "start", targetId: "current", modId: "diffspec", confirmation: "test-admin" }))).status).toBe(409);
   expect(spawn).not.toHaveBeenCalled();
 });
 

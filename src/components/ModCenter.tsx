@@ -96,7 +96,7 @@ export default function ModCenter() {
     </header>
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
       <section className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">面向推理实例管理优化扩展。</p></div>
+        <div><p className="app-text-muted mb-3 flex items-center gap-2 text-xs tracking-widest"><Puzzle size={16} /> WORKSTATION EXTENSIONS</p><h1 className="text-3xl font-semibold tracking-tight">Mod 中心</h1><p className="app-text-secondary mt-3 max-w-xl text-sm leading-6">准备扩展制品，核对兼容性，并管理已登记实例的运行状态。</p></div>
         <a href={MOD_CATALOG_SOURCE} target="_blank" rel="noreferrer" className="app-text-secondary inline-flex items-center gap-2 text-sm underline underline-offset-4">官方插件目录<ExternalLink size={14} /></a>
       </section>
       {loginOpen && !administrator && <form onSubmit={login} className="app-surface rounded-xl border app-border p-4 flex flex-wrap items-end gap-3">
@@ -151,7 +151,7 @@ export default function ModCenter() {
         <div className="mt-4 flex gap-3"><button type="button" className="app-control rounded-lg border px-4 py-2 text-sm" disabled={pending || busy} onClick={() => void runAction()}>{pending ? "提交中…" : "确认操作"}</button><button type="button" className="app-control rounded-lg border px-4 py-2 text-sm" disabled={pending} onClick={() => setConfirmation(null)}>取消</button></div>
       </section></div>}
       {administrator && <section aria-label="Mod 任务日志" className="space-y-3"><h2 className="text-lg font-semibold">任务与日志</h2>{!payload?.tasks.length && <p className="app-text-muted text-sm">暂无 Mod 管理任务。</p>}{payload?.tasks.map(task => <details key={task.id} className="app-surface rounded-xl border app-border p-4" open={task.status === "running" || task.status === "failed"}><summary className="cursor-pointer text-sm">{task.modId} · {labels[task.action]} · {labels[task.status]}<span className="app-text-muted ml-2 text-xs">{new Date(task.createdAt).toLocaleString()}</span></summary><pre className="app-text-secondary mt-3 whitespace-pre-wrap break-all text-xs leading-5">{task.logs.join("\n")}</pre></details>)}</section>}
-      <footer className="app-text-muted border-t app-border pt-5 text-xs leading-6">制品准备与配置需管理员权限。正式应用时，插件与 Extension Manager 必须进入 vLLM 的同一运行环境；各扩展的版本与兼容要求见详情。</footer>
+      <footer className="app-text-muted border-t app-border pt-5 text-xs leading-6">制品准备、运行配置与服务生命周期分别记录；只有目标 worker 的执行证据才会标记为生效。</footer>
     </div>
   </main>;
 }

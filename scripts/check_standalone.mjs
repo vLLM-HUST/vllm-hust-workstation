@@ -50,7 +50,7 @@ try {
   if (modCatalog.catalog.some(mod => !["compatible", "incompatible", "unknown"].includes(mod.currentCompatibility?.status) || !mod.currentCompatibility.reason)) throw new Error("Standalone Mod compatibility contract failed");
   const instance = await fetch(`http://127.0.0.1:${port}/api/mod-runtime`);
   const instanceData = await instance.json();
-  if (!instance.ok || instanceData.administrator || instanceData.applicationAvailable !== false || instanceData.tasks.length) throw new Error("Standalone runtime catalog failed");
+  if (!instance.ok || instanceData.administrator || instanceData.applicationAvailable !== false || instanceData.tasks.length || !instanceData.lifecycle || !Array.isArray(instanceData.mods)) throw new Error("Standalone runtime catalog failed");
   console.log("Standalone startup and read-only catalog probe passed");
 } finally {
   if (child.exitCode === null && !spawnError) {

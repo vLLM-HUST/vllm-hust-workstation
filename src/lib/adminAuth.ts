@@ -2,8 +2,12 @@ import { timingSafeEqual } from "node:crypto";
 
 /** Server-side authorization; a hidden button is never a permission boundary. */
 export function hasValidAdminToken(request: Request): boolean {
+  return hasValidAdminCredential(request.headers.get("x-workstation-admin-token") || "");
+}
+
+export function hasValidAdminCredential(value: string): boolean {
   const expected = (process.env.WORKSTATION_ADMIN_TOKEN || "").trim();
-  const provided = (request.headers.get("x-workstation-admin-token") || "").trim();
+  const provided = value.trim();
   if (!expected || !provided) return false;
   const expectedBuffer = Buffer.from(expected);
   const providedBuffer = Buffer.from(provided);

@@ -73,7 +73,7 @@ async (page) => {
       runtimeActions.push(body);
       return route.fulfill({status: 202, json: {id: 'runtime-fixture'}});
     }
-    return route.fulfill({json: {administrator, target: {id: 'fixture-target', label: '实例交互验收（模拟）', ownership: 'shared', identityVerified: true, imageId: 'sha256:' + 'a'.repeat(64), models: ['fixture-model'], observedMods: null}, preparationAvailable: true, applicationAvailable: false, message: '应用前需完成当前实例的兼容性验收。', tasks: []}});
+    return route.fulfill({json: {administrator, target: {id: 'fixture-target', label: '实例交互验收（模拟）', ownership: 'shared', identityVerified: true, imageId: 'sha256:' + 'a'.repeat(64), models: ['fixture-model'], observedMods: null}, preparationAvailable: true, applicationAvailable: false, lifecycle: {status: 'unavailable', brokerAvailable: false, instanceRegistered: false, identityLive: true, rollbackReady: false, oneUseAuthorization: false, reason: '当前实例尚未纳入运行控制。'}, mods: [{id: 'bidkv', compatibility: 'compatible'}, {id: 'diffspec', compatibility: 'incompatible'}, {id: 'latchmoe', compatibility: 'incompatible'}], message: '运行环境可准备；服务切换需通过全部运行门控。', tasks: []}});
   });
   await page.route('**/api/mods', async route => {
     const request = route.request();
@@ -105,7 +105,7 @@ async (page) => {
     await runtime.getByRole('button', {name: '准备运行镜像', exact: true}).click();
     await page.getByRole('dialog').getByRole('button', {name: '确认准备', exact: true}).click();
     await page.getByRole('dialog').waitFor({state: 'detached'});
-    if (!await runtime.getByRole('button', {name: '应用到实例', exact: true}).isDisabled()) throw new Error('Unsafe runtime application');
+    for (const label of ['启动', '停止', '重启']) if (!await runtime.getByRole('button', {name: label, exact: true}).isDisabled()) throw new Error('Unsafe runtime lifecycle: ' + label);
     const card = page.locator('article').filter({has: page.getByRole('heading', {name: 'BidKV', exact: true})});
     await card.locator('summary').filter({hasText: /^制品与配置$/}).click();
     await card.getByRole('button', {name: '准备到 Mod 库', exact: true}).click();

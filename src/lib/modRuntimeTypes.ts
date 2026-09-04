@@ -25,7 +25,20 @@ export interface ModRuntimePayload {
     observedMods: null; // Unknown until the owner adapter supplies worker + inference evidence.
   };
   preparationAvailable: boolean;
-  applicationAvailable: false;
+  applicationAvailable: boolean;
+  lifecycle: {
+    status: "unavailable" | "ready" | "running" | "stopped" | "recovery_required";
+    brokerAvailable: boolean;
+    instanceRegistered: boolean;
+    identityLive: boolean;
+    rollbackReady: boolean;
+    oneUseAuthorization: boolean;
+    reason: string;
+  };
+  mods: Array<{
+    id: string;
+    compatibility: "compatible" | "incompatible" | "unknown";
+  }>;
   message: string;
   tasks: ModPreparationTask[];
 }

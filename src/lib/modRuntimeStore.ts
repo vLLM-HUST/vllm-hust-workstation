@@ -3,6 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { MOD_CATALOG, MOD_MANAGER_SHA } from "./modCatalog";
+import { assessModCompatibility, currentCompatibility } from "./modCompatibility";
+import { describeHostTarget } from "./hostBrokerClient";
 import { ModError, modRoot } from "./modStore";
 import { getRuntimeProvenance } from "./runtimeProvenance";
 import { fetchUpstreamModels } from "./upstream";
@@ -78,16 +80,23 @@ function projectTask(task: PrivateTask): ModPreparationTask {
 
 export async function getModRuntime(administrator: boolean): Promise<ModRuntimePayload> {
   const config = await runtimeConfig();
-  if (!config) return { administrator, target: null, preparationAvailable: false, applicationAvailable: false, message: "尚未登记推理实例。", tasks: [] };
-  const [provenance, models] = await Promise.all([getRuntimeProvenance(), fetchUpstreamModels()]);
+  const closedLifecycle = { status: "unavailable" as const, brokerAvailable: false, instanceRegistered: false,
+    identityLive: false, rollbackReady: false, oneUseAuthorization: false, reason: "运行控制尚未就绪。" };
+  if (!config) return { administrator, target: null, preparationAvailable: false, applicationAvailable: false,
+    lifecycle: closedLifecycle, mods: [], message: "尚未登记推理实例。", tasks: [] };
+  const [provenance, models, broker] = await Promise.all([getRuntimeProvenance(), fetchUpstreamModels(), describeHostTarget(config.target.id)]);
   const verified = provenance.available && provenance.verification?.status === "verified" && provenance.container?.name === config.target.containerName;
   let root: string | undefined;
   try { root = await runtimeRoot(); await modRoot(); } catch { root = undefined; }
   const target = { id: config.target.id, label: config.target.label, ownership: config.target.ownership, identityVerified: Boolean(verified),
     ...(verified ? { imageId: provenance.image!.id, coreSha: provenance.components!.core.commit, pluginSha: provenance.components!.plugin.commit, checkedAt: provenance.verification!.checkedAt } : {}),
     models: models.reachable ? models.ids : [], observedMods: null };
-  return { administrator, target, preparationAvailable: Boolean(root && verified), applicationAvailable: false,
-    message: !verified ? "实例身份暂未核验，准备操作已暂停。" : !root ? "实例制品存储尚未就绪。" : "应用前需完成当前实例的兼容性验收。",
+  const mods = MOD_CATALOG.filter(mod => mod.sha).map(mod => ({ id: mod.id, compatibility: currentCompatibility(assessModCompatibility(mod.id, provenance)).status }));
+  const lifecycle = { status: "unavailable" as const, brokerAvailable: broker.available, instanceRegistered: broker.registered,
+    identityLive: Boolean(verified), rollbackReady: false, oneUseAuthorization: false,
+    reason: !verified ? "实例身份待核验。" : !broker.registered ? "当前实例尚未纳入运行控制。" : "回滚基线尚未验收。" };
+  return { administrator, target, preparationAvailable: Boolean(root && verified), applicationAvailable: false, lifecycle, mods,
+    message: !verified ? "实例身份暂未核验，准备操作已暂停。" : !root ? "实例制品存储尚未就绪。" : "运行环境可准备；服务切换需通过全部运行门控。",
     tasks: root && administrator ? (await taskRecords(root)).filter(task => task.targetId === target.id).slice(0, 30).map(projectTask) : [] };
 }
 
