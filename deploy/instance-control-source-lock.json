@@ -1,13 +1,13 @@
 {
   "protocol": "vllm-hust.instance-control/v1",
-  "sourceSha": "71cbf8b8d41796cf8b65153329ebca0014593d7a",
+  "sourceSha": "e7d1525d96ece424c993d9350dc69de3c84f2a5c",
   "entrypoint": "scripts/instance_control_entry.py",
   "files": {
     "config/instance-control-contract.json": "29b1d1399daf5c76ddc7c17e2a7d24e789e8113c11b881136e3b5f5ca9bf0307",
     "scripts/instance_control_entry.py": "eceb6c6d9d2eeedaa706b065f19d98be56b27492a8c8ad0cbd1ff05f024d8869",
     "scripts/instance_control/__init__.py": "2827f71e084c77bd5adeb2220b0fa7c79e1da32d51658398741aeb69c81db98e",
     "scripts/instance_control/backend.py": "7dddfea30f5c75d5d71d0109094c99a06d05a8c2ec20e602cf10a251de3cd0c6",
-    "scripts/instance_control/canary_coordinator.py": "588ffa8fcb1a5ed6515f07d1ba73cef97f877c1b18b1a3ad17b459c716db1670",
+    "scripts/instance_control/canary_coordinator.py": "e9be6033a122c010e3de9c508e177c10b08762b63e65da016d4abfeb0e6e8b4c",
     "scripts/instance_control/controller.py": "7e716f2836b030908d9c13b12a7cd3cd9c920c914cd78be5b6caf771fb259941",
     "scripts/instance_control/foreground.py": "86d7a6304a4a326d5fef77ee1c6059fd1b90087e8bf99d55da73f9bfcef27a63",
     "scripts/instance_control/host_authority.py": "8d9c545118072635e5c9403f76d161419bf17caf0d89ea18d0d931a7a55aee8e",
