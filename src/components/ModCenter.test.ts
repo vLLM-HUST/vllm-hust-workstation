@@ -8,11 +8,12 @@ let root: Root;
 let host: HTMLDivElement;
 const fetchMock = vi.fn();
 const qualification = { status: "incompatible", label: "不兼容", reason: "固定 manifest 要求 0.23；当前为 0.28。", evaluatedAgainst: {} };
+const currentCompatibility = { ...qualification };
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   fetchMock.mockReset().mockResolvedValue({ ok: true, status: 200, json: async () => ({
-    catalog: MOD_CATALOG.map(mod => ({ ...mod, state: { installed: false, configured: false, enabled: false }, qualification })),
+    catalog: MOD_CATALOG.map(mod => ({ ...mod, state: { installed: false, configured: false, enabled: false }, currentCompatibility, qualification })),
     administrator: false, storageReady: true, tasks: [], runtime: { status: "unverified" },
   }) });
   vi.stubGlobal("fetch", fetchMock);

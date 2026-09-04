@@ -88,7 +88,7 @@ async (page) => {
       if (action === 'uninstall') state = {installed: false, configured: false, enabled: false};
       return route.fulfill({status: 202, json: {id: 'fixture', status: 'queued'}});
     }
-    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, state, qualification: {...mod.qualification, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}} : mod), tasks: []}});
+    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, state, currentCompatibility: {...mod.currentCompatibility, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}, qualification: {...mod.qualification, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}} : mod), tasks: []}});
   });
   for (const theme of ['light', 'dark']) {
     await page.goto(base + '/mods');

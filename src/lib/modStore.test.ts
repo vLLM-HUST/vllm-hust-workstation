@@ -50,7 +50,29 @@ it("keeps running gate closed even with a valid password", async () => {
 });
 it("fails closed before saving enable intent when current compatibility is not proven", async () => {
   await expect(startModAction("bidkv", "enable")).rejects.toThrow(/未核验.*启用意图未保存/);
-  expect((await getModCatalog(true)).catalog[0].qualification.status).toBe("unverified");
+  const mod = (await getModCatalog(true)).catalog[0];
+  expect(mod.currentCompatibility).toMatchObject({ status: "unknown", label: "未核验" });
+  expect(mod.qualification.status).toBe("unverified");
+});
+it("returns explicit current-instance compatibility from verified server provenance", async () => {
+  vi.mocked(getRuntimeProvenance).mockResolvedValue({
+    available: true,
+    source: "docker-inspect-receipt",
+    vllmHust: "762f85b311fbab0bcf8921dd216f5093cd58b9b8",
+    vllmAscendHust: "4e57439e58ed3d78e675f9fd7b4614fb183c5394",
+    components: {
+      core: { name: "vLLM-HUST", repository: "", commitUrl: "", commit: "762f85b311fbab0bcf8921dd216f5093cd58b9b8", version: "0.28.1rc1.dev319+g762f85b31" },
+      plugin: { name: "vLLM-Ascend-HUST", repository: "", commitUrl: "", commit: "4e57439e58ed3d78e675f9fd7b4614fb183c5394", version: "0.25.1rc1+hust.20260903.4" },
+    },
+    verification: { status: "verified", checkedAt: "2026-09-04T00:00:00Z", receiptAgeSeconds: 1, message: "fixture", processSource: "not-attested" },
+  });
+  const response = await GET(new Request("http://localhost/api/mods"));
+  const data = await response.json();
+  expect(data.catalog.map((mod: { currentCompatibility: { status: string } }) => mod.currentCompatibility.status)).toEqual([
+    "incompatible", "incompatible", "incompatible", "unknown",
+  ]);
+  expect(data.catalog[0].currentCompatibility.reason).toMatch(/当前 Core/);
+  expect(data.catalog[1].state.installed).toBe(false);
 });
 it("serializes management work and projects stale tasks as interrupted", async () => {
   await mkdir(path.join(root, "tasks"));

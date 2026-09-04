@@ -108,7 +108,7 @@ function createSteps(params: {
 }
 
 export default function WorkstationClient({ config }: { config: AppConfig }) {
-  const { brandName, brandLogo, accentColor, defaultModel, searchEnabled } = config;
+  const { brandName, brandLogo, accentColor, searchEnabled } = config;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -209,7 +209,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         setModelsChecked(true);
         setLiveModelSwitchSupported(false);
       });
-  }, [defaultModel]);
+  }, []);
 
   // Poll metrics
   useEffect(() => {

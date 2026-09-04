@@ -156,7 +156,6 @@ export interface AppConfig {
   brandLogo: string | null;
   accentColor: string;
   baseUrl: string;
-  defaultModel: string;
   searchEnabled: boolean;
 }
 

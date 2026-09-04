@@ -6,7 +6,7 @@ over the existing shared inference service. Public access is read-only.
 ## Delivered operations
 
 - Curated official catalog; full reviewed Git commits in `src/lib/modCatalog.ts`.
-- Install each extension and pinned Extension Manager in a separate venv, using
+- Prepare each extension and pinned Extension Manager in an isolated artifact-validation venv, using
   GitHub codeload archives addressed by full commit SHA (not Git branch tips).
   Build only the reviewed sources; record resulting wheel SHA256 values. Build
   isolation dependencies are resolved from PyPI, so this is source-pinned, not a
@@ -42,6 +42,21 @@ page-memory-only. The Python worker holds a process-wide filesystem lock across
 each operation, bounds individual subprocesses to five minutes and the task to
 15 minutes. Stale jobs project interrupted after 20 minutes. This service uses
 a single host-local store; do not share it between multiple uncoordinated hosts.
+
+## Read-only compatibility API
+
+Every `GET /api/mods` catalog entry includes a server-derived
+`currentCompatibility` object. Its `status` is exactly `compatible`,
+`incompatible`, or `unknown`, accompanied by a reason and the Core/Plugin
+versions and SHAs used for the decision. Missing or unverified runtime evidence
+is `unknown`, never a compatibility claim. The older `qualification` field is a
+deprecated compatibility alias derived from the same assessment; new clients,
+including the Mod Center, consume `currentCompatibility`.
+
+The `state.installed` wire field is the legacy name for a prepared library
+artifact. It does not mean that the target process contains the package, and it
+does not contribute runtime-effectiveness evidence. Actual effectiveness still
+requires owner-bound deployment plus observed target-worker execution.
 
 ## Explicitly not delivered: inference run/apply
 

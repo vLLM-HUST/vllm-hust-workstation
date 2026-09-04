@@ -16,7 +16,13 @@ export type ModAction = "install" | "configure" | "enable" | "disable" | "uninst
 export interface ModState { installed: boolean; enabled: boolean; configured: boolean; version?: string; sha?: string; installedAt?: string }
 export interface ModTask { id: string; modId: string; action: string; status: "queued" | "running" | "succeeded" | "failed" | "interrupted"; createdAt: string; updatedAt: string; logs: string[] }
 export interface ModCatalogPayload {
-  catalog: Array<typeof MOD_CATALOG[number] & { state: ModState; stateError?: string; qualification: import("./modCompatibility").ModCompatibilityAssessment }>;
+  catalog: Array<typeof MOD_CATALOG[number] & {
+    state: ModState;
+    stateError?: string;
+    currentCompatibility: import("./modCompatibility").CurrentModCompatibility;
+    /** @deprecated Use currentCompatibility. Derived from the same server assessment. */
+    qualification: import("./modCompatibility").ModCompatibilityAssessment;
+  }>;
   administrator: boolean;
   storageReady: boolean;
   tasks: ModTask[];

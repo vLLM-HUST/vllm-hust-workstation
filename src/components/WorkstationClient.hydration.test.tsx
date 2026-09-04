@@ -11,7 +11,6 @@ const config: AppConfig = {
   brandLogo: null,
   accentColor: "#6366f1",
   baseUrl: "http://private.invalid",
-  defaultModel: "zai-org/GLM-4-32B-0414",
   searchEnabled: false,
 };
 

@@ -47,6 +47,7 @@ try {
   const mods = await fetch(`http://127.0.0.1:${port}/api/mods`);
   const modCatalog = await mods.json();
   if (!mods.ok || !Array.isArray(modCatalog.catalog) || modCatalog.administrator) throw new Error("Standalone Mod catalog failed");
+  if (modCatalog.catalog.some(mod => !["compatible", "incompatible", "unknown"].includes(mod.currentCompatibility?.status) || !mod.currentCompatibility.reason)) throw new Error("Standalone Mod compatibility contract failed");
   const instance = await fetch(`http://127.0.0.1:${port}/api/mod-runtime`);
   const instanceData = await instance.json();
   if (!instance.ok || instanceData.administrator || instanceData.applicationAvailable !== false || instanceData.tasks.length) throw new Error("Standalone runtime catalog failed");

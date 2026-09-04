@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { MOD_CATALOG, MOD_MANAGER_SHA, type ModAction, type ModCatalogPayload, type ModState, type ModTask } from "./modCatalog";
-import { assessModCompatibility } from "./modCompatibility";
+import { assessModCompatibility, currentCompatibility } from "./modCompatibility";
 import { getRuntimeProvenance } from "./runtimeProvenance";
 
 export class ModError extends Error { constructor(message: string, public status = 409) { super(message); } }
@@ -53,7 +53,8 @@ export async function getModCatalog(administrator: boolean): Promise<ModCatalogP
         state = { installed: false, configured: false, enabled: false };
       }
     }
-    return { ...mod, state, stateError, qualification: assessModCompatibility(mod.id, provenance) };
+    const qualification = assessModCompatibility(mod.id, provenance);
+    return { ...mod, state, stateError, currentCompatibility: currentCompatibility(qualification), qualification };
   }));
   return { catalog, administrator, storageReady: Boolean(root), tasks: root && administrator ? (await tasks(root)).slice(0, 20) : [], runtime: { status: "unverified", message: "尚未绑定可管理的推理实例。制品准备和启用意图仅保存在 Mod 库；不代表当前共享服务已加载。正式应用须将 Manager 与插件装入 vLLM 的同一运行环境，并经过目标版本、资源与重启审批。" } };
 }

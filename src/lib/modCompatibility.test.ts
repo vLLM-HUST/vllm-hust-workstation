@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { assessModCompatibility } from "./modCompatibility";
+import { assessModCompatibility, currentCompatibility } from "./modCompatibility";
 import type { RuntimeProvenance } from "./runtimeProvenance";
 
 function runtime(coreVersion = "0.28.1rc1.dev319+g762f85b31", pluginVersion = "0.25.1rc1+hust.20260903"): RuntimeProvenance {
@@ -35,4 +35,13 @@ it("reports missing or stale runtime evidence as unverified", () => {
   const stale = { ...runtime(), verification: { ...runtime().verification!, status: "stale" as const } };
   expect(assessModCompatibility("bidkv", missing).status).toBe("unverified");
   expect(assessModCompatibility("latchmoe", stale).status).toBe("unverified");
+});
+
+it("projects insufficient evidence as explicit API unknown", () => {
+  const assessment = assessModCompatibility("bidkv", { ...runtime(), available: false });
+  expect(currentCompatibility(assessment)).toMatchObject({
+    status: "unknown",
+    label: "未核验",
+    reason: expect.stringContaining("尚未核验"),
+  });
 });

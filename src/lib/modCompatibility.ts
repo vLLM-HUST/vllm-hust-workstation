@@ -9,6 +9,22 @@ export interface ModCompatibilityAssessment {
   evaluatedAgainst: { coreVersion?: string; pluginVersion?: string; coreSha?: string; pluginSha?: string };
 }
 
+export interface CurrentModCompatibility {
+  status: "compatible" | "incompatible" | "unknown";
+  label: "兼容" | "不兼容" | "未核验";
+  reason: string;
+  evaluatedAgainst: ModCompatibilityAssessment["evaluatedAgainst"];
+}
+
+export function currentCompatibility(
+  assessment: ModCompatibilityAssessment,
+): CurrentModCompatibility {
+  return {
+    ...assessment,
+    status: assessment.status === "unverified" ? "unknown" : assessment.status,
+  };
+}
+
 const LATCHMOE_CORE_SHA = "ad7125a431e176d4161099480a66f0169609a690";
 const LATCHMOE_PLUGIN_SHA = "4806367eeeb7d62b32078ae90cd929cc06d825fe";
 

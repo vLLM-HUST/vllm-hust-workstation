@@ -119,9 +119,9 @@ export default function ModCenter() {
           <div className="flex items-start justify-between gap-3"><div><p className="app-text-muted mb-2 text-xs">{mod.kind}</p><h2 className="text-xl font-semibold">{mod.name}</h2></div><a href={mod.repository} target="_blank" rel="noreferrer" className="app-control rounded-lg border p-2.5" aria-label={`${mod.name} 源码`}><ExternalLink size={16} /></a></div>
           <p className="app-text-secondary mt-3 text-sm leading-6">{mod.description}</p>
           {mod.sha ? <details className="mt-4 text-sm">
-            <summary className="app-text-secondary cursor-pointer py-2">当前实例 · {mod.qualification.label}</summary>
+            <summary className="app-text-secondary cursor-pointer py-2">当前实例 · {mod.currentCompatibility.label}</summary>
             <dl className="mt-2 space-y-3 text-xs leading-5">
-              <div><dt className="app-text-secondary font-medium">当前判定</dt><dd className={mod.qualification.status === "compatible" ? "mt-1 text-emerald-300" : mod.qualification.status === "incompatible" ? "mt-1 text-red-300" : "mt-1 text-amber-300"}>{mod.qualification.reason}</dd></div>
+              <div><dt className="app-text-secondary font-medium">当前判定</dt><dd className={mod.currentCompatibility.status === "compatible" ? "mt-1 text-emerald-300" : mod.currentCompatibility.status === "incompatible" ? "mt-1 text-red-300" : "mt-1 text-amber-300"}>{mod.currentCompatibility.reason}</dd></div>
               <div><dt className="app-text-secondary font-medium">历史声明基线</dt><dd className="app-text-muted mt-1">{mod.compatibility}</dd></div>
               <div><dt className="app-text-secondary font-medium">基线依赖与配置</dt><dd className="app-text-muted mt-1">{mod.requirements}</dd></div>
             </dl>
@@ -138,7 +138,7 @@ export default function ModCenter() {
             </details>}
             <div className="flex flex-wrap gap-2 text-sm">
               {!mod.state.installed ? <button type="button" disabled={!payload?.storageReady || busy || pending || Boolean(mod.stateError)} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "install"})}>准备到 Mod 库</button> : <>
-                <button type="button" disabled={busy || pending || (!mod.state.enabled && (!mod.state.configured || mod.qualification.status !== "compatible"))} title={!mod.state.enabled && mod.qualification.status !== "compatible" ? `当前实例${mod.qualification.label}，不能启用` : undefined} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.state.enabled ? "disable" : "enable"})}>{mod.state.enabled ? "停用意图" : "启用意图"}</button>
+                <button type="button" disabled={busy || pending || (!mod.state.enabled && (!mod.state.configured || mod.currentCompatibility.status !== "compatible"))} title={!mod.state.enabled && mod.currentCompatibility.status !== "compatible" ? `当前实例${mod.currentCompatibility.label}，不能启用` : undefined} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.state.enabled ? "disable" : "enable"})}>{mod.state.enabled ? "停用意图" : "启用意图"}</button>
                 <button type="button" disabled={busy || pending || mod.state.enabled} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "uninstall"})}>卸载</button>
               </>}
             </div>
