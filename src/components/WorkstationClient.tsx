@@ -7,7 +7,7 @@ import MetricsDashboard from "@/components/MetricsDashboard";
 import InferenceSidebar, { type ProcessStep } from "@/components/InferenceSidebar";
 import ModelHubModal from "@/components/ModelHubModal";
 import AgentLabModal from "@/components/AgentLabModal";
-import type { AppConfig, Message, MetricsSnapshot, SearchResult } from "@/types";
+import type { AppConfig, Message, MetricsSnapshot, SearchResult, ServiceProbeStatus } from "@/types";
 import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
 
 const METRICS_INTERVAL = 3000;
@@ -112,9 +112,10 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [models, setModels] = useState<string[]>([defaultModel]);
-  const [model, setModel] = useState(defaultModel);
-  const [online, setOnline] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [model, setModel] = useState("");
+  const [serviceStatus, setServiceStatus] = useState<ServiceProbeStatus>("checking");
+  const [modelsChecked, setModelsChecked] = useState(false);
   const [liveModelSwitchSupported, setLiveModelSwitchSupported] = useState(false);
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [metricsHistory, setMetricsHistory] = useState<HistoryPoint[]>([]);
@@ -130,6 +131,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>("dark");
   const [runtimeProvenance, setRuntimeProvenance] = useState<RuntimeProvenance>(unavailableProvenance);
+  const [provenanceChecked, setProvenanceChecked] = useState(false);
   const [hardware, setHardware] = useState<{ npu: string; cpu: string; memory: string }>({
     npu: "", cpu: "", memory: "",
   });
@@ -168,8 +170,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
     let cancelled = false;
     const refresh = () => fetch("/api/versions", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: RuntimeProvenance) => { if (!cancelled) setRuntimeProvenance(d); })
-      .catch(() => { if (!cancelled) setRuntimeProvenance(unavailableProvenance); });
+      .then((d: RuntimeProvenance) => { if (!cancelled) { setRuntimeProvenance(d); setProvenanceChecked(true); } })
+      .catch(() => { if (!cancelled) { setRuntimeProvenance(unavailableProvenance); setProvenanceChecked(true); } });
     void refresh();
     const timer = window.setInterval(refresh, 30000);
     return () => { cancelled = true; window.clearInterval(timer); };
@@ -198,11 +200,13 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
             return ids[0];
           });
         }
-        setOnline(Boolean(data?.upstreamAvailable));
+        setServiceStatus(Boolean(data?.engineReady && ids.length > 0) ? "online" : "offline");
+        setModelsChecked(true);
         setLiveModelSwitchSupported(Boolean(data?.liveModelSwitchSupported));
       })
       .catch(() => {
-        setOnline(false);
+        setServiceStatus("offline");
+        setModelsChecked(true);
         setLiveModelSwitchSupported(false);
       });
   }, [defaultModel]);
@@ -215,7 +219,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         if (!res.ok) return;
         const snap: MetricsSnapshot = await res.json();
         setMetrics(snap);
-        setOnline(Boolean(snap.gatewayAvailable));
+        setServiceStatus(Boolean(snap.gatewayAvailable) ? "online" : "offline");
         setMetricsHistory((prev) =>
           [
             ...prev,
@@ -516,6 +520,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   }, []);
 
   const handleClear = useCallback(() => setMessages([]), []);
+  const displayedServiceStatus: ServiceProbeStatus = provenanceChecked && modelsChecked ? serviceStatus : "checking";
+  const displayedModel = displayedServiceStatus === "online" ? model : "";
 
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden">
@@ -523,7 +529,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         brandName={brandName}
         brandLogo={brandLogo}
         accentColor={accentColor}
-        model={model}
+        model={displayedModel}
         models={models}
         liveModelSwitchSupported={liveModelSwitchSupported}
         onModelChange={setModel}
@@ -532,7 +538,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         onOpenMetrics={() => setMetricsOpen(true)}
         theme={theme}
         onToggleTheme={handleToggleTheme}
-        online={online}
+        serviceStatus={displayedServiceStatus}
       />
       <main className="relative flex flex-1 min-w-0 overflow-hidden">
         <InferenceSidebar
@@ -557,18 +563,18 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           onToggleThinking={handleToggleThinking}
           onOpenInference={() => setPanelOpen(true)}
           onOpenMetrics={() => setMetricsOpen(true)}
-          online={online}
-          model={model}
+          serviceStatus={displayedServiceStatus}
+          model={displayedModel}
           hardware={hardware}
         />
         <MetricsDashboard
           snapshot={metrics}
           history={metricsHistory}
           accentColor={accentColor}
-          model={model}
+          model={displayedModel}
           models={models}
           liveModelSwitchSupported={liveModelSwitchSupported}
-          online={online}
+          serviceStatus={displayedServiceStatus}
           onModelChange={setModel}
           open={metricsOpen}
           onClose={() => setMetricsOpen(false)}
@@ -624,12 +630,12 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
       </footer>
       <ModelHubModal
         open={modelHubOpen}
-        currentModel={model}
+        currentModel={displayedModel}
         onClose={() => setModelHubOpen(false)}
       />
       <AgentLabModal
         open={agentLabOpen}
-        currentModel={model}
+        currentModel={displayedModel}
         accentColor={accentColor}
         onClose={() => setAgentLabOpen(false)}
       />

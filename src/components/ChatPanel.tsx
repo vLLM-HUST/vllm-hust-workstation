@@ -15,7 +15,7 @@ import {
   Gauge,
   Telescope,
 } from "lucide-react";
-import type { Message } from "@/types";
+import type { Message, ServiceProbeStatus } from "@/types";
 import clsx from "clsx";
 
 interface ChatPanelProps {
@@ -32,7 +32,7 @@ interface ChatPanelProps {
   onToggleThinking: () => void;
   onOpenInference: () => void;
   onOpenMetrics: () => void;
-  online: boolean;
+  serviceStatus: ServiceProbeStatus;
   model: string;
   hardware: { npu: string; cpu: string; memory: string };
 }
@@ -153,10 +153,12 @@ export default function ChatPanel({
   onToggleThinking,
   onOpenInference,
   onOpenMetrics,
-  online,
+  serviceStatus,
   model,
   hardware,
 }: ChatPanelProps) {
+  const online = serviceStatus === "online";
+  const checking = serviceStatus === "checking";
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -204,22 +206,24 @@ export default function ChatPanel({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="app-text-muted text-[11px] font-semibold uppercase tracking-[0.18em]">Private inference</span>
-                    <span className={online ? "text-emerald-300" : "text-red-300"}>● {online ? "服务在线" : "服务离线"}</span>
+                    <span className={online ? "text-emerald-300" : checking ? "text-amber-300" : "text-red-300"}>● {online ? "服务在线" : checking ? "正在核验" : "服务离线"}</span>
                   </div>
                   <h1 className="app-text mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
-                    {online ? "推理工作区已就绪" : "推理服务暂时离线"}
+                    {online ? "推理工作区已就绪" : checking ? "正在核验推理服务" : "推理服务暂时离线"}
                   </h1>
                   <p className="app-text-muted mt-2 text-sm leading-6">
                     {online
                       ? "对话在本地算力上完成；模型、硬件与运行来源均可核验。"
-                      : "页面仍保留模型、硬件与运行来源证据；可在运行状态中查看探测结果。"}
+                      : checking
+                        ? "正在读取模型、服务健康与运行来源；核验完成前不作在线或离线判断。"
+                        : "页面仍保留模型、硬件与运行来源证据；可在运行状态中查看探测结果。"}
                   </p>
                 </div>
               </div>
 
               <div className="app-surface-muted app-border mt-5 rounded-2xl border p-4">
                 <p className="app-text-muted text-[11px] font-semibold uppercase tracking-wider">当前模型</p>
-                <p className="app-text-secondary mt-1 truncate font-mono text-sm" title={model}>{model}</p>
+                <p className="app-text-secondary mt-1 truncate font-mono text-sm" title={model || undefined}>{model || "正在读取实际运行模型…"}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[hardware.npu, hardware.cpu, hardware.memory].filter(Boolean).map((item) => (
                     <span key={item} className="app-control rounded-full border px-2.5 py-1 text-[11px]">{item}</span>
@@ -336,10 +340,10 @@ export default function ChatPanel({
             <button
               onClick={loading ? onStop : handleSend}
               aria-label={loading ? "停止生成" : "发送消息"}
-              disabled={!loading && !input.trim()}
+              disabled={!loading && (!input.trim() || serviceStatus !== "online")}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
               style={
-                loading || input.trim()
+                loading || (input.trim() && serviceStatus === "online")
                   ? { background: accentColor }
                   : { background: "rgba(255,255,255,0.1)" }
               }

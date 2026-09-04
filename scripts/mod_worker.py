@@ -80,7 +80,7 @@ def execute(root, task, spec, report):
         if os.statvfs(root).f_bavail * os.statvfs(root).f_frsize < 2 * 1024**3:
             raise ValueError("Mod 库至少需要 2 GiB 可用空间")
         stage = Path(tempfile.mkdtemp(prefix=f".install-{ident}-", dir=root))
-        report("创建独立环境；失败时不替换现有安装。")
+        report("创建隔离的制品验收环境；失败时不替换现有制品。")
         run([sys.executable, "-m", "venv", stage / "env"], stage)
         python = stage / "env/bin/python"
         pip = [python, "-m", "pip", "install", "--no-deps", "--index-url", "https://pypi.org/simple"]

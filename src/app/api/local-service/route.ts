@@ -1,6 +1,6 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { hasValidAdminToken } from "@/lib/adminAuth";
+import { hasValidAdminToken, requireAdmin } from "@/lib/adminAuth";
 import {
   DEFAULT_MODEL_ID,
   SERVER_CONFIG,
@@ -104,13 +104,13 @@ export async function POST(request: Request) {
       : Response.json({ error: "administrator authorization required" }, { status: 401 });
   }
 
+  const denied = requireAdmin(request);
+  if (denied) return denied;
+
   if (action === "restart-managed-backend") {
     const unit = managedBackendUnit();
     if (!unit) {
       return Response.json({ error: "managed backend restart is not configured" }, { status: 503 });
-    }
-    if (!hasValidAdminToken(request)) {
-      return Response.json({ error: "administrator authorization required" }, { status: 401 });
     }
     const child = spawn("systemctl", ["--user", "restart", unit], {
       detached: true,

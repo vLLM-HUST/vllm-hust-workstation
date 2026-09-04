@@ -13,7 +13,7 @@ import RuntimeStackCard from "@/components/RuntimeStackCard";
 import clsx from "clsx";
 import { useDialogFocus } from "@/components/useDialogFocus";
 import LocalServiceCard from "@/components/LocalServiceCard";
-import type { MetricsSnapshot } from "@/types";
+import type { MetricsSnapshot, ServiceProbeStatus } from "@/types";
 import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
 
 interface MetricsDashboardProps {
@@ -23,7 +23,7 @@ interface MetricsDashboardProps {
   model: string;
   models: string[];
   liveModelSwitchSupported: boolean;
-  online: boolean;
+  serviceStatus: ServiceProbeStatus;
   onModelChange: (model: string) => void;
   open: boolean;
   onClose: () => void;
@@ -156,12 +156,14 @@ export default function MetricsDashboard({
   model,
   models,
   liveModelSwitchSupported,
-  online,
+  serviceStatus,
   onModelChange,
   open,
   onClose,
   runtimeProvenance,
 }: MetricsDashboardProps) {
+  const online = serviceStatus === "online";
+  const checking = serviceStatus === "checking";
   const s = snapshot;
   const [desktopRail, setDesktopRail] = useState(false);
   const dialogRef = useDialogFocus<HTMLElement>(open && !desktopRail, onClose);
@@ -209,17 +211,19 @@ export default function MetricsDashboard({
             </span>
             <span
               className={
-                !online
+                checking
+                  ? "text-amber-300 text-xs"
+                  : !online
                   ? "text-red-300 text-xs"
                   : liveModelSwitchSupported
                     ? "text-emerald-300 text-xs"
                     : "text-amber-300 text-xs"
               }
             >
-              {!online ? "离线兜底" : liveModelSwitchSupported ? "在线可切换" : "平台单模型"}
+              {checking ? "正在核验" : !online ? "已确认离线" : liveModelSwitchSupported ? "在线可切换" : "平台单模型"}
             </span>
           </div>
-          <select
+          {model ? <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
             disabled={!liveModelSwitchSupported}
@@ -231,11 +235,13 @@ export default function MetricsDashboard({
                 {item}
               </option>
             ))}
-          </select>
+          </select> : <p className="app-control rounded-lg border px-3 py-2 text-sm">正在读取实际运行模型…</p>}
           <p className="app-text-muted text-xs leading-5">
             {liveModelSwitchSupported
               ? "当前后端暴露了多个在线模型，切换会作用于新请求。"
-              : "当前后端是平台托管的单模型服务；模型切换由平台运维统一完成。"}
+              : checking
+                ? "模型与服务健康核验完成前不展示默认模型或离线结论。"
+                : "当前后端是平台托管的单模型服务；模型切换由平台运维统一完成。"}
           </p>
         </div>
 
@@ -317,7 +323,7 @@ export default function MetricsDashboard({
             </div>
             <div className="flex justify-between">
               <span className="text-white/40">状态</span>
-              <span className={online ? "text-emerald-400 font-medium" : "text-red-300 font-medium"}>{online ? "服务在线" : "服务离线"}</span>
+              <span className={online ? "text-emerald-400 font-medium" : checking ? "text-amber-300 font-medium" : "text-red-300 font-medium"}>{online ? "服务在线" : checking ? "正在核验" : "服务离线"}</span>
             </div>
           </div>
         )}

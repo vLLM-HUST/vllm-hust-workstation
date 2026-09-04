@@ -18,21 +18,22 @@ async (page) => {
       if (await page.getByRole('region', {name: '运行边界', exact: true}).count()) throw new Error('Internal implementation banner visible');
       if (/目标绑定、兼容性验收与重启审批|Sage Mate|Extension Manager 0\.2/.test(await page.locator('main').innerText())) throw new Error('Internal implementation copy visible');
       if (await page.evaluate(() => document.documentElement.dataset.theme) !== theme) await page.getByRole('button', {name: /切换到.*主题/}).click();
-      if (await page.getByRole('button', {name: '安装到 Mod 库', exact: true}).count()) throw new Error('Public mutation visible');
+      if (await page.getByRole('button', {name: '准备到 Mod 库', exact: true}).count()) throw new Error('Public mutation visible');
       const adaptation = page.locator('article').filter({has: page.getByRole('heading', {name: 'DiffSpec', exact: true})}).locator('details').first();
       if (await adaptation.getAttribute('open') !== null) throw new Error('Adaptation details should start collapsed');
       await adaptation.locator('summary').focus();
       await page.keyboard.press('Enter');
       await adaptation.getByText('历史声明基线', {exact: true}).waitFor();
-      await adaptation.getByText('新版本可重新适配，验收后更新支持范围。旧基线不代表当前实例不兼容。', {exact: true}).waitFor();
+      await adaptation.getByText(/固定 manifest 要求 vLLM Ascend/).waitFor();
+      if (!await adaptation.getByText('当前判定', {exact: true}).count()) throw new Error('Current-instance qualification missing');
       if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Adaptation disclosure overflow');
       await page.keyboard.press('Enter');
       if (await adaptation.getAttribute('open') !== null) throw new Error('Keyboard disclosure close failed');
       // Compare with this rendered catalog; a real preparation can finish while
       // the multi-viewport audit runs, so its initial API snapshot can be older.
-      const installedCount = await page.locator('article').filter({has: page.getByText(/^已安装到库 ·/)}).count();
+      const installedCount = await page.locator('article').filter({has: page.getByText(/^制品已准备 ·/)}).count();
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('installed');
-      if (!installedCount) await page.getByText('Mod 库中还没有已安装的扩展。', {exact: true}).waitFor();
+      if (!installedCount) await page.getByText('Mod 库中还没有已准备的制品。', {exact: true}).waitFor();
       else if (await page.locator('article').count() !== installedCount) throw new Error('Installed filter differs from actual catalog');
       await page.getByRole('combobox', {name: '筛选 Mod', exact: true}).selectOption('all');
       await page.getByLabel('搜索 Mod', {exact: true}).fill('DiffSpec');
@@ -87,7 +88,7 @@ async (page) => {
       if (action === 'uninstall') state = {installed: false, configured: false, enabled: false};
       return route.fulfill({status: 202, json: {id: 'fixture', status: 'queued'}});
     }
-    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, state} : mod), tasks: []}});
+    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, state, qualification: {...mod.qualification, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}} : mod), tasks: []}});
   });
   for (const theme of ['light', 'dark']) {
     await page.goto(base + '/mods');
@@ -107,11 +108,11 @@ async (page) => {
     if (!await runtime.getByRole('button', {name: '应用到实例', exact: true}).isDisabled()) throw new Error('Unsafe runtime application');
     const card = page.locator('article').filter({has: page.getByRole('heading', {name: 'BidKV', exact: true})});
     await card.locator('summary').filter({hasText: /^制品与配置$/}).click();
-    await card.getByRole('button', {name: '安装到 Mod 库', exact: true}).click();
+    await card.getByRole('button', {name: '准备到 Mod 库', exact: true}).click();
     await page.getByRole('dialog', {name: '操作确认'}).waitFor();
     await page.keyboard.press('Escape');
     if (await page.getByRole('dialog').count()) throw new Error('Escape failed');
-    for (const label of ['安装到 Mod 库', '保存配置', '启用意图', '停用意图', '卸载']) {
+    for (const label of ['准备到 Mod 库', '保存配置', '启用意图', '停用意图', '卸载']) {
       if (label === '保存配置') await card.locator('summary').filter({hasText: /^配置 ·/}).click();
       await card.getByRole('button', {name: label, exact: true}).click();
       await page.getByRole('dialog').getByRole('button', {name: '确认操作', exact: true}).click();

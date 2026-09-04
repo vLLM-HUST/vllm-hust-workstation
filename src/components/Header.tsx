@@ -2,6 +2,7 @@
 
 import { ChevronDown, PackageOpen, Bot, Gauge, Moon, Sun, Puzzle } from "lucide-react";
 import Link from "next/link";
+import type { ServiceProbeStatus } from "@/types";
 
 interface HeaderProps {
   brandName: string;
@@ -16,7 +17,7 @@ interface HeaderProps {
   onOpenMetrics: () => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
-  online: boolean;
+  serviceStatus: ServiceProbeStatus;
 }
 
 export default function Header({
@@ -32,8 +33,10 @@ export default function Header({
   onOpenMetrics,
   theme,
   onToggleTheme,
-  online,
+  serviceStatus,
 }: HeaderProps) {
+  const online = serviceStatus === "online";
+  const checking = serviceStatus === "checking";
   return (
     <header className="app-header flex min-w-0 items-center justify-between gap-2 border-b px-3 py-3 sm:gap-4 sm:px-6">
       {/* Brand */}
@@ -60,16 +63,18 @@ export default function Header({
           className={`flex h-9 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium sm:px-3 ${
             online
               ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
-              : "border-red-400/25 bg-red-400/10 text-red-300"
+              : checking
+                ? "border-amber-400/25 bg-amber-400/10 text-amber-300"
+                : "border-red-400/25 bg-red-400/10 text-red-300"
           }`}
-          aria-label={online ? "推理服务在线" : "推理服务离线"}
-          title={online ? "推理服务在线" : "推理服务离线"}
+          aria-label={online ? "推理服务在线" : checking ? "正在核验推理服务" : "推理服务离线"}
+          title={online ? "推理服务在线" : checking ? "正在核验推理服务" : "推理服务离线"}
         >
           <span
             className="w-1.5 h-1.5 rounded-full"
-            style={{ background: online ? "var(--success)" : "var(--danger)" }}
+            style={{ background: online ? "var(--success)" : checking ? "var(--warning)" : "var(--danger)" }}
           />
-          <span className="hidden sm:inline">{online ? "在线" : "离线"}</span>
+          <span className="hidden sm:inline">{online ? "在线" : checking ? "核验中" : "离线"}</span>
         </span>
         <button
           type="button"
@@ -110,7 +115,7 @@ export default function Header({
         >
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
-        <div className="relative hidden max-w-[36vw] sm:block lg:max-w-none">
+        {model && <div className="relative hidden max-w-[36vw] sm:block lg:max-w-none">
           <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
@@ -125,7 +130,7 @@ export default function Header({
             ))}
           </select>
           <ChevronDown size={14} className="app-text-muted pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-        </div>
+        </div>}
       </div>
     </header>
   );

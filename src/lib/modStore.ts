@@ -3,6 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { MOD_CATALOG, MOD_MANAGER_SHA, type ModAction, type ModCatalogPayload, type ModState, type ModTask } from "./modCatalog";
+import { assessModCompatibility } from "./modCompatibility";
+import { getRuntimeProvenance } from "./runtimeProvenance";
 
 export class ModError extends Error { constructor(message: string, public status = 409) { super(message); } }
 
@@ -33,6 +35,7 @@ async function tasks(root: string): Promise<ModTask[]> {
 export async function getModCatalog(administrator: boolean): Promise<ModCatalogPayload> {
   let root: string | undefined;
   try { root = await modRoot(); } catch { /* Fail closed; catalog remains browsable. */ }
+  const provenance = await getRuntimeProvenance();
   const catalog = await Promise.all(MOD_CATALOG.map(async mod => {
     let state: ModState = { installed: false, configured: false, enabled: false };
     let stateError: string | undefined;
@@ -50,9 +53,9 @@ export async function getModCatalog(administrator: boolean): Promise<ModCatalogP
         state = { installed: false, configured: false, enabled: false };
       }
     }
-    return { ...mod, state, stateError };
+    return { ...mod, state, stateError, qualification: assessModCompatibility(mod.id, provenance) };
   }));
-  return { catalog, administrator, storageReady: Boolean(root), tasks: root && administrator ? (await tasks(root)).slice(0, 20) : [], runtime: { status: "unverified", message: "尚未绑定可管理的推理实例。安装和启用意图仅保存在 Mod 库；不代表当前共享服务已加载。运行需目标版本、资源与重启审批。" } };
+  return { catalog, administrator, storageReady: Boolean(root), tasks: root && administrator ? (await tasks(root)).slice(0, 20) : [], runtime: { status: "unverified", message: "尚未绑定可管理的推理实例。制品准备和启用意图仅保存在 Mod 库；不代表当前共享服务已加载。正式应用须将 Manager 与插件装入 vLLM 的同一运行环境，并经过目标版本、资源与重启审批。" } };
 }
 
 export async function startModAction(id: string, action: ModAction, configuration?: unknown): Promise<ModTask> {
@@ -62,11 +65,15 @@ export async function startModAction(id: string, action: ModAction, configuratio
   if (action === "run") throw new ModError("未绑定经兼容性验收的专属推理实例；本操作不会重启共享服务。需要单独的部署与重启审批。");
   if (!mod.sha) throw new ModError("外部服务不由工作站安装、启停或卸载。");
   if (action === "configure" && (!configuration || typeof configuration !== "object" || Array.isArray(configuration) || JSON.stringify(configuration).length > 16_384)) throw new ModError("配置必须为不超过 16 KiB 的 JSON 对象。", 400);
+  if (action === "enable") {
+    const qualification = assessModCompatibility(id, await getRuntimeProvenance());
+    if (qualification.status !== "compatible") throw new ModError(`当前实例${qualification.label}：${qualification.reason} 启用意图未保存。`);
+  }
   const root = await modRoot();
   if ((await tasks(root)).some(t => ["running", "queued"].includes(t.status))) throw new ModError("已有 Mod 任务正在执行，请等待完成。");
   const worker = path.resolve(process.env.WORKSTATION_MOD_WORKER || path.join(process.cwd(), "scripts/mod_worker.py"));
   await access(worker);
-  const task: ModTask = { id: randomUUID(), modId: id, action, status: "queued", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), logs: ["任务已排队；仅操作独立 Mod 库。"] };
+  const task: ModTask = { id: randomUUID(), modId: id, action, status: "queued", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), logs: ["任务已排队；仅操作 Mod 制品库，不改动当前推理环境。"] };
   await mkdir(path.join(root, "tasks"), { recursive: true, mode: 0o700 });
   const file = path.join(root, "tasks", `${task.id}.json`);
   await writeFile(file, JSON.stringify(task), { flag: "wx", mode: 0o600 });

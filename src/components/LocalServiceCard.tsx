@@ -51,7 +51,7 @@ export default function LocalServiceCard() {
 
   const runAction = useCallback(
     async (action: ActionName) => {
-      if (action === "restart-managed-backend" && !adminToken) return;
+      if (!adminToken) return;
       setPendingAction(action);
       setMessage("");
 
@@ -60,9 +60,7 @@ export default function LocalServiceCard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(action === "restart-managed-backend" && adminToken
-              ? { "X-Workstation-Admin-Token": adminToken }
-              : {}),
+            "X-Workstation-Admin-Token": adminToken,
           },
           body: JSON.stringify({ action }),
         });
@@ -123,7 +121,7 @@ export default function LocalServiceCard() {
     status.currentModel &&
     status.desiredModel &&
     status.currentModel !== status.desiredModel
-      ? "当前服务已运行其他模型；“一键拉起 / 修复后端”会优先复用当前健康服务，如需按配置模型切换请点击“重启本地后端”。"
+      ? "当前服务模型与部署配置不同；当前健康实例保持不变。如需变更，由管理员通过平台部署流程操作。"
       : null;
   const evoStatus = status?.evoScientist;
   const evoStatusTone = !evoStatus
@@ -150,7 +148,7 @@ export default function LocalServiceCard() {
 
       <div className="app-text-muted space-y-1 text-xs">
         <p>目标：{status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
-        <p className="truncate" title={status?.currentModel || undefined}>模型：{status?.currentModel ?? status?.desiredModel ?? "未探测到"}</p>
+        <p className="truncate" title={status?.currentModel || undefined}>模型：{status ? status.currentModel ?? status.desiredModel ?? "未探测到" : "正在核验"}</p>
       </div>
 
       <details className="app-card-flat rounded-xl p-3 text-xs leading-5">
@@ -168,7 +166,16 @@ export default function LocalServiceCard() {
       {message ? <p className="text-xs text-cyan-200/90 leading-5">{message}</p> : null}
   {mismatchHint ? <p className="text-xs text-amber-200/90 leading-5">{mismatchHint}</p> : null}
 
-      {status?.isLocalTarget !== false ? <div className="grid grid-cols-1 gap-2">
+      {!status ? null : status.isLocalTarget && !adminToken ? (
+        <button
+          type="button"
+          onClick={enterAdminMode}
+          className="app-control inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors"
+        >
+          <Wrench size={14} />
+          进入管理员模式
+        </button>
+      ) : status.isLocalTarget && adminToken ? <div className="grid grid-cols-1 gap-2">
         <button
           type="button"
           onClick={() => runAction("ensure-backend")}
@@ -231,7 +238,7 @@ export default function LocalServiceCard() {
         </div>
       )}
 
-      {status?.isLocalTarget !== false ? (
+      {status?.isLocalTarget === true ? (
         <p className="text-[11px] text-white/30 leading-5">
           后端日志: {status?.backendLogFile ?? "加载中"}
         </p>

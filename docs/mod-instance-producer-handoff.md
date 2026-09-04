@@ -1,6 +1,6 @@
 # Sage Mate handoff: dev-hub default-off transaction milestone
 
-Current producer main: `bfcc0d5c2c083d6b633d2f0657a09c7f7712c74c`.
+Current producer main: `39521108c79a2c6217d44d1ed4189ebf6b87e308`.
 Initial transaction milestone: `b6e56e1f7f1ae58ea15aa9994852f48290827a55`.
 Workstation explicitly accepts Sage Mate `d310686`'s single-writer division and
 exact owner-entry/v1 request/manifest. No consumer schema change is requested.
@@ -88,3 +88,39 @@ it was **not delivered** by this task. This committed artifact is available to t
 coordinating task for delivery; the user is not asked to forward messages.
 No online deployment, permissions installation, service restart, NPU use, model/
 TP4/graph change or Sage gitlink edit was performed by this task.
+
+## Follow-up: durable host launch grants (`3952110`)
+
+The generic producer now contains a default-off `LaunchGrantAuthority`: one-use
+hashed launch grants bind the existing operation/fence/executor, target generation/
+spec, registered owner UID and frozen command hash. Claims derive UID/PID from
+Linux AF_UNIX `SO_PEERCRED` plus `/proc` start ticks and persist an exact lease.
+Reopening the private Store after broker failure preserves replay protection;
+generation/fence/PID drift prevents later critical sections.
+
+This commit also validates the shape and exact inventory digest of host fencing
+receipts, but deliberately does not assert OS enforcement. Full architecture,
+threat cases and the separately approved installation checklist are in
+`deps/vllm-hust-dev-hub/docs/host-integration-v1.md`. Producer result: **59 tests,
+40 subtests**, Ruff and diff checks pass using CPU/AF_UNIX fixtures only.
+
+No current wire schema changed; no socket server, product adapter, writer ACL,
+unit, group, enrollment or gate was installed. Sage must review and repin this
+producer independently. Production remains unqualified until every external
+writer is broker-only and the product adapter proves cgroup/daemon quiescence.
+
+## Extension authoring source of truth
+
+Workstation was checked against canonical `vllm-hust-docs` main commit
+`e70e4234c56512d312ac58cd39080411a13667f1`, specifically
+`operations/bidkv-packaging-and-release-guide.md`. The catalog preserves BidKV's
+`0.2-experimental` bundle ID, `>=0.23,<0.24` host range, API/contract boundary,
+and install/enable/effective separation; it does not widen that manifest.
+
+The library worker's virtual environment is now described only as an isolated
+artifact-validation environment. It is not presented as a serving installation.
+An approved deployment must install Extension Manager and the plugin into the
+same environment that executes `vllm`, render activation through
+`vllm-hust-ext run`, and require actual startup/health evidence before claiming
+effective. This documentation alignment does not alter a shared API or enable a
+production execution path.

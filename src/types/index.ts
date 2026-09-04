@@ -149,6 +149,8 @@ export interface MetricsSnapshot {
   gatewayAvailable?: boolean;
 }
 
+export type ServiceProbeStatus = "checking" | "online" | "offline";
+
 export interface AppConfig {
   brandName: string;
   brandLogo: string | null;

@@ -1,6 +1,6 @@
 {
   "protocol": "vllm-hust.instance-control/v1",
-  "sourceSha": "bfcc0d5c2c083d6b633d2f0657a09c7f7712c74c",
+  "sourceSha": "39521108c79a2c6217d44d1ed4189ebf6b87e308",
   "entrypoint": "scripts/instance_control_entry.py",
   "files": {
     "config/instance-control-contract.json": "29b1d1399daf5c76ddc7c17e2a7d24e789e8113c11b881136e3b5f5ca9bf0307",
@@ -9,6 +9,7 @@
     "scripts/instance_control/backend.py": "7dddfea30f5c75d5d71d0109094c99a06d05a8c2ec20e602cf10a251de3cd0c6",
     "scripts/instance_control/controller.py": "f9de7c81fba292a341dc0d4af1fdb871777d9d4390bc52cd004462fdaec813f2",
     "scripts/instance_control/foreground.py": "86d7a6304a4a326d5fef77ee1c6059fd1b90087e8bf99d55da73f9bfcef27a63",
+    "scripts/instance_control/host_authority.py": "4c7d97114d3b5a045d62048ae9db4e858d39197b1bc7dd0d655c92fae326d2b1",
     "scripts/instance_control/schema.py": "a8f21e7df69514dc9e66ffc9d91b23ce6d3238c4911465f12b7b12a0cf80191b",
     "scripts/instance_control/store.py": "a86d72e48f38eb19e5e9a90fcbed3fd5b61a3363578c9e91628bcbbe940a25d4"
   }

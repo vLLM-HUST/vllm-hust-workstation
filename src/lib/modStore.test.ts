@@ -6,8 +6,10 @@ import path from "node:path";
 import { getModCatalog, modRoot, startModAction } from "./modStore";
 import { MOD_CATALOG } from "./modCatalog";
 import { GET, POST } from "@/app/api/mods/route";
+import { getRuntimeProvenance } from "./runtimeProvenance";
+vi.mock("./runtimeProvenance", () => ({ getRuntimeProvenance: vi.fn() }));
 let root: string;
-beforeEach(async () => { root = await mkdtemp(path.join(os.tmpdir(), "mod-unit-")); vi.stubEnv("WORKSTATION_MOD_DIR", root); vi.stubEnv("WORKSTATION_ADMIN_TOKEN", "test-secret"); });
+beforeEach(async () => { root = await mkdtemp(path.join(os.tmpdir(), "mod-unit-")); vi.stubEnv("WORKSTATION_MOD_DIR", root); vi.stubEnv("WORKSTATION_ADMIN_TOKEN", "test-secret"); vi.mocked(getRuntimeProvenance).mockResolvedValue({ available: false, source: "unavailable", vllmHust: "unavailable", vllmAscendHust: "unavailable" }); });
 afterEach(async () => { vi.unstubAllEnvs(); await rm(root, {recursive: true, force: true}); });
 it("requires explicit storage and rejects root/symlink paths", async () => {
   vi.stubEnv("WORKSTATION_MOD_DIR", ""); await expect(modRoot()).rejects.toThrow();
@@ -45,6 +47,10 @@ it("authenticates read-only catalog and rejects invalid commands and external se
 it("keeps running gate closed even with a valid password", async () => {
   const response = await POST(new Request("http://localhost/api/mods", {method: "POST", headers: {"x-workstation-admin-token": "test-secret"}, body: JSON.stringify({id: "bidkv", action: "run"})}));
   expect(response.status).toBe(409);
+});
+it("fails closed before saving enable intent when current compatibility is not proven", async () => {
+  await expect(startModAction("bidkv", "enable")).rejects.toThrow(/未核验.*启用意图未保存/);
+  expect((await getModCatalog(true)).catalog[0].qualification.status).toBe("unverified");
 });
 it("serializes management work and projects stale tasks as interrupted", async () => {
   await mkdir(path.join(root, "tasks"));

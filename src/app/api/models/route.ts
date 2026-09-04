@@ -1,4 +1,3 @@
-import { DEFAULT_MODEL_ID } from "@/lib/config";
 import { recordApiRequest, recordUpstreamRequest } from "@/lib/metrics";
 import { fetchUpstreamEngineProbe, fetchUpstreamModels } from "@/lib/upstream";
 
@@ -28,9 +27,8 @@ export async function GET() {
     );
   }
 
-  const fallbackModelId = process.env.DEFAULT_MODEL || DEFAULT_MODEL_ID;
   const usableIds = engineProbe.state === "healthy" ? engineProbe.modelIds : modelsProbe.ids;
-  const availableIds = usableIds.length > 0 ? usableIds : [fallbackModelId];
+  const availableIds = usableIds;
   const liveModelSwitchSupported = usableIds.length > 1;
 
   recordApiRequest("/api/models", "GET", 200, (performance.now() - start) / 1000);
