@@ -11,8 +11,9 @@ Runtime receipt verification, freshness policy, and independent UI audit:
 
 Mod Center 当前以 Core `762f85b3`（`0.28.1rc1.dev319`）和 Ascend
 `4e57439e`（`0.25.1rc1`）作为候选资格基线。目录中的 `sha` 仍是已发布的
-历史制品锁；`candidateSha` 与 `candidateManagerSha` 记录尚待人工审查、推送和
-独立 NPU 资格验证后仍待人工逐行审查和推送的源码候选，不能直接用于生产准备或启用。
+历史制品锁；`candidateSha` 与 `candidateManagerSha` 记录已推送到组织 `main`
+且完成独立 NPU 资格验证的候选。是否在某个实例启用仍取决于精确制品和
+runtime-effective 见证；性能退化的候选不自动成为生产推荐。
 
 API 和界面分别报告 `installed`、`configured`、`enabled` 与
 `runtimeEffective`。前三项是制品库、配置和启用意图；只有带证据标识和观察
