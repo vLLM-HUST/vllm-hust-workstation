@@ -90,7 +90,7 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(checks[key]["status"], "unknown")
 
     def test_matching_explicit_constraints_still_do_not_qualify_model_or_runtime(self):
-        self.snapshot["launch"]["options"] = {"tensorParallel": 4, "pipelineParallel": 1, "maxNumSeqs": 2, "asyncScheduling": False,
+        self.snapshot["launch"]["options"] = {"tensorParallel": 4, "pipelineParallel": 1, "maxNumSeqs": 4, "asyncScheduling": False,
                                                "enforceEager": False, "prefixCaching": False, "dtype": "bfloat16"}
         report = self.assess()
         self.assertEqual(report["status"], "unverified")

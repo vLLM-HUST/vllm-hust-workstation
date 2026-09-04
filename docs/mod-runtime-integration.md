@@ -80,7 +80,7 @@ Core package: `0.28.1rc1.dev319+g762f85b31.empty`; Ascend package:
 `164860f3095362efe5ccab9ed3486bd665c00baa`. The `v0.23.0` compatibility label must not substitute
 for either package version.
 
-The reviewed manifests currently require:
+The manifests reviewed on 2026-09-03 historically required:
 
 | Mod | Host package range | Additional admission requirements |
 | --- | --- | --- |
@@ -88,7 +88,11 @@ The reviewed manifests currently require:
 | DiffSpec | vllm-ascend >=0.23,<0.24 | draft model and acceptance of unversioned patch surfaces |
 | LatchMoE | vllm ==0.21.0 | MoE offload seam v1, supported MoE model and documented launch limits |
 
-All three are outside this shared image's historical declared ranges. These ranges
+Those historical ranges were outside the shared image. They are preserved as
+dated evidence, not current declarations. The 2026-09-04 qualified candidates
+target Core `0.28.1rc1.dev319` at `762f85b3` and Ascend `0.25.1rc1` at
+`4e57439e`; DiffSpec additionally binds Qwen3.8-27B, TP4 FULL_DECODE_ONLY graph,
+and the hashed `VirVen/Qwen3.5-27B-EAGLE3-v2` draft. These ranges
 are reviewable declarations, not permanent prohibitions. The user selected the
 existing workstation instance and authorized revisiting compatibility descriptions.
 Requalify exact versions and update declarations with the adaptation code and

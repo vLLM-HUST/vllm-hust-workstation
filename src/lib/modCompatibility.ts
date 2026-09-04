@@ -75,7 +75,7 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     if (!exactTarget || minor(runtime.components.plugin.version) !== "0.25") {
       return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 与 Ascend 4e57439e / 0.25.1rc1；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "TP4 graph 源码适配尚未取得兼容 Eagle3 draft checkpoint，以及多 rank 接受/拒绝、KV 元数据、并发与恢复实跑证据。", runtime);
+    return result("unverified", "Qwen3.8-27B 与指定 VirVen Eagle3 draft 的 TP4 graph 候选已通过正确性、四 rank、接受/拒绝、KV、并发、取消和恢复门禁，但性能退化。当前容器只证明宿主基线，未证明安装的是候选 c78f55c7、匹配 draft 哈希及 runtime-effective 见证。", runtime);
   }
 
   if (modId === "latchmoe") {

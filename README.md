@@ -12,17 +12,18 @@ Runtime receipt verification, freshness policy, and independent UI audit:
 Mod Center 当前以 Core `762f85b3`（`0.28.1rc1.dev319`）和 Ascend
 `4e57439e`（`0.25.1rc1`）作为候选资格基线。目录中的 `sha` 仍是已发布的
 历史制品锁；`candidateSha` 与 `candidateManagerSha` 记录尚待人工审查、推送和
-独立 NPU 资格验证的源码候选，不能用于生产准备或启用。
+独立 NPU 资格验证后仍待人工逐行审查和推送的源码候选，不能直接用于生产准备或启用。
 
 API 和界面分别报告 `installed`、`configured`、`enabled` 与
 `runtimeEffective`。前三项是制品库、配置和启用意图；只有带证据标识和观察
 时间的运行适配器结果才能设置 `runtimeEffective`。没有 TP4 graph 实跑证据时，
 精确版本匹配也只返回 `unknown`，不会返回 `compatible`。
 
-BidKV 候选使用版本化 preemption-policy API。DiffSpec 尚缺与 Qwen3.8-27B
-架构、vocab 和 tokenizer 匹配的 Eagle3 draft checkpoint。LatchMoE 对 dense
+BidKV 候选使用版本化 preemption-policy API。DiffSpec 已使用匹配 Qwen3.8-27B
+架构、vocab 和 tokenizer 的 VirVen Eagle3 draft 通过 TP4 graph 功能矩阵，但性能退化。LatchMoE 对 dense
 Qwen3.8-27B 为不适用；其独立 MoE 资格模型是 Qwen3-30B-A3B。生产 NPU0-3 与
-Native Engine 保留的 NPU4-7 均不属于候选验证资源。
+NPU0-3 在明确授权停服后用于本轮验证并已恢复原服务；Native Engine 保留的
+NPU4-7 未用于这些 Mod 的验证。
 
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。
 

@@ -13,8 +13,8 @@ import zipfile
 from prepare_mod_image import artifacts
 
 
-DIFFSPEC_SOURCE = "96188b9923928b3d51bbf7f81d38fcd1144e3fb9"
-DIFFSPEC_VALIDATOR = "8e9bf7f38aab3a2d5aec7d99fa42f1368b9424086c9970f6e65e95105239252b"
+DIFFSPEC_SOURCE = "c78f55c7e4923da342f2fc52c2cb509c150e5363"
+DIFFSPEC_VALIDATOR = "1ceeb18c4fa7c3c1832f090b55194cecb888930ba30e1e68aa2014dfe4539d91"
 
 
 def assess(snapshot, mod_id, source_sha, validator_hash):
@@ -38,7 +38,7 @@ def assess(snapshot, mod_id, source_sha, validator_hash):
     rules = [
         ("tensorParallel", 4, "当前资格画像要求 TP=4"),
         ("pipelineParallel", 1, "固定 DiffSpec 实现要求 PP=1"),
-        ("maxNumSeqs", 2, "并发与取消/恢复资格验证要求 max-num-seqs=2"),
+        ("maxNumSeqs", 4, "已验证并发与取消/恢复画像要求 max-num-seqs=4"),
         ("asyncScheduling", False, "固定 DiffSpec 实现要求关闭异步调度"),
         ("enforceEager", False, "正式资格画像要求 graph mode，禁止 eager 降级"),
         ("prefixCaching", False, "固定 DiffSpec 实现要求关闭 prefix cache"),
@@ -50,8 +50,8 @@ def assess(snapshot, mod_id, source_sha, validator_hash):
         # Absent flags and implicit runtime defaults are always unknown.
         status = "unknown" if value is None else "pass" if type(value) is type(expected) and value == expected else "adaptation-required"
         checks.append({"id": key, "status": status, "observed": value, "message": message})
-    checks.append({"id": "model-and-draft", "status": "unknown", "message": "还需核验 Qwen3.8 target 与 Eagle3 draft 的架构、vocab、tokenizer 一致性；当前本地 Qwen3-1.7B draft vocab 不匹配。"})
-    checks.append({"id": "tp4-runtime-evidence", "status": "unknown", "message": "命令行匹配不能证明各 rank 的 draft、接受/拒绝、KV 元数据、graph replay、并发和恢复正确。"})
+    checks.append({"id": "model-and-draft", "status": "unknown", "message": "资格制品绑定 Qwen3.8-27B 与 VirVen/Qwen3.5-27B-EAGLE3-v2（checkpoint SHA256 a57cefc4…）；仍需核验当前实例实际文件哈希。"})
+    checks.append({"id": "tp4-runtime-evidence", "status": "unknown", "message": "候选已通过 TP4 graph 矩阵，但命令行匹配不能让当前实例继承四 rank、接受/拒绝、KV、并发和恢复见证。"})
     if any(check["status"] == "adaptation-required" for check in checks):
         report["status"] = "adaptation-required"
     # Never turns all present CLI checks passing into compatibility or permission.
