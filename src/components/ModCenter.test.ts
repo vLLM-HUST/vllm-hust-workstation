@@ -13,7 +13,7 @@ const currentCompatibility = { ...qualification };
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   fetchMock.mockReset().mockResolvedValue({ ok: true, status: 200, json: async () => ({
-    catalog: MOD_CATALOG.map(mod => ({ ...mod, state: { installed: false, configured: false, enabled: false }, currentCompatibility, qualification })),
+    catalog: MOD_CATALOG.map(mod => ({ ...mod, state: { installed: false, configured: false, enabled: false, runtimeEffective: null }, currentCompatibility, qualification })),
     administrator: false, storageReady: true, tasks: [], runtime: { status: "unverified" },
   }) });
   vi.stubGlobal("fetch", fetchMock);
@@ -33,10 +33,10 @@ it("separates historical source declarations from explicit target qualification"
     expect(details.open).toBe(false);
     expect(details.querySelector("summary")?.textContent).toBe("当前实例 · 不兼容");
     expect(details.textContent).toContain("固定 manifest 要求 0.23；当前为 0.28。");
-    expect(details.textContent).toContain("历史声明基线");
-    expect(details.textContent).toContain("未修改上游兼容范围");
+    expect(details.textContent).toContain("候选资格基线");
+    expect(details.textContent).toContain("独立 NPU 资格验证");
     expect(details.querySelectorAll("dd")[1]?.textContent).toBe(MOD_CATALOG[cards.indexOf(card)].compatibility);
-    expect(card.textContent).toContain("运行未核验");
+    expect(card.textContent).toContain("运行生效性未知");
   }
   expect(cards[3].querySelector("details")).toBeNull();
   expect(cards[3].textContent).toContain("由外部服务运维方管理");

@@ -22,7 +22,7 @@ export interface ModRuntimePayload {
     pluginSha?: string;
     checkedAt?: string;
     models: string[];
-    observedMods: null; // Unknown until the owner adapter supplies worker + inference evidence.
+    observedMods: null | Array<{ id: string; runtimeEffective: boolean; evidenceId: string; observedAt: string }>;
   };
   preparationAvailable: boolean;
   applicationAvailable: boolean;

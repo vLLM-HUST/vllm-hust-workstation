@@ -25,8 +25,8 @@ export function currentCompatibility(
   };
 }
 
-const LATCHMOE_CORE_SHA = "ad7125a431e176d4161099480a66f0169609a690";
-const LATCHMOE_PLUGIN_SHA = "4806367eeeb7d62b32078ae90cd929cc06d825fe";
+const TARGET_CORE_SHA = "762f85b311fbab0bcf8921dd216f5093cd58b9b8";
+const TARGET_PLUGIN_SHA = "4e57439e58ed3d78e675f9fd7b4614fb183c5394";
 
 function minor(version?: string): string | null {
   const match = version?.match(/^v?(\d+)\.(\d+)(?:\.|rc|$)/);
@@ -61,29 +61,28 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     return result("unverified", "当前容器身份或安装制品尚未核验，不能判断兼容性。", runtime);
   }
 
+  const exactTarget = runtime.components.core.commit === TARGET_CORE_SHA &&
+    runtime.components.plugin.commit === TARGET_PLUGIN_SHA;
+
   if (modId === "bidkv") {
-    const current = minor(runtime.components.core.version);
-    if (current !== "0.23") {
-      return result("incompatible", `固定 manifest 要求 vLLM-HUST >=0.23,<0.24；当前 Core 为 ${runtime.components.core.version}。`, runtime);
+    if (!exactTarget || minor(runtime.components.core.version) !== "0.28") {
+      return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 / 0.28.1rc1.dev319 与 Ascend 4e57439e；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "宿主版本在声明范围内，但 scheduler-policy v1、Manager admission 与执行证据尚未核验。", runtime);
+    return result("unverified", "源码已迁移到 preemption-policy API v1；尚缺独立 NPU 上的 TP4 graph 调用日志、指标、回滚和输出正确性证据。", runtime);
   }
 
   if (modId === "diffspec") {
-    const current = minor(runtime.components.plugin.version);
-    if (current !== "0.23") {
-      return result("incompatible", `固定 manifest 要求 vLLM Ascend >=0.23,<0.24；当前 Plugin 为 ${runtime.components.plugin.version}。`, runtime);
+    if (!exactTarget || minor(runtime.components.plugin.version) !== "0.25") {
+      return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 与 Ascend 4e57439e / 0.25.1rc1；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "宿主版本在声明范围内，但未版本化进程内补丁面、Manager admission 与执行证据尚未核验。", runtime);
+    return result("unverified", "TP4 graph 源码适配尚未取得兼容 Eagle3 draft checkpoint，以及多 rank 接受/拒绝、KV 元数据、并发与恢复实跑证据。", runtime);
   }
 
   if (modId === "latchmoe") {
-    const core = runtime.components.core.commit;
-    const plugin = runtime.components.plugin.commit;
-    if (core !== LATCHMOE_CORE_SHA || plugin !== LATCHMOE_PLUGIN_SHA) {
-      return result("incompatible", `固定 compatibility.lock 要求 Core ${LATCHMOE_CORE_SHA.slice(0, 8)}、Ascend seam ${LATCHMOE_PLUGIN_SHA.slice(0, 8)}；当前为 ${core.slice(0, 8)} / ${plugin.slice(0, 8)}。`, runtime);
+    if (!exactTarget) {
+      return result("incompatible", "候选 compatibility.lock 仅面向 Core 762f85b3 与 Ascend 4e57439e 加 MoE seam v2；当前运行制品不匹配。", runtime);
     }
-    return result("unverified", "源码锁匹配，但 MoE 模型、资源、graph 配置和真实执行证据尚未核验。", runtime);
+    return result("unverified", "Qwen3.8-27B 是 dense 模型，LatchMoE 对该模型不适用；Qwen3-30B-A3B 的 TP4 graph、专家映射、换入换出和地址稳定性仍待独立 NPU 实跑。", runtime);
   }
 
   return result("unverified", "该扩展由外部运维方管理，Workstation 没有其生命周期兼容性证据。", runtime);

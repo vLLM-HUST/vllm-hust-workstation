@@ -37,20 +37,20 @@ export async function getModCatalog(administrator: boolean): Promise<ModCatalogP
   try { root = await modRoot(); } catch { /* Fail closed; catalog remains browsable. */ }
   const provenance = await getRuntimeProvenance();
   const catalog = await Promise.all(MOD_CATALOG.map(async mod => {
-    let state: ModState = { installed: false, configured: false, enabled: false };
+    let state: ModState = { installed: false, configured: false, enabled: false, runtimeEffective: null };
     let stateError: string | undefined;
     if (root && mod.sha) {
       try {
         const target = path.join(root, mod.id);
         if ((await lstat(target)).isSymbolicLink()) throw new Error("symlink");
         const receipt = JSON.parse(await readFile(path.join(target, "receipt.json"), "utf8"));
-        state = { installed: receipt.installed, enabled: receipt.enabled, configured: receipt.configured, version: receipt.version, sha: receipt.sha, installedAt: receipt.installedAt };
+        state = { installed: receipt.installed, enabled: receipt.enabled, configured: receipt.configured, runtimeEffective: null, version: receipt.version, sha: receipt.sha, installedAt: receipt.installedAt };
         if (state.sha !== mod.sha || typeof state.installed !== "boolean" || typeof state.enabled !== "boolean" || typeof state.configured !== "boolean") throw new Error("receipt");
         await access(path.join(target, "env/bin/python"));
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") stateError = "安装凭据无效，需管理员检查。";
         else if (state.installed) stateError = "安装环境缺失，需管理员检查。";
-        state = { installed: false, configured: false, enabled: false };
+        state = { installed: false, configured: false, enabled: false, runtimeEffective: null };
       }
     }
     const qualification = assessModCompatibility(mod.id, provenance);

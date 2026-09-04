@@ -7,6 +7,23 @@ Runtime receipt verification, freshness policy, and independent UI audit:
 
 独立 [Mod 中心](docs/mod-center.md)：固定版本安装、管理员配置/启停意图、可恢复卸载与任务日志。运行实例接入尚未开放，安装不代表推理生效。
 
+## Sage Mate Mod 候选基线（2026-09-04）
+
+Mod Center 当前以 Core `762f85b3`（`0.28.1rc1.dev319`）和 Ascend
+`4e57439e`（`0.25.1rc1`）作为候选资格基线。目录中的 `sha` 仍是已发布的
+历史制品锁；`candidateSha` 与 `candidateManagerSha` 记录尚待人工审查、推送和
+独立 NPU 资格验证的源码候选，不能用于生产准备或启用。
+
+API 和界面分别报告 `installed`、`configured`、`enabled` 与
+`runtimeEffective`。前三项是制品库、配置和启用意图；只有带证据标识和观察
+时间的运行适配器结果才能设置 `runtimeEffective`。没有 TP4 graph 实跑证据时，
+精确版本匹配也只返回 `unknown`，不会返回 `compatible`。
+
+BidKV 候选使用版本化 preemption-policy API。DiffSpec 尚缺与 Qwen3.8-27B
+架构、vocab 和 tokenizer 匹配的 Eagle3 draft checkpoint。LatchMoE 对 dense
+Qwen3.8-27B 为不适用；其独立 MoE 资格模型是 Qwen3-30B-A3B。生产 NPU0-3 与
+Native Engine 保留的 NPU4-7 均不属于候选验证资源。
+
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。
 
 🛡️ 数据不出境 · 完全本地推理 · 零编程门槛

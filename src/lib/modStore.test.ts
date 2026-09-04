@@ -69,9 +69,9 @@ it("returns explicit current-instance compatibility from verified server provena
   const response = await GET(new Request("http://localhost/api/mods"));
   const data = await response.json();
   expect(data.catalog.map((mod: { currentCompatibility: { status: string } }) => mod.currentCompatibility.status)).toEqual([
-    "incompatible", "incompatible", "incompatible", "unknown",
+    "unknown", "unknown", "unknown", "unknown",
   ]);
-  expect(data.catalog[0].currentCompatibility.reason).toMatch(/当前 Core/);
+  expect(data.catalog[0].currentCompatibility.reason).toMatch(/TP4 graph/);
   expect(data.catalog[1].state.installed).toBe(false);
 });
 it("serializes management work and projects stale tasks as interrupted", async () => {

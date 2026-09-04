@@ -13,8 +13,8 @@ import zipfile
 from prepare_mod_image import artifacts
 
 
-DIFFSPEC_SOURCE = "762959978514cdd01407b58f1015a75f2ae2c936"
-DIFFSPEC_VALIDATOR = "54dead6dc7acd16b3fe573dfefb31b82f654382b2624c73c0612d61bfe4dc0fc"
+DIFFSPEC_SOURCE = "af00892c8858f28f672e5812f32ed70eaaaafe27"
+DIFFSPEC_VALIDATOR = "8e9bf7f38aab3a2d5aec7d99fa42f1368b9424086c9970f6e65e95105239252b"
 
 
 def assess(snapshot, mod_id, source_sha, validator_hash):
@@ -36,11 +36,11 @@ def assess(snapshot, mod_id, source_sha, validator_hash):
     report["process"] = {key: launch[key] for key in ("pid", "startTicks")}
     options = launch.get("options", {})
     rules = [
-        ("tensorParallel", 1, "固定 DiffSpec 实现要求 TP=1"),
+        ("tensorParallel", 4, "当前资格画像要求 TP=4"),
         ("pipelineParallel", 1, "固定 DiffSpec 实现要求 PP=1"),
-        ("maxNumSeqs", 1, "固定 DiffSpec 实现要求 max-num-seqs=1"),
+        ("maxNumSeqs", 2, "并发与取消/恢复资格验证要求 max-num-seqs=2"),
         ("asyncScheduling", False, "固定 DiffSpec 实现要求关闭异步调度"),
-        ("enforceEager", True, "固定 DiffSpec 实现要求 target eager；不能自动降低现有执行模式"),
+        ("enforceEager", False, "正式资格画像要求 graph mode，禁止 eager 降级"),
         ("prefixCaching", False, "固定 DiffSpec 实现要求关闭 prefix cache"),
         ("dtype", "bfloat16", "固定 DiffSpec 实现要求 target BF16"),
         ("quantization", None, "固定 DiffSpec 实现不接受量化模型；需核验实际模型配置"),
@@ -50,7 +50,8 @@ def assess(snapshot, mod_id, source_sha, validator_hash):
         # Absent flags and implicit runtime defaults are always unknown.
         status = "unknown" if value is None else "pass" if type(value) is type(expected) and value == expected else "adaptation-required"
         checks.append({"id": key, "status": status, "observed": value, "message": message})
-    checks.append({"id": "model-and-draft", "status": "unknown", "message": "还需验收 Eagle3 单层 draft、BF16、padded drafter、非 M-RoPE/MLA，以及模型与设备上的实际推理。"})
+    checks.append({"id": "model-and-draft", "status": "unknown", "message": "还需核验 Qwen3.8 target 与 Eagle3 draft 的架构、vocab、tokenizer 一致性；当前本地 Qwen3-1.7B draft vocab 不匹配。"})
+    checks.append({"id": "tp4-runtime-evidence", "status": "unknown", "message": "命令行匹配不能证明各 rank 的 draft、接受/拒绝、KV 元数据、graph replay、并发和恢复正确。"})
     if any(check["status"] == "adaptation-required" for check in checks):
         report["status"] = "adaptation-required"
     # Never turns all present CLI checks passing into compatibility or permission.

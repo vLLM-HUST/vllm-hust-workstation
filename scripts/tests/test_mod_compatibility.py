@@ -80,7 +80,7 @@ class CompatibilityTests(unittest.TestCase):
     def test_current_style_launch_produces_specific_adaptation_requirements(self):
         report = self.assess()
         self.assertEqual(report["status"], "adaptation-required")
-        self.assertEqual({c["id"] for c in report["checks"] if c["status"] == "adaptation-required"}, {"tensorParallel", "maxNumSeqs", "asyncScheduling"})
+        self.assertEqual({c["id"] for c in report["checks"] if c["status"] == "adaptation-required"}, {"maxNumSeqs", "asyncScheduling"})
         self.assertFalse(report["ready"])
         self.assertFalse(report["runtimeQualified"])
 
@@ -90,12 +90,13 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(checks[key]["status"], "unknown")
 
     def test_matching_explicit_constraints_still_do_not_qualify_model_or_runtime(self):
-        self.snapshot["launch"]["options"] = {"tensorParallel": 1, "pipelineParallel": 1, "maxNumSeqs": 1, "asyncScheduling": False,
-                                               "enforceEager": True, "prefixCaching": False, "dtype": "bfloat16"}
+        self.snapshot["launch"]["options"] = {"tensorParallel": 4, "pipelineParallel": 1, "maxNumSeqs": 2, "asyncScheduling": False,
+                                               "enforceEager": False, "prefixCaching": False, "dtype": "bfloat16"}
         report = self.assess()
         self.assertEqual(report["status"], "unverified")
         self.assertFalse(report["ready"])
         self.assertIn("model-and-draft", [c["id"] for c in report["checks"] if c["status"] == "unknown"])
+        self.assertIn("tp4-runtime-evidence", [c["id"] for c in report["checks"] if c["status"] == "unknown"])
 
     def test_other_source_or_validator_cannot_reuse_historical_constraints(self):
         for kwargs in [{"source": "b" * 40}, {"validator": "c" * 64}]:

@@ -122,12 +122,12 @@ export default function ModCenter() {
             <summary className="app-text-secondary cursor-pointer py-2">当前实例 · {mod.currentCompatibility.label}</summary>
             <dl className="mt-2 space-y-3 text-xs leading-5">
               <div><dt className="app-text-secondary font-medium">当前判定</dt><dd className={mod.currentCompatibility.status === "compatible" ? "mt-1 text-emerald-300" : mod.currentCompatibility.status === "incompatible" ? "mt-1 text-red-300" : "mt-1 text-amber-300"}>{mod.currentCompatibility.reason}</dd></div>
-              <div><dt className="app-text-secondary font-medium">历史声明基线</dt><dd className="app-text-muted mt-1">{mod.compatibility}</dd></div>
+              <div><dt className="app-text-secondary font-medium">候选资格基线</dt><dd className="app-text-muted mt-1">{mod.compatibility}</dd></div>
               <div><dt className="app-text-secondary font-medium">基线依赖与配置</dt><dd className="app-text-muted mt-1">{mod.requirements}</dd></div>
             </dl>
-            <p className="app-text-muted mt-3 text-xs leading-5">只按固定 manifest / compatibility.lock 判断；未修改上游兼容范围。安装、配置或准备完成均不代表运行生效。</p>
+            <p className="app-text-muted mt-3 text-xs leading-5">候选源码与 Manager 锁仍待人工审查、推送和独立 NPU 资格验证。安装、配置或保存启用意图均不代表运行生效。</p>
           </details> : <><p className="app-text-secondary mt-4 text-sm leading-6">{mod.compatibility}</p><p className="app-text-muted mt-2 text-xs leading-5">{mod.requirements}</p></>}
-          {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.installed ? `制品已准备 · ${mod.state.version}` : "制品未准备"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">运行未核验</span></div>
+          {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.installed ? `制品已准备 · ${mod.state.version}` : "制品未准备"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.configured ? "配置已保存" : "未配置"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.runtimeEffective === true ? "运行已生效" : mod.state.runtimeEffective === false ? "运行未生效" : "运行生效性未知"}</span></div>
           <a href={`${mod.repository}/commit/${mod.sha}`} target="_blank" rel="noreferrer" className="app-text-muted mt-3 text-xs underline underline-offset-4">固定源码 {mod.sha.slice(0, 12)}</a></>}
           {mod.stateError && <p role="alert" className="mt-3 text-sm" style={{ color: "var(--danger)" }}>{mod.stateError}</p>}
           {administrator && mod.sha && <details className="mt-auto pt-5"><summary className="app-text-secondary cursor-pointer py-2 text-sm">制品与配置</summary><div className="pt-3">
