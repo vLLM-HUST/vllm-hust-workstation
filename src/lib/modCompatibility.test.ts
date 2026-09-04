@@ -18,11 +18,17 @@ function runtime(coreVersion = "0.28.1rc1.dev319+g762f85b31", pluginVersion = "0
 
 it("keeps exact host targets unverified until the candidate artifact and instance witness match", () => {
   const current = runtime();
-  for (const id of ["bidkv", "diffspec", "latchmoe"]) {
+  for (const id of ["diffspec", "latchmoe"]) {
     const result = assessModCompatibility(id, current);
     expect(result.status).toBe("unverified");
     expect(result.reason).toMatch(/runtime-effective|实跑|不适用/);
   }
+});
+
+it("blocks BidKV after the current-main TP4 graph qualification failed", () => {
+  const result = assessModCompatibility("bidkv", runtime());
+  expect(result.status).toBe("incompatible");
+  expect(result.reason).toMatch(/未通过.*禁止启用/);
 });
 
 it("rejects artifacts outside the exact candidate baseline", () => {

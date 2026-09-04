@@ -8,7 +8,7 @@ not automatically replace an instance's deployable lock or runtime-effective wit
 | Core | tested artifact `7362232895e0a38bb5ef4ac11fc4b2e2aa3026dd` on base `762f85b3`; equivalent rebased organization-main commit `a4d6aa022fb1b734edb0ae4ee75d32624911e47c` | 381 passed, 25 skipped; rebased API 5/5 and Ruff; BidKV Qwen3.8 TP4 graph qualified |
 | Ascend MoE seam | `2c8c722107a54127999a64c4eb0ec86139df8c26` on base `4e57439e58ed3d78e675f9fd7b4614fb183c5394` | LatchMoE Qwen3-30B-A3B TP4 PIECEWISE graph qualified functionally |
 | Extension Manager | `6e9a477f30b3399dda06733de03a78814dc28ca6` | organization main; tests passed; activation implementation parent `24036c11` was used by the qualification artifact |
-| BidKV | `463f798b209a33ff2d2f4e277b9aedb26d75fa29` | Qwen3.8-27B TP4 graph passed: 187 selector calls, 0 failures, output and rollback passed |
+| BidKV | current-main runtime `5fb109be683f486dfdf45d50f88c6138e003637e`; qualification correction `5b114caa35537ff0e1bbd1a2ea604cbb9eb95497` | Current Core a4d6aa02 / Ascend 2c8c7221 Qwen3.8-27B TP4 graph failed: 164 vs 161 preemptions, -2.35% throughput, +2.15% P95 TTFT, unmatched long-output hashes; cancellation/recovery and rollback passed |
 | DiffSpec | runtime `c78f55c7e4923da342f2fc52c2cb509c150e5363`; qualification metadata `998697897c0f854dc0fda8f0f28f07670196c411` | Qwen3.8-27B + VirVen/Qwen3.5-27B-EAGLE3-v2 passed TP4 FULL_DECODE_ONLY graph functional gates; 103/534 accepted (19.29%), performance degraded |
 | LatchMoE | `63781f3dd0235f933735bfd8ce614d388093c0b5` | Qwen3-30B-A3B TP4 graph functional gates passed; throughput degraded to ~2.91 tok/s from ~23.57 tok/s baseline |
 
@@ -37,7 +37,8 @@ observed worker and inference evidence from the owner adapter.
 
 ## Model boundary
 
-- BidKV: `Qwen3.8-27B` is qualified only for the exact TP4 graph candidate lane.
+- BidKV: `Qwen3.8-27B` is not currently qualified. The historical 762f/4e
+  result must not be applied to current main.
 - DiffSpec: `Qwen3.8-27B` is functionally qualified only with the hashed
   `VirVen/Qwen3.5-27B-EAGLE3-v2` draft on TP4 FULL_DECODE_ONLY graph. The
   measured lane is performance degraded and is not an acceleration recommendation.

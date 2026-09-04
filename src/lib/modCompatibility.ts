@@ -65,10 +65,7 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     runtime.components.plugin.commit === TARGET_PLUGIN_SHA;
 
   if (modId === "bidkv") {
-    if (!exactTarget || minor(runtime.components.core.version) !== "0.28") {
-      return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 / 0.28.1rc1.dev319 与 Ascend 4e57439e；当前运行制品不匹配。", runtime);
-    }
-    return result("unverified", "Qwen3.8-27B TP4 graph 的候选制品已通过调用、指标、回滚和输出门禁；但当前容器只证明宿主基线，未证明安装的是候选 463f798b，也未提供本实例 runtime-effective 见证。", runtime);
+    return result("incompatible", "BidKV 5fb109be 在当前 Core a4d6aa02 / Ascend 2c8c7221 的 Qwen3.8-27B TP4 graph 实跑未通过：抢占和延迟增加、吞吐下降，且长输出哈希未匹配。重新验收前禁止启用。", runtime);
   }
 
   if (modId === "diffspec") {
