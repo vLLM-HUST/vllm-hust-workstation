@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MOD_CATALOG } from "@/lib/modCatalog";
 import type { ModRuntimePayload } from "@/lib/modRuntimeTypes";
 import { useDialogFocus } from "./useDialogFocus";
+import ModCanaryPanel from "./ModCanaryPanel";
 
 const phases: Record<string, string> = { queued: "排队中", preparing: "准备中", prepared: "已准备 · 未应用", superseded: "目标已变化", failed: "准备失败", interrupted: "执行中断 · 待核查" };
 
@@ -122,6 +123,7 @@ export default function ModRuntimePanel({ token, onAuthorizationExpired, onLibra
         {task.imageId && <p className="app-text-muted mt-2 break-all">候选镜像 {task.imageId}</p>}
         <pre className="app-text-secondary mt-2 whitespace-pre-wrap break-words leading-5">{task.logs.join("\n")}</pre>
       </details>)}</div>}
+      {administrator && <ModCanaryPanel token={token} onAuthorizationExpired={onAuthorizationExpired} />}
     </>}
     {confirmation && administrator && target && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "var(--overlay)" }}>
       <section ref={dialogRef} role="dialog" aria-modal="true" aria-label="准备运行镜像确认" tabIndex={-1} className="app-surface-raised w-full max-w-lg rounded-xl border app-border p-5">

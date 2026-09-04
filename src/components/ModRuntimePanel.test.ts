@@ -26,8 +26,9 @@ beforeEach(() => {
   payload = { administrator: false, target: { id: "current", label: "工作站实例", ownership: "shared", identityVerified: true, models: ["model"], observedMods: null, imageId: "sha256:" + "a".repeat(64) }, preparationAvailable: true, applicationAvailable: false,
     lifecycle: { status: "unavailable", brokerAvailable: false, instanceRegistered: false, identityLive: true, rollbackReady: false, oneUseAuthorization: false, reason: "当前实例尚未纳入运行控制。" },
     mods: [{ id: "diffspec", compatibility: "incompatible" }], message: "运行环境可准备", tasks: [] };
-  fetchMock.mockReset().mockImplementation(async (_url: string, options: RequestInit) => {
+  fetchMock.mockReset().mockImplementation(async (url: string, options: RequestInit) => {
     if (fail) return { ok: false, status: 503, json: async () => ({ error: "实例暂不可用" }) };
+    if (url === "/api/mod-canary") return { ok: true, status: 200, json: async () => ({ available: false, registered: false, state: "unavailable", healthy: false, effective: false }) };
     if (options.method === "POST") {
       const request = JSON.parse(String(options.body));
       if (["start", "stop", "restart"].includes(request.action)) return { ok: true, status: 202, json: async () => ({ id: "lifecycle-fixture" }) };
@@ -48,6 +49,7 @@ it("shows public target identity without mutation controls or a false effective 
   expect(host.textContent).not.toContain("准备运行镜像");
   expect(host.querySelector("select")).toBeNull();
   expect(host.textContent).not.toContain("目标绑定、兼容性验收与重启审批");
+  expect(host.textContent).not.toContain("生命周期自检");
 });
 
 it("requires a second password and sends no launch fields for a ready lifecycle action", async () => {
@@ -55,6 +57,8 @@ it("requires a second password and sends no launch fields for a ready lifecycle 
     lifecycle: { status: "ready", brokerAvailable: true, instanceRegistered: true, identityLive: true, rollbackReady: true, oneUseAuthorization: true, reason: "运行控制已就绪。" },
     mods: [{ id: "diffspec", compatibility: "compatible" }] };
   await render("fixture-token");
+  expect(host.textContent).toContain("生命周期自检");
+  expect(host.textContent).toContain("不安装或启用 Mod");
   await act(async () => button("启动").click());
   expect(host.querySelector('[aria-label="服务生命周期确认"]')).not.toBeNull();
   const input = host.querySelector('input[type="password"]') as HTMLInputElement;
