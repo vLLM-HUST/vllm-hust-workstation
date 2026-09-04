@@ -25,10 +25,10 @@ it("keeps exact host targets unverified until the candidate artifact and instanc
   }
 });
 
-it("blocks BidKV after the current-main TP4 graph qualification failed", () => {
+it("keeps qualified BidKV unverified until the live candidate witness matches", () => {
   const result = assessModCompatibility("bidkv", runtime());
-  expect(result.status).toBe("incompatible");
-  expect(result.reason).toMatch(/未通过.*禁止启用/);
+  expect(result.status).toBe("unverified");
+  expect(result.reason).toMatch(/已通过.*runtime effective/);
 });
 
 it("rejects artifacts outside the exact candidate baseline", () => {

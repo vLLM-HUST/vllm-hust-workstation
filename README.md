@@ -20,10 +20,12 @@ API 和界面分别报告 `installed`、`configured`、`enabled` 与
 时间的运行适配器结果才能设置 `runtimeEffective`。没有 TP4 graph 实跑证据时，
 精确版本匹配也只返回 `unknown`，不会返回 `compatible`。
 
-BidKV 候选使用版本化 preemption-policy API。DiffSpec 已使用匹配 Qwen3.8-27B
+BidKV 已在当前 Core `a4d6aa0` / Ascend `2c8c722` 的 Qwen3.8-27B TP4
+FULL_DECODE_ONLY graph 上通过三轮 A/B，标记为 runtime effective / 性能中性，
+不宣称统计显著加速。DiffSpec 已使用匹配 Qwen3.8-27B
 架构、vocab 和 tokenizer 的 VirVen Eagle3 draft 通过 TP4 graph 功能矩阵，但性能退化。LatchMoE 对 dense
 Qwen3.8-27B 为不适用；其独立 MoE 资格模型是 Qwen3-30B-A3B。生产 NPU0-3 与
-NPU0-3 在明确授权停服后用于本轮验证并已恢复原服务；Native Engine 保留的
+线上服务在明确授权停服后使用 NPU0-3 完成本轮验证并恢复；Native Engine 保留的
 NPU4-7 未用于这些 Mod 的验证。
 
 私有化 AI 工作站 — 基于 Next.js + `vllm-hust-gateway` 的统一 Web 工作台。

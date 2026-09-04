@@ -27,6 +27,8 @@ export function currentCompatibility(
 
 const TARGET_CORE_SHA = "762f85b311fbab0bcf8921dd216f5093cd58b9b8";
 const TARGET_PLUGIN_SHA = "4e57439e58ed3d78e675f9fd7b4614fb183c5394";
+const BIDKV_CURRENT_CORE_SHA = "a4d6aa022fb1885a25a802a6e29372c81eac6c9f";
+const BIDKV_CURRENT_PLUGIN_SHA = "2c8c722107a54127999a64c4eb0ec86139df8c26";
 
 function minor(version?: string): string | null {
   const match = version?.match(/^v?(\d+)\.(\d+)(?:\.|rc|$)/);
@@ -65,7 +67,14 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     runtime.components.plugin.commit === TARGET_PLUGIN_SHA;
 
   if (modId === "bidkv") {
-    return result("incompatible", "BidKV 5fb109be 在当前 Core a4d6aa02 / Ascend 2c8c7221 的 Qwen3.8-27B TP4 graph 实跑未通过：抢占和延迟增加、吞吐下降，且长输出哈希未匹配。重新验收前禁止启用。", runtime);
+    const exactCurrentMain = runtime.components.core.commit === BIDKV_CURRENT_CORE_SHA &&
+      runtime.components.plugin.commit === BIDKV_CURRENT_PLUGIN_SHA;
+    if (minor(runtime.components.core.version) !== "0.28" ||
+        minor(runtime.components.plugin.version) !== "0.25" ||
+        (!exactCurrentMain && !exactTarget)) {
+      return result("incompatible", "BidKV 仅对已锁定的 Core/Ascend 0.28/0.25 TP4 graph 制品通过验收；当前运行制品不匹配。", runtime);
+    }
+    return result("unverified", "Qwen3.8-27B 的 BidKV TP4 graph（FULL_DECODE_ONLY）候选已通过三轮 A/B、483 次策略选择、正确性、取消与恢复门禁，效果标记为 runtime effective / performance neutral。当前容器身份只证明宿主基线，仍需已安装候选 1462a17、启动配置与非零调用计数见证。", runtime);
   }
 
   if (modId === "diffspec") {
