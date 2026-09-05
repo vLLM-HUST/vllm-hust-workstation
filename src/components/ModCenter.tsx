@@ -79,7 +79,7 @@ export default function ModCenter() {
     } catch (err) { if (current === epoch.current) setError(err instanceof Error ? err.message : "操作失败"); }
     finally { setPending(false); }
   };
-  const visible = payload?.catalog.filter(mod => (`${mod.name} ${mod.description}`.toLowerCase().includes(query.toLowerCase())) && (filter === "all" || (filter === "installed" ? mod.state.installed : mod.kind === "外部服务"))) || [];
+  const visible = payload?.catalog.filter(mod => (`${mod.name} ${mod.description}`.toLowerCase().includes(query.toLowerCase())) && (filter === "all" || (filter === "installed" ? mod.currentRuntimeState.installed : mod.kind === "外部服务"))) || [];
   return <main className="mod-center app-shell min-h-full app-text">
     <header className="app-header sticky top-0 z-10 border-b px-4 py-3">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
@@ -119,27 +119,28 @@ export default function ModCenter() {
           <div className="flex items-start justify-between gap-3"><div><p className="app-text-muted mb-2 text-xs">{mod.kind}</p><h2 className="text-xl font-semibold">{mod.name}</h2></div><a href={mod.repository} target="_blank" rel="noreferrer" className="app-control rounded-lg border p-2.5" aria-label={`${mod.name} 源码`}><ExternalLink size={16} /></a></div>
           <p className="app-text-secondary mt-3 text-sm leading-6">{mod.description}</p>
           {mod.sha ? <details className="mt-4 text-sm">
-            <summary className="app-text-secondary cursor-pointer py-2">当前实例 · {mod.currentCompatibility.label}</summary>
+            <summary className="app-text-secondary cursor-pointer py-2">当前运行制品 · {mod.currentRuntimeCompatibility.label}</summary>
             <dl className="mt-2 space-y-3 text-xs leading-5">
-              <div><dt className="app-text-secondary font-medium">当前判定</dt><dd className={mod.currentCompatibility.status === "compatible" ? "mt-1 text-emerald-300" : mod.currentCompatibility.status === "incompatible" ? "mt-1 text-red-300" : "mt-1 text-amber-300"}>{mod.currentCompatibility.reason}</dd></div>
-              <div><dt className="app-text-secondary font-medium">候选资格基线</dt><dd className="app-text-muted mt-1">{mod.compatibility}</dd></div>
-              <div><dt className="app-text-secondary font-medium">基线依赖与配置</dt><dd className="app-text-muted mt-1">{mod.requirements}</dd></div>
+              <div><dt className="app-text-secondary font-medium">当前运行制品兼容性</dt><dd className={mod.currentRuntimeCompatibility.status === "compatible" ? "mt-1 text-emerald-300" : mod.currentRuntimeCompatibility.status === "incompatible" ? "mt-1 text-red-300" : "mt-1 text-amber-300"}>{mod.currentRuntimeCompatibility.reason}</dd></div>
+              <div><dt className="app-text-secondary font-medium">候选制品功能资格</dt><dd className="app-text-muted mt-1">{mod.artifactQualification.label}：{mod.artifactQualification.scope}</dd></div>
+              <div><dt className="app-text-secondary font-medium">效果资格（仅限所列测试单元）</dt><dd className="app-text-muted mt-1">{mod.effectivenessQualification.label}：{mod.effectivenessQualification.scope}</dd></div>
+              <div><dt className="app-text-secondary font-medium">证据与限制</dt><dd className="app-text-muted mt-1">{mod.requirements}</dd></div>
             </dl>
-            <p className="app-text-muted mt-3 text-xs leading-5">候选源码与 Manager 锁仍待人工审查、推送和独立 NPU 资格验证。安装、配置或保存启用意图均不代表运行生效。</p>
+            <p className="app-text-muted mt-3 text-xs leading-5">候选制品功能资格、当前运行制品兼容性和当前实例的安装/配置/启用/运行生效是三组独立事实。仓库资格不能把当前实例自动标记为运行生效。</p>
           </details> : <><p className="app-text-secondary mt-4 text-sm leading-6">{mod.compatibility}</p><p className="app-text-muted mt-2 text-xs leading-5">{mod.requirements}</p></>}
-          {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.installed ? `制品已准备 · ${mod.state.version}` : "制品未准备"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.configured ? "配置已保存" : "未配置"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.state.runtimeEffective === true ? "运行已生效" : mod.state.runtimeEffective === false ? "运行未生效" : "运行生效性未知"}</span></div>
+          {mod.sha && <><div className="mt-5 flex flex-wrap gap-2 text-xs"><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.currentRuntimeState.installed ? `制品已准备 · ${mod.currentRuntimeState.version}` : "制品未准备"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.currentRuntimeState.configured ? "配置已保存" : "未配置"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.currentRuntimeState.enabled ? "启用意图已保存" : "未启用"}</span><span className="app-surface-muted rounded-md px-2.5 py-1.5">{mod.currentRuntimeState.runtimeEffective === true ? "运行已生效" : mod.currentRuntimeState.runtimeEffective === false ? "运行未生效" : "运行生效性未知"}</span></div>
           <a href={`${mod.repository}/commit/${mod.sha}`} target="_blank" rel="noreferrer" className="app-text-muted mt-3 text-xs underline underline-offset-4">固定源码 {mod.sha.slice(0, 12)}</a></>}
           {mod.stateError && <p role="alert" className="mt-3 text-sm" style={{ color: "var(--danger)" }}>{mod.stateError}</p>}
           {administrator && mod.sha && <details className="mt-auto pt-5"><summary className="app-text-secondary cursor-pointer py-2 text-sm">制品与配置</summary><div className="pt-3">
-            {mod.state.installed && <details className="mb-4 text-sm"><summary className="cursor-pointer app-text-secondary py-2">配置 · {mod.state.configured ? "已保存" : "未配置"}</summary>
+            {mod.currentRuntimeState.installed && <details className="mb-4 text-sm"><summary className="cursor-pointer app-text-secondary py-2">配置 · {mod.currentRuntimeState.configured ? "已保存" : "未配置"}</summary>
               <p className="app-text-muted my-2 text-xs leading-5">仅接受 launch_options。BidKV / LatchMoE 可先保存空对象；DiffSpec 需要 speculative_config.model。配置不代表宿主兼容。</p>
               <label className="block"><span className="sr-only">{mod.name} 配置 JSON</span><textarea rows={5} value={configs[mod.id] ?? (mod.id === "diffspec" ? '{"launch_options":{"speculative_config":{"model":"","method":"eagle3"}}}' : "{}")} onChange={event => setConfigs(value => ({...value, [mod.id]: event.target.value}))} className="app-control w-full rounded-lg border p-3 font-mono text-xs" /></label>
               <button type="button" className="app-control mt-2 rounded-lg border px-3 py-2" disabled={busy || pending} onClick={() => setConfirmation({id: mod.id, action: "configure"})}>保存配置</button>
             </details>}
             <div className="flex flex-wrap gap-2 text-sm">
-              {!mod.state.installed ? <button type="button" disabled={!payload?.storageReady || busy || pending || Boolean(mod.stateError)} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "install"})}>准备到 Mod 库</button> : <>
-                <button type="button" disabled={busy || pending || (!mod.state.enabled && (!mod.state.configured || mod.currentCompatibility.status !== "compatible"))} title={!mod.state.enabled && mod.currentCompatibility.status !== "compatible" ? `当前实例${mod.currentCompatibility.label}，不能启用` : undefined} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.state.enabled ? "disable" : "enable"})}>{mod.state.enabled ? "停用意图" : "启用意图"}</button>
-                <button type="button" disabled={busy || pending || mod.state.enabled} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "uninstall"})}>卸载</button>
+              {!mod.currentRuntimeState.installed ? <button type="button" disabled={!payload?.storageReady || busy || pending || Boolean(mod.stateError)} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "install"})}>准备到 Mod 库</button> : <>
+                <button type="button" disabled={busy || pending || (!mod.currentRuntimeState.enabled && (!mod.currentRuntimeState.configured || mod.currentRuntimeCompatibility.status !== "compatible"))} title={!mod.currentRuntimeState.enabled && mod.currentRuntimeCompatibility.status !== "compatible" ? `当前运行制品${mod.currentRuntimeCompatibility.label}，不能启用` : undefined} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: mod.currentRuntimeState.enabled ? "disable" : "enable"})}>{mod.currentRuntimeState.enabled ? "停用意图" : "启用意图"}</button>
+                <button type="button" disabled={busy || pending || mod.currentRuntimeState.enabled} className="app-control rounded-lg border px-3 py-2" onClick={() => setConfirmation({id: mod.id, action: "uninstall"})}>卸载</button>
               </>}
             </div>
           </div></details>}

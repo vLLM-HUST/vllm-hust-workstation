@@ -1,6 +1,6 @@
 {
   "protocol": "vllm-hust.instance-control/v1",
-  "sourceSha": "e7d1525d96ece424c993d9350dc69de3c84f2a5c",
+  "sourceSha": "b7e53949b1d32907bc8402e4024a4f794659d796",
   "entrypoint": "scripts/instance_control_entry.py",
   "files": {
     "config/instance-control-contract.json": "29b1d1399daf5c76ddc7c17e2a7d24e789e8113c11b881136e3b5f5ca9bf0307",

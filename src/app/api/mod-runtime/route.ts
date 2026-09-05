@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       if (Object.keys(body).sort().join() !== "action,confirmation,modId,targetId" || typeof body.confirmation !== "string") throw new ModError("运行操作需要管理员二次确认。", 400);
       if (!hasValidAdminCredential(body.confirmation)) throw new ModError("管理员二次确认失败。", 401);
       const runtime = await getModRuntime(true);
-      const compatibility = runtime.mods.find(mod => mod.id === body.modId)?.compatibility;
+      const compatibility = runtime.mods.find(mod => mod.id === body.modId)?.currentRuntimeCompatibility;
       if (!runtime.target || runtime.target.id !== body.targetId) throw new ModError("实例未登记。", 404);
       if (compatibility !== "compatible") throw new ModError("当前 Mod 与实例尚未通过兼容性验收。");
       if (!runtime.lifecycle.identityLive) throw new ModError("实例身份不是当前 live 身份。");

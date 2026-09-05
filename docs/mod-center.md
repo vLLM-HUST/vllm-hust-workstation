@@ -45,18 +45,22 @@ a single host-local store; do not share it between multiple uncoordinated hosts.
 
 ## Read-only compatibility API
 
-Every `GET /api/mods` catalog entry includes a server-derived
-`currentCompatibility` object. Its `status` is exactly `compatible`,
-`incompatible`, or `unknown`, accompanied by a reason and the Core/Plugin
-versions and SHAs used for the decision. Missing or unverified runtime evidence
-is `unknown`, never a compatibility claim. The older `qualification` field is a
-deprecated compatibility alias derived from the same assessment; new clients,
-including the Mod Center, consume `currentCompatibility`.
+Every `GET /api/mods` catalog entry reports three independent objects:
 
-The `state.installed` wire field is the legacy name for a prepared library
-artifact. It does not mean that the target process contains the package, and it
-does not contribute runtime-effectiveness evidence. Actual effectiveness still
-requires owner-bound deployment plus observed target-worker execution.
+- `artifactQualification`: model/topology-scoped functional evidence for the
+  reviewed candidate artifact;
+- `currentRuntimeCompatibility`: whether the current instance's exact
+  Core/Ascend provenance belongs to a qualified lane; and
+- `currentRuntimeState`: the live instance's separate `installed`, `configured`,
+  `enabled`, and `runtimeEffective` observations.
+
+The API intentionally has no ambiguous `qualification`, `currentCompatibility`,
+or `state` aliases. An uninstalled, disabled, or unobserved Mod is not thereby
+incompatible. `currentRuntimeState.installed` means only that a prepared library
+artifact exists; it does not mean that a target worker loaded the package.
+`runtimeEffective` requires owner-bound deployment plus observed target-worker
+execution. Effectiveness measurements are also separate and are qualified only
+for their explicit configuration/workload cell.
 
 ## Explicitly not delivered: inference run/apply
 

@@ -9,7 +9,7 @@ export interface ModCompatibilityAssessment {
   evaluatedAgainst: { coreVersion?: string; pluginVersion?: string; coreSha?: string; pluginSha?: string };
 }
 
-export interface CurrentModCompatibility {
+export interface CurrentRuntimeCompatibility {
   status: "compatible" | "incompatible" | "unknown";
   label: "兼容" | "不兼容" | "未核验";
   reason: string;
@@ -18,7 +18,7 @@ export interface CurrentModCompatibility {
 
 export function currentCompatibility(
   assessment: ModCompatibilityAssessment,
-): CurrentModCompatibility {
+): CurrentRuntimeCompatibility {
   return {
     ...assessment,
     status: assessment.status === "unverified" ? "unknown" : assessment.status,
@@ -55,8 +55,9 @@ function result(
 
 /**
  * Compare immutable catalog declarations with the verified current runtime.
- * A range match is deliberately only `unverified`: compatibility also requires
- * Manager/Provider admission and target execution evidence not present here.
+ * This assesses whether the verified host artifact belongs to a functionally
+ * qualified lane. Installation/configuration/enabled/effective state is
+ * deliberately reported elsewhere and never changes this artifact verdict.
  */
 export function assessModCompatibility(modId: string, runtime: RuntimeProvenance): ModCompatibilityAssessment {
   if (!runtime.available || runtime.verification?.status !== "verified" || !runtime.components) {
@@ -72,21 +73,21 @@ export function assessModCompatibility(modId: string, runtime: RuntimeProvenance
     if (minor(runtime.components.core.version) !== "0.28" ||
         minor(runtime.components.plugin.version) !== "0.25" ||
         (!exactCurrentMain && !exactTarget)) {
-      return result("incompatible", "BidKV 仅对已锁定的 Core/Ascend 0.28/0.25 TP4 graph 制品通过验收；当前运行制品不匹配。", runtime);
+      return result("unverified", "当前 Core/Ascend 制品不在 BidKV 已完成实机功能验收的精确 lane；没有反证证明不兼容。", runtime);
     }
-    return result("unverified", "Qwen3.8-27B 的 BidKV TP4 graph（FULL_DECODE_ONLY）候选已通过三轮 A/B、483 次策略选择、正确性、取消与恢复门禁，效果标记为 runtime effective / performance neutral。当前容器身份只证明宿主基线，仍需已安装候选 1462a17、启动配置与非零调用计数见证。", runtime);
+    return result("compatible", "该宿主制品属于 Qwen3.8-27B BidKV TP4 graph 已通过功能验收的精确 lane；安装、配置、启用与运行生效状态另行报告。", runtime);
   }
 
   if (modId === "diffspec") {
     if (!exactTarget || minor(runtime.components.plugin.version) !== "0.25") {
-      return result("incompatible", "候选 manifest 仅面向 Core 762f85b3 与 Ascend 4e57439e / 0.25.1rc1；当前运行制品不匹配。", runtime);
+      return result("unverified", "当前 Core/Ascend 制品不在 DiffSpec 已完成实机功能验收的精确 lane；没有反证证明不兼容。", runtime);
     }
-    return result("unverified", "Qwen3.8-27B 与指定 VirVen Eagle3 draft 的 TP4 graph 候选已通过正确性、四 rank、接受/拒绝、KV、并发、取消和恢复门禁，但性能退化。当前容器只证明宿主基线，未证明安装的是候选 c78f55c7、匹配 draft 哈希及 runtime-effective 见证。", runtime);
+    return result("compatible", "该宿主制品属于 DiffSpec 已通过功能验收的精确 lane；仍须由配置和 live witness 核对 Qwen3.8、draft 哈希及当前运行状态。", runtime);
   }
 
   if (modId === "latchmoe") {
     if (!exactTarget) {
-      return result("incompatible", "候选 compatibility.lock 仅面向 Core 762f85b3 与 Ascend 4e57439e 加 MoE seam v2；当前运行制品不匹配。", runtime);
+      return result("unverified", "当前 Core/Ascend 制品不在 LatchMoE 已完成实机功能验收的精确 lane；没有反证证明不兼容。", runtime);
     }
     return result("unverified", "Qwen3.8-27B 是 dense 模型，LatchMoE 不适用；Qwen3-30B-A3B 候选已通过 TP4 graph 功能门禁但性能退化。当前容器未证明候选 63781f3d、模型身份和 runtime-effective 见证，不能继承该结论。", runtime);
   }

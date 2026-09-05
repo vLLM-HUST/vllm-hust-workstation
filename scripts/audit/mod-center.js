@@ -73,7 +73,7 @@ async (page) => {
       runtimeActions.push(body);
       return route.fulfill({status: 202, json: {id: 'runtime-fixture'}});
     }
-    return route.fulfill({json: {administrator, target: {id: 'fixture-target', label: '实例交互验收（模拟）', ownership: 'shared', identityVerified: true, imageId: 'sha256:' + 'a'.repeat(64), models: ['fixture-model'], observedMods: null}, preparationAvailable: true, applicationAvailable: false, lifecycle: {status: 'unavailable', brokerAvailable: false, instanceRegistered: false, identityLive: true, rollbackReady: false, oneUseAuthorization: false, reason: '当前实例尚未纳入运行控制。'}, mods: [{id: 'bidkv', compatibility: 'compatible'}, {id: 'diffspec', compatibility: 'incompatible'}, {id: 'latchmoe', compatibility: 'incompatible'}], message: '运行环境可准备；服务切换需通过全部运行门控。', tasks: []}});
+    return route.fulfill({json: {administrator, target: {id: 'fixture-target', label: '实例交互验收（模拟）', ownership: 'shared', identityVerified: true, imageId: 'sha256:' + 'a'.repeat(64), models: ['fixture-model'], observedMods: null}, preparationAvailable: true, applicationAvailable: false, lifecycle: {status: 'unavailable', brokerAvailable: false, instanceRegistered: false, identityLive: true, rollbackReady: false, oneUseAuthorization: false, reason: '当前实例尚未纳入运行控制。'}, mods: [{id: 'bidkv', currentRuntimeCompatibility: 'compatible'}, {id: 'diffspec', currentRuntimeCompatibility: 'incompatible'}, {id: 'latchmoe', currentRuntimeCompatibility: 'incompatible'}], message: '运行环境可准备；服务切换需通过全部运行门控。', tasks: []}});
   });
   await page.route('**/api/mods', async route => {
     const request = route.request();
@@ -88,7 +88,7 @@ async (page) => {
       if (action === 'uninstall') state = {installed: false, configured: false, enabled: false};
       return route.fulfill({status: 202, json: {id: 'fixture', status: 'queued'}});
     }
-    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, state, currentCompatibility: {...mod.currentCompatibility, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}, qualification: {...mod.qualification, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}} : mod), tasks: []}});
+    return route.fulfill({json: {...original, administrator, storageReady: true, catalog: original.catalog.map((mod, index) => index === 0 ? {...mod, currentRuntimeState: state, currentRuntimeCompatibility: {...mod.currentRuntimeCompatibility, status: 'compatible', label: '兼容', reason: '验收模拟：目标版本、入口与执行证据均已匹配。'}} : mod), tasks: []}});
   });
   for (const theme of ['light', 'dark']) {
     await page.goto(base + '/mods');

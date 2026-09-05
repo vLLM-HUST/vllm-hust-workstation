@@ -37,7 +37,8 @@ export interface ModRuntimePayload {
   };
   mods: Array<{
     id: string;
-    compatibility: "compatible" | "incompatible" | "unknown";
+    artifactQualification: { status: "passed" | "not-applicable" | "external"; label: string; scope: string; evidence?: string };
+    currentRuntimeCompatibility: "compatible" | "incompatible" | "unknown";
   }>;
   message: string;
   tasks: ModPreparationTask[];

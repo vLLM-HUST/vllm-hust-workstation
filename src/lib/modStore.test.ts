@@ -22,13 +22,13 @@ it("does not expose receipt internals or task logs to anonymous users", async ()
   await writeFile(path.join(root, "bidkv/env/bin/python"), "fixture");
   await writeFile(path.join(root, "bidkv/receipt.json"), JSON.stringify({installed: true, enabled: true, configured: true, sha: MOD_CATALOG[0].sha, manifest: {path: "/private/host"}}));
   const data = await getModCatalog(false);
-  expect(data.catalog[0].state.enabled).toBe(true);
+  expect(data.catalog[0].currentRuntimeState.enabled).toBe(true);
   expect(JSON.stringify(data)).not.toContain("/private/"); expect(data.tasks).toEqual([]);
   expect(data.runtime.status).toBe("unverified");
 });
 it("fails closed on corrupt installation metadata", async () => {
   await mkdir(path.join(root, "bidkv")); await writeFile(path.join(root, "bidkv/receipt.json"), "{}");
-  const mod = (await getModCatalog(true)).catalog[0]; expect(mod.state.installed).toBe(false); expect(mod.stateError).toBeTruthy();
+  const mod = (await getModCatalog(true)).catalog[0]; expect(mod.currentRuntimeState.installed).toBe(false); expect(mod.stateError).toBeTruthy();
 });
 it("rejects all mutations before parsing without administrator credentials", async () => {
   for (const action of ["install", "configure", "enable", "disable", "uninstall", "run"]) {
@@ -51,8 +51,8 @@ it("keeps running gate closed even with a valid password", async () => {
 it("fails closed before saving enable intent when current compatibility is not proven", async () => {
   await expect(startModAction("bidkv", "enable")).rejects.toThrow(/未核验.*启用意图未保存/);
   const mod = (await getModCatalog(true)).catalog[0];
-  expect(mod.currentCompatibility).toMatchObject({ status: "unknown", label: "未核验" });
-  expect(mod.qualification.status).toBe("unverified");
+  expect(mod.currentRuntimeCompatibility).toMatchObject({ status: "unknown", label: "未核验" });
+  expect(mod.artifactQualification.status).toBe("passed");
 });
 it("returns explicit current-instance compatibility from verified server provenance", async () => {
   vi.mocked(getRuntimeProvenance).mockResolvedValue({
@@ -68,11 +68,11 @@ it("returns explicit current-instance compatibility from verified server provena
   });
   const response = await GET(new Request("http://localhost/api/mods"));
   const data = await response.json();
-  expect(data.catalog.map((mod: { currentCompatibility: { status: string } }) => mod.currentCompatibility.status)).toEqual([
-    "unknown", "unknown", "unknown", "unknown",
+  expect(data.catalog.map((mod: { currentRuntimeCompatibility: { status: string } }) => mod.currentRuntimeCompatibility.status)).toEqual([
+    "compatible", "compatible", "unknown", "unknown",
   ]);
-  expect(data.catalog[0].currentCompatibility.reason).toMatch(/TP4 graph/);
-  expect(data.catalog[1].state.installed).toBe(false);
+  expect(data.catalog[0].currentRuntimeCompatibility.reason).toMatch(/TP4 graph/);
+  expect(data.catalog[1].currentRuntimeState.installed).toBe(false);
 });
 it("serializes management work and projects stale tasks as interrupted", async () => {
   await mkdir(path.join(root, "tasks"));
