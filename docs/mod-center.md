@@ -49,14 +49,14 @@ Every `GET /api/mods` catalog entry reports three independent objects:
 
 - `artifactQualification`: model/topology-scoped functional evidence for the
   reviewed candidate artifact;
-- `currentRuntimeCompatibility`: whether the current instance's exact
-  Core/Ascend provenance belongs to a qualified lane; and
+- `currentRuntimeCompatibility`: whether the current instance has both exact
+  qualified Core/Ascend provenance and a candidate runtime-effective witness; and
 - `currentRuntimeState`: the live instance's separate `installed`, `configured`,
   `enabled`, and `runtimeEffective` observations.
 
 The API intentionally has no ambiguous `qualification`, `currentCompatibility`,
-or `state` aliases. An uninstalled, disabled, or unobserved Mod is not thereby
-incompatible. `currentRuntimeState.installed` means only that a prepared library
+or `state` aliases. An uninstalled, disabled, or unobserved Mod reports `unknown`,
+not `compatible` or `incompatible`. `currentRuntimeState.installed` means only that a prepared library
 artifact exists; it does not mean that a target worker loaded the package.
 `runtimeEffective` requires owner-bound deployment plus observed target-worker
 execution. Effectiveness measurements are also separate and are qualified only

@@ -18,7 +18,18 @@ export interface CurrentRuntimeCompatibility {
 
 export function currentCompatibility(
   assessment: ModCompatibilityAssessment,
+  runtimeEffective: boolean | null = null,
 ): CurrentRuntimeCompatibility {
+  if (runtimeEffective !== true) {
+    return {
+      status: "unknown",
+      label: "未核验",
+      reason: assessment.status === "compatible"
+        ? "宿主制品属于已验收 lane，但当前实例尚无该候选已加载并运行生效的见证。"
+        : assessment.reason,
+      evaluatedAgainst: assessment.evaluatedAgainst,
+    };
+  }
   return {
     ...assessment,
     status: assessment.status === "unverified" ? "unknown" : assessment.status,
@@ -56,8 +67,8 @@ function result(
 /**
  * Compare immutable catalog declarations with the verified current runtime.
  * This assesses whether the verified host artifact belongs to a functionally
- * qualified lane. Installation/configuration/enabled/effective state is
- * deliberately reported elsewhere and never changes this artifact verdict.
+ * qualified lane. This host-lane assessment is not current Mod compatibility;
+ * currentCompatibility also requires an observed runtime-effective witness.
  */
 export function assessModCompatibility(modId: string, runtime: RuntimeProvenance): ModCompatibilityAssessment {
   if (!runtime.available || runtime.verification?.status !== "verified" || !runtime.components) {

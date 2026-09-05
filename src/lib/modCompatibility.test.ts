@@ -48,3 +48,13 @@ it("projects insufficient evidence as explicit API unknown", () => {
     reason: expect.stringContaining("尚未核验"),
   });
 });
+
+it("requires a runtime-effective witness before reporting current compatibility", () => {
+  const assessment = assessModCompatibility("bidkv", runtime());
+  expect(assessment.status).toBe("compatible");
+  expect(currentCompatibility(assessment)).toMatchObject({
+    status: "unknown",
+    reason: expect.stringContaining("运行生效"),
+  });
+  expect(currentCompatibility(assessment, true).status).toBe("compatible");
+});
