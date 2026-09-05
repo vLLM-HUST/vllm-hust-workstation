@@ -16,24 +16,21 @@ function runtime(coreVersion = "0.28.1rc1.dev319+g762f85b31", pluginVersion = "0
   };
 }
 
-it("keeps exact host targets unverified until the candidate artifact and instance witness match", () => {
+it("reports exact host artifacts independently from live runtime state", () => {
   const current = runtime();
-  for (const id of ["diffspec", "latchmoe"]) {
-    const result = assessModCompatibility(id, current);
-    expect(result.status).toBe("unverified");
-    expect(result.reason).toMatch(/runtime-effective|实跑|不适用/);
-  }
+  expect(assessModCompatibility("diffspec", current).status).toBe("compatible");
+  expect(assessModCompatibility("latchmoe", current).status).toBe("unverified");
 });
 
-it("keeps qualified BidKV unverified until the live candidate witness matches", () => {
+it("does not downgrade qualified BidKV because the live instance has not enabled it", () => {
   const result = assessModCompatibility("bidkv", runtime());
-  expect(result.status).toBe("unverified");
-  expect(result.reason).toMatch(/已通过.*runtime effective/);
+  expect(result.status).toBe("compatible");
+  expect(result.reason).toMatch(/功能验收.*安装、配置、启用与运行生效/);
 });
 
-it("rejects artifacts outside the exact candidate baseline", () => {
-  expect(assessModCompatibility("bidkv", runtime("0.23.9", "0.25.1")).status).toBe("incompatible");
-  expect(assessModCompatibility("diffspec", runtime("0.28.1", "0.23.8")).status).toBe("incompatible");
+it("keeps artifacts outside exact qualified lanes unverified absent negative evidence", () => {
+  expect(assessModCompatibility("bidkv", runtime("0.23.9", "0.25.1")).status).toBe("unverified");
+  expect(assessModCompatibility("diffspec", runtime("0.28.1", "0.23.8")).status).toBe("unverified");
 });
 
 it("reports missing or stale runtime evidence as unverified", () => {

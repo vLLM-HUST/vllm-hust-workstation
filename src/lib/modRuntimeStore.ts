@@ -91,7 +91,11 @@ export async function getModRuntime(administrator: boolean): Promise<ModRuntimeP
   const target = { id: config.target.id, label: config.target.label, ownership: config.target.ownership, identityVerified: Boolean(verified),
     ...(verified ? { imageId: provenance.image!.id, coreSha: provenance.components!.core.commit, pluginSha: provenance.components!.plugin.commit, checkedAt: provenance.verification!.checkedAt } : {}),
     models: models.reachable ? models.ids : [], observedMods: null };
-  const mods = MOD_CATALOG.filter(mod => mod.sha).map(mod => ({ id: mod.id, compatibility: currentCompatibility(assessModCompatibility(mod.id, provenance)).status }));
+  const mods = MOD_CATALOG.filter(mod => mod.sha).map(mod => ({
+    id: mod.id,
+    artifactQualification: mod.artifactQualification,
+    currentRuntimeCompatibility: currentCompatibility(assessModCompatibility(mod.id, provenance)).status,
+  }));
   const lifecycle = { status: "unavailable" as const, brokerAvailable: broker.available, instanceRegistered: broker.registered,
     identityLive: Boolean(verified), rollbackReady: false, oneUseAuthorization: false,
     reason: !verified ? "实例身份待核验。" : !broker.registered ? "当前实例尚未纳入运行控制。" : "回滚基线尚未验收。" };

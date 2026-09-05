@@ -21,8 +21,10 @@ API 和界面分别报告 `installed`、`configured`、`enabled` 与
 精确版本匹配也只返回 `unknown`，不会返回 `compatible`。
 
 BidKV 已在当前 Core `a4d6aa0` / Ascend `2c8c722` 的 Qwen3.8-27B TP4
-FULL_DECODE_ONLY graph 上通过三轮 A/B，标记为 runtime effective / 性能中性，
-不宣称统计显著加速。DiffSpec 已使用匹配 Qwen3.8-27B
+FULL_DECODE_ONLY graph 上通过功能兼容性门槛。三轮 ascending-mixed 单元因一次
+未触发选择器而标记为 `inconclusive`；稳定触发的 interactive c=8 单元吞吐均值
+-25.31%、P95 延迟 +34.57%，标记为 `not-beneficial-in-tested-cell`。这不构成
+全局加速或回归结论；当前实例是否 runtime effective 由独立运行观察决定。DiffSpec 已使用匹配 Qwen3.8-27B
 架构、vocab 和 tokenizer 的 VirVen Eagle3 draft 通过 TP4 graph 功能矩阵，但性能退化。LatchMoE 对 dense
 Qwen3.8-27B 为不适用；其独立 MoE 资格模型是 Qwen3-30B-A3B。生产 NPU0-3 与
 线上服务在明确授权停服后使用 NPU0-3 完成本轮验证并恢复；Native Engine 保留的

@@ -55,7 +55,7 @@ export default function ModRuntimePanel({ token, onAuthorizationExpired, onLibra
   const administrator = Boolean(token && data?.administrator);
   const target = data?.target;
   const canPrepare = Boolean(administrator && target && data?.preparationAvailable && !busy && !recoveryRequired && !pending && !loading);
-  const compatibility = data?.mods?.find(item => item.id === modId)?.compatibility || "unknown";
+  const compatibility = data?.mods?.find(item => item.id === modId)?.currentRuntimeCompatibility || "unknown";
   const canLifecycle = Boolean(administrator && target && data?.applicationAvailable && compatibility === "compatible" && data.lifecycle.identityLive && data.lifecycle.instanceRegistered && data.lifecycle.rollbackReady && data.lifecycle.oneUseAuthorization && !pending && !loading);
   const mod = MOD_CATALOG.find(item => item.id === modId)!;
   const prepare = async () => {
