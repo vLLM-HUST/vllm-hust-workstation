@@ -9,6 +9,7 @@ import {
   CirclePause,
   Gauge,
   Moon,
+  Puzzle,
   RefreshCw,
   ShieldCheck,
   Sun,
@@ -105,6 +106,7 @@ export default function InferenceSwitchDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <span className="hidden rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-300 sm:inline-flex sm:items-center sm:gap-2"><i className="h-1.5 w-1.5 rounded-full bg-emerald-400" />实测证据已载入</span>
+          <Link href="/mods" className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm" aria-label="打开 Mod 中心" title="Mod 中心"><Puzzle size={15} /><span className="hidden sm:inline">Mod 中心</span></Link>
           <button type="button" className="app-control inline-flex h-9 w-9 items-center justify-center rounded-lg border" onClick={toggleTheme} aria-label="切换主题">{theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}</button>
         </div>
       </header>
