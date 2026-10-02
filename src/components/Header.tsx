@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, PackageOpen, Bot, Gauge, Moon, Sun, Puzzle } from "lucide-react";
+import { ChevronDown, PackageOpen, Bot, Gauge, Moon, Sun, Puzzle, Zap } from "lucide-react";
 import Link from "next/link";
 import type { ServiceProbeStatus } from "@/types";
 
@@ -58,6 +58,7 @@ export default function Header({
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+        <Link href="/switch" className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm" aria-label="打开 GenNova 推理开关" title="GenNova 推理开关"><Zap size={14} /><span className="hidden lg:inline">推理开关</span></Link>
         <Link href="/mods" className="app-control inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-sm" aria-label="打开 Mod 中心" title="Mod 中心"><Puzzle size={14} /><span className="hidden md:inline">Mod 中心</span></Link>
         <span
           className={`flex h-9 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium sm:px-3 ${
