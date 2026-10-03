@@ -166,6 +166,21 @@ export interface TrafficSeriesPoint {
   p50LatencyMs: number;
 }
 
+export interface ModelTrafficSnapshot {
+  id: string;
+  backendId: string;
+  displayName: string;
+  hardware: string;
+  activeRequests: number;
+  activeKeys: number;
+  totalRequests: number;
+  totalSuccesses: number;
+  lastRequestAt: number | null;
+  lastSuccessAt: number | null;
+  windows: TrafficSnapshot["windows"];
+  series: TrafficSeriesPoint[];
+}
+
 export interface TrafficSnapshot {
   generatedAt: number;
   retentionDays: number;
@@ -182,6 +197,7 @@ export interface TrafficSnapshot {
     "24h": TrafficWindowSnapshot;
   };
   series: TrafficSeriesPoint[];
+  models: ModelTrafficSnapshot[];
 }
 
 export type ServiceProbeStatus = "checking" | "online" | "offline";

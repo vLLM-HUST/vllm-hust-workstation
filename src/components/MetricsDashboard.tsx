@@ -211,7 +211,7 @@ export default function MetricsDashboard({
         <div className="app-card rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-white/55 text-xs font-medium uppercase tracking-wider">
-              模型选择
+              工作站聊天模型
             </span>
             <span
               className={
@@ -346,6 +346,45 @@ export default function MetricsDashboard({
               color="var(--chart-teal)"
               label="24 小时请求趋势（15 分钟）"
             />
+            <div className="space-y-2" aria-label="模型后端监控">
+              {traffic.models.map((item) => {
+                const requests24h = item.windows["24h"].requests;
+                const modelSuccessRate = requests24h > 0
+                  ? (item.windows["24h"].successes / requests24h) * 100
+                  : 100;
+                return (
+                  <article key={item.backendId} className="app-card-flat rounded-xl p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="app-text truncate text-sm font-semibold" title={item.id}>{item.displayName}</p>
+                        <p className="app-text-muted mt-0.5 text-[11px]">{item.hardware}</p>
+                      </div>
+                      <span className={item.activeRequests > 0 ? "text-cyan-300 text-[11px]" : "text-emerald-300 text-[11px]"}>
+                        {item.activeRequests > 0 ? `${item.activeRequests} 个处理中` : "空闲"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 text-center">
+                      <div>
+                        <p className="app-text-muted text-[10px]">总请求</p>
+                        <p className="app-text mt-0.5 text-sm font-semibold tabular-nums">{item.totalRequests}</p>
+                      </div>
+                      <div>
+                        <p className="app-text-muted text-[10px]">1 小时</p>
+                        <p className="app-text mt-0.5 text-sm font-semibold tabular-nums">{item.windows["1h"].requests}</p>
+                      </div>
+                      <div>
+                        <p className="app-text-muted text-[10px]">成功率</p>
+                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-300">{modelSuccessRate.toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className="app-text-muted text-[10px]">P95</p>
+                        <p className="app-text mt-0.5 text-sm font-semibold tabular-nums">{item.windows["24h"].p95LatencyMs} ms</p>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
             <div className="app-text-muted flex items-start gap-2 text-[11px] leading-5">
               <ShieldCheck size={13} className="mt-0.5 shrink-0 text-emerald-300/70" />
               <p>仅展示聚合元数据；不公开提示词、回复正文、密钥标识或客户端地址。</p>
