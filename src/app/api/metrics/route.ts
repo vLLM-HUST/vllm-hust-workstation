@@ -10,6 +10,7 @@ import {
   fetchUpstreamModels,
   fetchUpstreamStats,
 } from "@/lib/upstream";
+import { readTrafficSnapshot } from "@/lib/traffic";
 import type { MetricsSnapshot } from "@/types";
 
 export const runtime = "nodejs";
@@ -23,11 +24,12 @@ function compactMetrics<T extends Record<string, unknown>>(input: T): Partial<T>
 
 export async function GET() {
   const start = performance.now();
-  const [metricsProbe, statsProbe, engineProbe, modelsProbe] = await Promise.all([
+  const [metricsProbe, statsProbe, engineProbe, modelsProbe, traffic] = await Promise.all([
     fetchUpstreamMetrics(),
     fetchUpstreamStats(),
     fetchUpstreamEngineProbe(),
     fetchUpstreamModels(),
+    readTrafficSnapshot(),
   ]);
 
   if (metricsProbe.status !== null) {
@@ -66,16 +68,17 @@ export async function GET() {
 
   const snapshot: MetricsSnapshot = {
     tokensPerSecond: merged.tokensPerSecond ?? 0,
-    pendingRequests: merged.pendingRequests ?? 0,
+    pendingRequests: traffic?.activeRequests ?? merged.pendingRequests ?? 0,
     gpuUtilPct: merged.gpuUtilPct ?? 0,
     gpuMemUsedGb: merged.gpuMemUsedGb ?? 0,
     gpuMemTotalGb: merged.gpuMemTotalGb ?? 0,
     uptimeSeconds: merged.uptimeSeconds ?? 0,
-    totalRequestsServed: merged.totalRequestsServed ?? 0,
-    avgLatencyMs: merged.avgLatencyMs ?? 0,
+    totalRequestsServed: traffic?.totalSuccesses ?? merged.totalRequestsServed ?? 0,
+    avgLatencyMs: traffic?.windows["24h"].p50LatencyMs ?? merged.avgLatencyMs ?? 0,
     modelName,
     backendType: merged.backendType ?? (process.env.BACKEND_TYPE || "CPU"),
     gatewayAvailable,
+    traffic,
   };
   setWorkstationInfo(snapshot.modelName!, snapshot.backendType!);
 

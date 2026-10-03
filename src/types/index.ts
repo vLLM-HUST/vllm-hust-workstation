@@ -147,6 +147,41 @@ export interface MetricsSnapshot {
   modelName: string;
   backendType: string;
   gatewayAvailable?: boolean;
+  traffic?: TrafficSnapshot;
+}
+
+export interface TrafficWindowSnapshot {
+  requests: number;
+  successes: number;
+  errors: number;
+  rateLimited: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface TrafficSeriesPoint {
+  time: number;
+  requests: number;
+  errors: number;
+  p50LatencyMs: number;
+}
+
+export interface TrafficSnapshot {
+  generatedAt: number;
+  retentionDays: number;
+  activeRequests: number;
+  activeKeys: number;
+  configuredConcurrency: number;
+  engineMaxSequences: number;
+  totalRequests: number;
+  totalSuccesses: number;
+  windows: {
+    "1m": TrafficWindowSnapshot;
+    "5m": TrafficWindowSnapshot;
+    "1h": TrafficWindowSnapshot;
+    "24h": TrafficWindowSnapshot;
+  };
+  series: TrafficSeriesPoint[];
 }
 
 export type ServiceProbeStatus = "checking" | "online" | "offline";

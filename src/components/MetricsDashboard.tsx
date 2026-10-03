@@ -8,7 +8,7 @@ import {
   Tooltip,
   YAxis,
 } from "recharts";
-import { Zap, Clock, Activity, HardDrive, Database, Server, X } from "lucide-react";
+import { Zap, Clock, Activity, HardDrive, Database, Server, X, Users, ShieldCheck } from "lucide-react";
 import RuntimeStackCard from "@/components/RuntimeStackCard";
 import clsx from "clsx";
 import { useDialogFocus } from "@/components/useDialogFocus";
@@ -165,6 +165,10 @@ export default function MetricsDashboard({
   const online = serviceStatus === "online";
   const checking = serviceStatus === "checking";
   const s = snapshot;
+  const traffic = s?.traffic;
+  const successRate = traffic && traffic.windows["24h"].requests > 0
+    ? (traffic.windows["24h"].successes / traffic.windows["24h"].requests) * 100
+    : 100;
   const [desktopRail, setDesktopRail] = useState(false);
   const dialogRef = useDialogFocus<HTMLElement>(open && !desktopRail, onClose);
 
@@ -295,8 +299,9 @@ export default function MetricsDashboard({
         <div className="grid grid-cols-2 gap-2">
           <StatCard
             icon={<Server size={14} />}
-            label="排队中"
+            label="网关在途"
             value={s ? s.pendingRequests : "—"}
+            sub={traffic ? `${traffic.activeKeys} 个活跃密钥 · 并发额度 ${traffic.configuredConcurrency}` : undefined}
             color="var(--chart-pink)"
           />
           <StatCard
@@ -307,6 +312,46 @@ export default function MetricsDashboard({
             color="var(--chart-teal)"
           />
         </div>
+
+        {traffic && (
+          <section className="app-card rounded-xl p-4 space-y-3" aria-label="统一 Codex 网关流量">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-cyan-300" />
+                <span className="app-text-muted text-xs font-semibold uppercase tracking-wider">统一 Codex 网关流量</span>
+              </div>
+              <span className="text-emerald-300 text-xs">聚合快照</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="app-card-flat rounded-lg p-2.5">
+                <p className="app-text-muted">最近 1 小时</p>
+                <p className="app-text mt-1 text-lg font-semibold tabular-nums">{traffic.windows["1h"].requests}</p>
+              </div>
+              <div className="app-card-flat rounded-lg p-2.5">
+                <p className="app-text-muted">最近 24 小时</p>
+                <p className="app-text mt-1 text-lg font-semibold tabular-nums">{traffic.windows["24h"].requests}</p>
+              </div>
+              <div className="app-card-flat rounded-lg p-2.5">
+                <p className="app-text-muted">24h 成功率</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">{successRate.toFixed(1)}%</p>
+              </div>
+              <div className="app-card-flat rounded-lg p-2.5">
+                <p className="app-text-muted">P95 延迟</p>
+                <p className="app-text mt-1 text-lg font-semibold tabular-nums">{traffic.windows["24h"].p95LatencyMs} ms</p>
+              </div>
+            </div>
+            <MiniChart
+              data={traffic.series.map((point) => ({ time: point.time, requests: point.requests }))}
+              dataKey="requests"
+              color="var(--chart-teal)"
+              label="24 小时请求趋势（15 分钟）"
+            />
+            <div className="app-text-muted flex items-start gap-2 text-[11px] leading-5">
+              <ShieldCheck size={13} className="mt-0.5 shrink-0 text-emerald-300/70" />
+              <p>仅展示聚合元数据；不公开提示词、回复正文、密钥标识或客户端地址。</p>
+            </div>
+          </section>
+        )}
 
         {/* Model info */}
         {s && (
