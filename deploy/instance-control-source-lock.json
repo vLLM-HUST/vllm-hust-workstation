@@ -1,6 +1,6 @@
 {
   "protocol": "vllm-hust.instance-control/v1",
-  "sourceSha": "5958941e68699ad11639a39ed9acf92a6b986982",
+  "sourceSha": "d7a47bed28cfdac85c65c800028117fb5a4a7e22",
   "entrypoint": "scripts/instance_control_entry.py",
   "files": {
     "config/instance-control-contract.json": "6709ba10d31153f549b2d3ea4094f48c62e34896c67541eee9af818238f474be",
@@ -8,11 +8,18 @@
     "scripts/instance_control/__init__.py": "2827f71e084c77bd5adeb2220b0fa7c79e1da32d51658398741aeb69c81db98e",
     "scripts/instance_control/backend.py": "7dddfea30f5c75d5d71d0109094c99a06d05a8c2ec20e602cf10a251de3cd0c6",
     "scripts/instance_control/canary_coordinator.py": "6f55ba32ed2aa39d4256924e4a23a51de4e5f177499c06c1869f5c543c61d549",
-    "scripts/instance_control/controller.py": "8806a670a06933b21b9049781e4e4a3dc3d1e9d7f740b7e8fe9b0b604184d7fc",
+    "scripts/instance_control/controller.py": "12459e67ce4bb07a3d4117e7fe779e3bb51c84c423c21234c0931ab03b17abcc",
     "scripts/instance_control/foreground.py": "86d7a6304a4a326d5fef77ee1c6059fd1b90087e8bf99d55da73f9bfcef27a63",
     "scripts/instance_control/host_authority.py": "8d9c545118072635e5c9403f76d161419bf17caf0d89ea18d0d931a7a55aee8e",
     "scripts/instance_control/host_broker.py": "c415a034214bca01c48d06653ff5ac0b4b0baf711c1570f048cd61f60bd28f0d",
     "scripts/instance_control/host_client.py": "294eaad63e556aab46e33edf13a1c6ed2f16714bcb6255dcc78197f506611acb",
+    "scripts/instance_control/lifecycle.py": "d15bf0a33120ecd356b10a7b940b9840919fa0509e2d9c63e6ed028a5adb6404",
+    "scripts/instance_control/lifecycle_backend.py": "a163cc5a26c32c835b8b005ebed9dce4d967776f13fc7b319498d558972593a8",
+    "scripts/instance_control/lifecycle_client.py": "d9706128153413b7a5cd0320deefd645352b9d75d61834212b4179396e4478a3",
+    "scripts/instance_control/lifecycle_server.py": "8bc84e943f30f51cea7c67136259ac64d7f7e9549ff34ec4a7e98bbe016e14e7",
+    "scripts/instance_control/production_backend.py": "6f60df0938af69757ec977c9402045bc24394ea8fe75959213daf25d2f0dd6d1",
+    "scripts/instance_control/production_driver.py": "0c08ea0e3aefd4adaa37b7153dc7955beee1f7209b970a93438f61c5ebc6a0e0",
+    "scripts/instance_control/production_policy.py": "4d7585d667ffcb03cf4e3f37a795ddda6f1e7d503b57a1331a74f1308f0b4247",
     "scripts/instance_control/schema.py": "a8f21e7df69514dc9e66ffc9d91b23ce6d3238c4911465f12b7b12a0cf80191b",
     "scripts/instance_control/store.py": "2b597353aee9eb8f230a419864e17250237806f711e0749b87df81a31b036c09",
     "scripts/instance_control/transport.py": "bcbeab1bfa7873ddb5664bb30189bc8fecbd9c70e07b9ea5841804dc2a65b9dc"
