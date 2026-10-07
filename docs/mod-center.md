@@ -31,6 +31,17 @@ runs as the workstation user. No credentials or host Python/pip environment are
 forwarded. Source changes require code review and a new explicit SHA. There is
 no arbitrary URL, shell command, package name or source-ref API.
 
+## Re-listing gates
+
+An ECPA 0.3 package can return to the visible plugin page as a `preview` after
+its merged repository commit and packaged manifest path are pinned in both the
+organization feed and this projection. Preview cards are discoverable but have
+no deployment pin and expose no prepare/configure action. Promotion to
+`available` is a separate change requiring an immutable installation descriptor
+plus current-baseline functional and recovery evidence. Import success,
+enablement intent, or an environment variable is never runtime-effective
+evidence, and performance remains a separate axis.
+
 ## Deployment
 
 Create an operator-owned mode-0700 directory on an appropriately sized disk:
