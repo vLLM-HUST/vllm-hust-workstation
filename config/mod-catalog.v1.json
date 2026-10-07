@@ -4,14 +4,14 @@
   "manager": {
     "repository": "https://github.com/vLLM-HUST/extension-manager",
     "defaultBranch": "main",
-    "sourceSha": "cf1ea71e3e2cb81ab06267ef05eddb3e580ea20b"
+    "sourceSha": "4be9d2c502f8a41797bb068993eb91add29f3401"
   },
   "feed": {
     "repository": "https://github.com/vLLM-HUST/vllm-hust-dev-hub",
     "defaultBranch": "main",
-    "sourceSha": "5958941e68699ad11639a39ed9acf92a6b986982",
+    "sourceSha": "d7a47bed28cfdac85c65c800028117fb5a4a7e22",
     "path": "config/extension-catalog-v1.json",
-    "sha256": "16378bca427501bce0e861dedc3a83abb4f4f9cf3e3a5e4718103efc6ef9179f"
+    "sha256": "4d4e3b4cb52fbf4ed8086bda1849bed1e372a3a2a04745e8f3d7c78f752e2c97"
   },
   "entries": [
     {
@@ -119,8 +119,8 @@
     },
     {
       "id": "pyramidkv", "name": "PyramidKV", "kind": "runtime", "description": "按层保留重要 KV 的金字塔式 cache 压缩扩展。",
-      "source": { "repository": "https://github.com/vLLM-HUST/vllm-ascend-pyramidkv-hust", "defaultBranch": "main", "sourceSha": "77b0862c1e5be8c883fda934cdb383c57cf7ad0d" }, "deployment": null,
-      "managerManifest": { "path": "src/vllm_ascend_pyramidkv/vllm-hust-extension-v0.2.json", "status": "present" },
+      "source": { "repository": "https://github.com/vLLM-HUST/vllm-ascend-pyramidkv-hust", "defaultBranch": "main", "sourceSha": "84c7ecb15fe744a07bcb35aa53d51556b714912a" }, "deployment": null,
+      "managerManifest": { "path": "src/vllm_ascend_pyramidkv/vllm-hust-extension-v0.3.json", "status": "present" },
       "availability": { "status": "preview", "label": "预览", "reason": "目标模型质量与 graph 兼容性尚未验收。" }, "applicability": { "status": "unknown", "label": "待核验", "scope": "需验证层级策略、模型结构和 Ascend graph", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "manifest 已发布，目标 worker 无见证" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "质量与容量对照缺失", "detail": "不承诺长上下文收益。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合注意力 KV 保留策略研究。" }, "categories": ["capacity"], "scenarios": ["长上下文分层 KV 保留"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
     },
     {
@@ -131,9 +131,9 @@
     },
     {
       "id": "kv-tiering", "name": "KV Tiering", "kind": "runtime", "description": "面向多层存储介质的 KV 分层策略实验仓。",
-      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-kv-tiering", "defaultBranch": "main", "sourceSha": "3a73c7e1628801ea5d4f585bcc9d06260161a78c" }, "deployment": null,
-      "managerManifest": { "path": null, "status": "missing" },
-      "availability": { "status": "preview", "label": "预览", "reason": "缺少 Extension Manager manifest 与运行验收。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "目标介质、容量和一致性契约尚未登记", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "缺少机器可读 manager manifest" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测分层命中率与传输代价", "detail": "不承诺容量收益。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合分层 KV 研究，暂不可执行。" }, "categories": ["capacity"], "scenarios": ["多介质 KV 分层与迁移"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
+      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-kv-tiering", "defaultBranch": "main", "sourceSha": "03f17227b4dde195382017981a52e874250a855e" }, "deployment": null,
+      "managerManifest": { "path": "src/vllm_hust_kv_tiering/manifests/vllm-hust-extension-v0.3.json", "status": "present" },
+      "availability": { "status": "preview", "label": "预览", "reason": "ECPA 0.3 Provider 已上架预览；运行与恢复验收未完成。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "目标介质、容量和一致性契约尚未登记", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "Manifest 与 clean-wheel 已通过，host 激活和恢复证据待补" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测分层命中率与传输代价", "detail": "不承诺容量收益。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合分层 KV 研究，暂不可执行。" }, "categories": ["capacity"], "scenarios": ["多介质 KV 分层与迁移"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
     },
     {
       "id": "kv-transfer-observability", "name": "KV Transfer Observability", "kind": "runtime", "description": "为 KV 传输、失败与恢复路径提供指标和追踪。",
@@ -161,9 +161,9 @@
     },
     {
       "id": "prefix-router", "name": "Prefix Router", "kind": "runtime", "description": "按 prompt 前缀亲和性路由请求以探索 cache 命中。",
-      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-prefix-router", "defaultBranch": "main", "sourceSha": "4e007c4fc1bd376a6dccfefbc1fd851019c8ceb6" }, "deployment": null,
-      "managerManifest": { "path": null, "status": "missing" },
-      "availability": { "status": "preview", "label": "预览", "reason": "缺少 Extension Manager manifest 和路由恢复门禁。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "需多实例、prefix cache 和 owner 路由契约", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "缺少一致性、失败转移与回滚证据" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测命中率与负载倾斜", "detail": "不承诺命中率提升。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合多副本 prefix-affinity 研究。" }, "categories": ["latency", "throughput"], "scenarios": ["共享前缀 workload 的多实例路由"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
+      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-prefix-router", "defaultBranch": "main", "sourceSha": "8115ed5077e15b98538e5e1e0a184ec76cdab2de" }, "deployment": null,
+      "managerManifest": { "path": "src/vllm_hust_prefix_router/manifests/vllm-hust-extension-v0.3.json", "status": "present" },
+      "availability": { "status": "preview", "label": "预览", "reason": "ECPA 0.3 外部服务描述已上架预览；路由恢复门禁未完成。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "需多实例、prefix cache 和 owner 路由契约", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "Manifest 与 clean-wheel 已通过，一致性、失败转移与回滚证据待补" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测命中率与负载倾斜", "detail": "不承诺命中率提升。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合多副本 prefix-affinity 研究。" }, "categories": ["latency", "throughput"], "scenarios": ["共享前缀 workload 的多实例路由"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
     },
     {
       "id": "simllm", "name": "SimLLM", "kind": "runtime", "description": "为 Ascend 推理路径提供可控模拟和策略实验能力。",
@@ -173,15 +173,15 @@
     },
     {
       "id": "slicegpt", "name": "SliceGPT", "kind": "runtime", "description": "通过模型切片压缩探索更小的运行制品。",
-      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-slicegpt", "defaultBranch": "main", "sourceSha": "6acf19d9cbb3ed6caa3f5e6341b1da41941f9f2e" }, "deployment": null,
-      "managerManifest": { "path": null, "status": "missing" },
-      "availability": { "status": "preview", "label": "预览", "reason": "缺少 Extension Manager manifest 与对应压缩模型资产。" }, "applicability": { "status": "unknown", "label": "需专用模型制品", "scope": "不能用原始权重替代 SliceGPT 压缩资产", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "模型质量、加载与恢复门禁未完成" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "需同时报告质量、容量和性能", "detail": "不承诺压缩率或吞吐。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合具备匹配压缩模型资产后的评估。" }, "categories": ["capacity", "throughput"], "scenarios": ["模型压缩后的容量/质量/性能权衡"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
+      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-slicegpt", "defaultBranch": "main", "sourceSha": "fc157ab2838a084940490ecdff0e32a817d93a8e" }, "deployment": null,
+      "managerManifest": { "path": "packages/runtime/src/vllm_hust_slicegpt/manifests/vllm-hust-extension-v0.3.json", "status": "present" },
+      "availability": { "status": "preview", "label": "预览", "reason": "ECPA 0.3 import-only 包已上架预览；对应压缩模型资产仍缺失。" }, "applicability": { "status": "unknown", "label": "需专用模型制品", "scope": "不能用原始权重替代 SliceGPT 压缩资产", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "Manifest 与 clean-wheel 已通过，模型质量、加载与恢复门禁待补" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "需同时报告质量、容量和性能", "detail": "不承诺压缩率或吞吐。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合具备匹配压缩模型资产后的评估。" }, "categories": ["capacity", "throughput"], "scenarios": ["模型压缩后的容量/质量/性能权衡"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
     },
     {
       "id": "knorm", "name": "KNorm", "kind": "runtime", "description": "围绕归一化与 KV 压缩交互开展算子和长上下文实验。",
-      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-knorm", "defaultBranch": "main", "sourceSha": "e0e872abfc9fa88659b3e83c1c8b8b2b3de88fc0" }, "deployment": null,
-      "managerManifest": { "path": null, "status": "missing" },
-      "availability": { "status": "preview", "label": "预览", "reason": "缺少 Extension Manager manifest、算子门禁和恢复证据。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "需匹配模型归一化结构、算子和 KV 路径", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "缺少当前工作站的正确性 evidence lock" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测质量、长上下文和性能影响", "detail": "不承诺加速。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合受控算子研究，暂不可执行。" }, "categories": ["latency", "throughput"], "scenarios": ["归一化与 KV 压缩交互研究"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
+      "source": { "repository": "https://github.com/vLLM-HUST/vllm-hust-knorm", "defaultBranch": "main", "sourceSha": "563173e1c42c9c62e96fef7611caaff35b5e9e63" }, "deployment": null,
+      "managerManifest": { "path": "src/vllm_hust_knorm/manifests/vllm-hust-extension-v0.3.json", "status": "present" },
+      "availability": { "status": "preview", "label": "预览", "reason": "ECPA 0.3 包已上架预览；算子门禁和恢复证据未完成。" }, "applicability": { "status": "unknown", "label": "待定义", "scope": "需匹配模型归一化结构、算子和 KV 路径", "currentModelApplicable": null }, "functionalQualification": { "status": "unverified", "label": "功能待验收", "scope": "Manifest 与 clean-wheel 已通过，当前工作站正确性 evidence lock 待补" }, "effectiveness": { "status": "unverified", "label": "收益待验证", "scope": "未测质量、长上下文和性能影响", "detail": "不承诺加速。" }, "recommendation": { "status": "experimental", "label": "实验预览", "reason": "适合受控算子研究，暂不可执行。" }, "categories": ["latency", "throughput"], "scenarios": ["归一化与 KV 压缩交互研究"], "actions": { "prepare": false, "configure": false, "externalHealth": false }
     }
   ]
 }
