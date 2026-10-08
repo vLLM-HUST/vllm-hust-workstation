@@ -12,6 +12,7 @@ import {
 } from "@/lib/upstream";
 import { readTrafficSnapshot } from "@/lib/traffic";
 import type { MetricsSnapshot } from "@/types";
+import { isUnifiedRouterMode } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -39,7 +40,7 @@ function compactMetrics<T extends Record<string, unknown>>(input: T): Partial<T>
 
 export async function GET() {
   const start = performance.now();
-  const unifiedRouterMode = process.env.WORKSTATION_UNIFIED_ROUTER_MODE === "true";
+  const unifiedRouterMode = isUnifiedRouterMode();
   const [metricsProbe, statsProbe, engineProbe, modelsProbe, traffic] = await Promise.all([
     unifiedRouterMode ? Promise.resolve(EMPTY_METRICS_PROBE) : fetchUpstreamMetrics(),
     unifiedRouterMode ? Promise.resolve(EMPTY_METRICS_PROBE) : fetchUpstreamStats(),

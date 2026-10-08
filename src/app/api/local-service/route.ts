@@ -5,6 +5,7 @@ import {
   DEFAULT_MODEL_ID,
   SERVER_CONFIG,
   isLocalBackendControlEnabled,
+  isUnifiedRouterMode,
 } from "@/lib/config";
 import { getEvoScientistIntegrationStatus } from "@/lib/server/evoscientist";
 import { fetchUpstreamEngineProbe, fetchUpstreamModels } from "@/lib/upstream";
@@ -38,9 +39,18 @@ function isLocalTarget(baseUrl: string): boolean {
 }
 
 async function getLocalServiceStatus(): Promise<LocalServiceStatus> {
+  const unifiedRouterMode = isUnifiedRouterMode();
   const [modelsProbe, engineProbe] = await Promise.all([
     fetchUpstreamModels(),
-    fetchUpstreamEngineProbe(),
+    unifiedRouterMode
+      ? Promise.resolve({
+          reachable: false,
+          status: null,
+          durationSeconds: 0,
+          state: "unsupported" as const,
+          modelIds: [],
+        })
+      : fetchUpstreamEngineProbe(),
   ]);
 
   const localControlEnabled = isLocalBackendControlEnabled();
