@@ -20,11 +20,12 @@ vi.mock("@/lib/metrics", () => metrics);
 
 import { POST } from "./route";
 
-const CURRENT_REASONING_ONLY_SSE = [
-  'data: {"id":"chatcmpl-live","object":"chat.completion.chunk","model":"Qwen/Qwen3.8-27B","choices":[{"index":0,"delta":{"content":null,"reasoning":"先分析。"},"finish_reason":null}]}',
-  'data: {"id":"chatcmpl-live","object":"chat.completion.chunk","model":"Qwen/Qwen3.8-27B","choices":[{"index":0,"delta":{"reasoning":"再确认。"},"finish_reason":null}]}',
-  'data: {"id":"chatcmpl-live","object":"chat.completion.chunk","model":"Qwen/Qwen3.8-27B","choices":[{"index":0,"delta":{},"finish_reason":"length"}]}',
-  "data: [DONE]",
+const RESPONSES_SSE = [
+  'data: {"type":"response.created","response":{"model":"Qwen3.8-27B"}}',
+  'data: {"type":"response.reasoning_text.delta","delta":"先分析。"}',
+  'data: {"type":"response.reasoning_text.delta","delta":"再确认。"}',
+  'data: {"type":"response.output_text.delta","delta":"答案。"}',
+  'data: {"type":"response.completed","response":{"model":"Qwen3.8-27B"}}',
   "",
 ].join("\n");
 
@@ -50,12 +51,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("chat proxy reasoning protocol", () => {
-  it("passes current reasoning SSE through unchanged and counts it", async () => {
+describe("Responses API chat adapter", () => {
+  it("converts Responses reasoning and answer deltas to chat chunks", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(CURRENT_REASONING_ONLY_SSE, {
+        new Response(RESPONSES_SSE, {
           status: 200,
           headers: { "Content-Type": "text/event-stream" },
         })
@@ -63,8 +64,12 @@ describe("chat proxy reasoning protocol", () => {
     );
 
     const response = await POST(request());
-    expect(await response.text()).toBe(CURRENT_REASONING_ONLY_SSE);
-    expect(metrics.estimateTokenCount).toHaveBeenCalledWith("先分析。再确认。");
+    const responseText = await response.text();
+    expect(responseText).toContain('"reasoning":"先分析。"');
+    expect(responseText).toContain('"content":"答案。"');
+    expect(responseText).toContain('"model":"Qwen3.8-27B"');
+    expect(responseText).toContain("data: [DONE]");
+    expect(metrics.estimateTokenCount).toHaveBeenCalledWith("先分析。再确认。\n答案。");
     expect(metrics.finishChatRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "Qwen/Qwen3.8-27B",
@@ -79,7 +84,12 @@ describe("chat proxy reasoning protocol", () => {
       "fetch",
       vi.fn().mockResolvedValue(
         Response.json({
-          choices: [{ message: { reasoning: "分析", content: "答案" } }],
+          id: "resp-test",
+          model: "Qwen3.8-27B",
+          output: [
+            { type: "reasoning", content: [{ type: "reasoning_text", text: "分析" }] },
+            { type: "message", content: [{ type: "output_text", text: "答案" }] },
+          ],
         })
       )
     );
@@ -87,6 +97,32 @@ describe("chat proxy reasoning protocol", () => {
     const response = await POST(request(false));
     expect(response.status).toBe(200);
     expect(metrics.estimateTokenCount).toHaveBeenCalledWith("分析\n答案");
+    expect(await response.json()).toMatchObject({
+      model: "Qwen3.8-27B",
+      choices: [{ message: { reasoning: "分析", content: "答案" } }],
+    });
+  });
+
+  it("sends request-level model selection through the Responses wire format", async () => {
+    const upstreamFetch = vi.fn().mockResolvedValue(
+      Response.json({ output: [{ type: "message", content: [{ type: "output_text", text: "好" }] }] })
+    );
+    vi.stubGlobal("fetch", upstreamFetch);
+
+    await POST(request(false, { model: "sage-auto", max_tokens: 77, enable_thinking: false }));
+    expect(upstreamFetch.mock.calls[0][0]).toBe("http://upstream.invalid/v1/responses");
+    const upstreamBody = JSON.parse(
+      (upstreamFetch.mock.calls[0][1] as RequestInit).body as string
+    );
+    expect(upstreamBody).toMatchObject({
+      model: "sage-auto",
+      input: expect.any(Array),
+      stream: false,
+      max_output_tokens: 77,
+    });
+    expect(upstreamBody).not.toHaveProperty("messages");
+    expect(upstreamBody).not.toHaveProperty("max_tokens");
+    expect(upstreamBody).not.toHaveProperty("enable_thinking");
   });
 });
 
@@ -103,7 +139,11 @@ describe("chat search context injection", () => {
       context: "",
     });
     const upstreamFetch = vi.fn().mockResolvedValue(
-      Response.json({ choices: [{ message: { content: "蓝光更容易被大气散射。" } }] })
+      Response.json({
+        output: [
+          { type: "message", content: [{ type: "output_text", text: "蓝光更容易被大气散射。" }] },
+        ],
+      })
     );
     vi.stubGlobal("fetch", upstreamFetch);
 
@@ -116,7 +156,7 @@ describe("chat search context injection", () => {
     const upstreamBody = JSON.parse(
       (upstreamFetch.mock.calls[0][1] as RequestInit).body as string
     );
-    expect(upstreamBody.messages.at(-1)).toEqual({ role: "user", content: question });
+    expect(upstreamBody.input.at(-1)).toEqual({ role: "user", content: question });
     expect(await response.json()).toMatchObject({
       search: { query: "天空为什么是蓝色", results: [] },
     });
@@ -135,7 +175,11 @@ describe("chat search context injection", () => {
       context,
     });
     const upstreamFetch = vi.fn().mockResolvedValue(
-      Response.json({ choices: [{ message: { content: "蓝光更容易被大气散射。" } }] })
+      Response.json({
+        output: [
+          { type: "message", content: [{ type: "output_text", text: "蓝光更容易被大气散射。" }] },
+        ],
+      })
     );
     vi.stubGlobal("fetch", upstreamFetch);
 
@@ -148,7 +192,7 @@ describe("chat search context injection", () => {
     const upstreamBody = JSON.parse(
       (upstreamFetch.mock.calls[0][1] as RequestInit).body as string
     );
-    expect(upstreamBody.messages.at(-1)).toEqual({
+    expect(upstreamBody.input.at(-1)).toEqual({
       role: "user",
       content: `${context}\n用户问题：${question}`,
     });
