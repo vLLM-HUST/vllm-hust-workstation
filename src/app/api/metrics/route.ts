@@ -16,6 +16,21 @@ import type { MetricsSnapshot } from "@/types";
 export const runtime = "nodejs";
 export const revalidate = 0;
 
+const EMPTY_METRICS_PROBE = {
+  reachable: false,
+  status: null,
+  durationSeconds: 0,
+  snapshot: {},
+};
+
+const UNSUPPORTED_ENGINE_PROBE = {
+  reachable: false,
+  status: null,
+  durationSeconds: 0,
+  state: "unsupported" as const,
+  modelIds: [],
+};
+
 function compactMetrics<T extends Record<string, unknown>>(input: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined && value !== null)
@@ -24,10 +39,11 @@ function compactMetrics<T extends Record<string, unknown>>(input: T): Partial<T>
 
 export async function GET() {
   const start = performance.now();
+  const unifiedRouterMode = process.env.WORKSTATION_UNIFIED_ROUTER_MODE === "true";
   const [metricsProbe, statsProbe, engineProbe, modelsProbe, traffic] = await Promise.all([
-    fetchUpstreamMetrics(),
-    fetchUpstreamStats(),
-    fetchUpstreamEngineProbe(),
+    unifiedRouterMode ? Promise.resolve(EMPTY_METRICS_PROBE) : fetchUpstreamMetrics(),
+    unifiedRouterMode ? Promise.resolve(EMPTY_METRICS_PROBE) : fetchUpstreamStats(),
+    unifiedRouterMode ? Promise.resolve(UNSUPPORTED_ENGINE_PROBE) : fetchUpstreamEngineProbe(),
     fetchUpstreamModels(),
     readTrafficSnapshot(),
   ]);

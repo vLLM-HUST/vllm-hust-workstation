@@ -9,8 +9,10 @@ const metrics = vi.hoisted(() => ({
   getInternalMetricsSnapshot: vi.fn(), recordApiRequest: vi.fn(),
   recordUpstreamRequest: vi.fn(), setWorkstationInfo: vi.fn(),
 }));
+const traffic = vi.hoisted(() => ({ readTrafficSnapshot: vi.fn() }));
 vi.mock("@/lib/upstream", () => upstream);
 vi.mock("@/lib/metrics", () => metrics);
+vi.mock("@/lib/traffic", () => traffic);
 import { GET } from "./route";
 
 const probe = { reachable: true, status: 200, durationSeconds: 0.01 };
@@ -22,6 +24,7 @@ beforeEach(() => {
   upstream.fetchUpstreamStats.mockResolvedValue({ ...probe, snapshot: { modelName: "zai-org/GLM-4-32B-0414", pendingRequests: 3 } });
   upstream.fetchUpstreamEngineProbe.mockResolvedValue({ ...probe, state: "unsupported", modelIds: [] });
   upstream.fetchUpstreamModels.mockResolvedValue({ ...probe, ids: ["Qwen/Qwen3.8-27B"] });
+  traffic.readTrafficSnapshot.mockResolvedValue(undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -55,5 +58,14 @@ describe("current model identity in metrics", () => {
     upstream.fetchUpstreamModels.mockResolvedValue({ ...probe, reachable: false, ids: [] });
     expect((await (await GET()).json()).modelName).toBe("未核验");
     expect(metrics.setWorkstationInfo).toHaveBeenLastCalledWith("未核验", "Ascend NPU");
+  });
+  it("skips unsupported observability probes in unified router mode", async () => {
+    vi.stubEnv("WORKSTATION_UNIFIED_ROUTER_MODE", "true");
+    const data = await (await GET()).json();
+    expect(upstream.fetchUpstreamMetrics).not.toHaveBeenCalled();
+    expect(upstream.fetchUpstreamStats).not.toHaveBeenCalled();
+    expect(upstream.fetchUpstreamEngineProbe).not.toHaveBeenCalled();
+    expect(upstream.fetchUpstreamModels).toHaveBeenCalledTimes(1);
+    expect(data.modelName).toBe("Qwen/Qwen3.8-27B");
   });
 });
