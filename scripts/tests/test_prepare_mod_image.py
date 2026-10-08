@@ -188,6 +188,41 @@ class ImagePreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Python path"):
                 module.validate_python(value)
 
+    def test_pipeline_microbatch_artifacts_use_owned_namespace(self):
+        location = self.library / "pipeline-microbatch"
+        wheels = location / "wheels"
+        wheels.mkdir(parents=True)
+        hashes = {}
+        for package, owned in [
+            ("vllm-hust-pipeline-microbatch", "vllm_hust_pipeline_microbatch"),
+            ("vllm-hust-ext", "vllm_hust_ext"),
+        ]:
+            filename = package.replace("-", "_") + "-0.2.0-py3-none-any.whl"
+            artifact = wheels / filename
+            with zipfile.ZipFile(artifact, "w") as wheel:
+                wheel.writestr(
+                    package.replace("-", "_") + "-0.2.0.dist-info/METADATA",
+                    f"Name: {package}\nVersion: 0.2.0\n",
+                )
+                wheel.writestr(owned + "/__init__.py", "")
+            hashes[filename] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        (location / "receipt.json").write_text(json.dumps({
+            "installed": True,
+            "sha": "e" * 40,
+            "managerSha": "f" * 40,
+            "manifest": {"bundle_id": "org.vllm-hust.pipeline-microbatch"},
+            "wheels": hashes,
+        }))
+
+        validated = module.artifacts(
+            self.library, "pipeline-microbatch", "e" * 40, "f" * 40
+        )
+
+        self.assertEqual(
+            {item["package"] for item in validated},
+            {"vllm-hust-pipeline-microbatch", "vllm-hust-ext"},
+        )
+
     def test_missing_manager_dependency_uses_fixed_hashed_support_wheel(self):
         self.dependencies["platformdirs"] = None
         payload = b"fake-support-wheel"

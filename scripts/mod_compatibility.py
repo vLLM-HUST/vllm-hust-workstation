@@ -72,7 +72,11 @@ def main():
     from inspect_mod_runtime import inspect
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--library", type=Path, required=True)
-    parser.add_argument("--mod", choices=["bidkv", "diffspec", "latchmoe"], required=True)
+    parser.add_argument(
+        "--mod",
+        choices=["bidkv", "diffspec", "latchmoe", "pipeline-microbatch"],
+        required=True,
+    )
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--manager-sha", required=True)
     parser.add_argument("--container", required=True)

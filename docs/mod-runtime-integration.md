@@ -5,6 +5,15 @@ a claim that runtime application is delivered. The current plugin boundary audit
 is [the BidKV guide alignment review](mod-plugin-guide-alignment.md); dated
 preparation evidence below describes historical artifacts, not current acceptance.
 
+The generated organization catalog currently admits artifact installation and
+candidate-image preparation for BidKV, DiffSpec, LatchMoE, and Pipeline
+Microbatch. Pipeline preparation accepts only its pinned package namespace; its
+runtime admission remains bound to the hardware-tested Qwen3.8-27B PP2 × TP2
+graph commits. The newly merged Core/Ascend `main` artifacts do not inherit that
+runtime-effective result until a fresh live witness is recorded. The measured
+Pipeline C8 cells remain explicitly not recommended and require risk
+acknowledgement; the production TP4/PP1 target is not applicable.
+
 ## Product goal
 
 An administrator selects an inference instance, prepares a compatible deployment,
@@ -212,6 +221,14 @@ editable through the API. `WORKSTATION_MOD_RUNTIME_DIR` is a separate private,
 operator-owned directory for task journals and derived image contexts. The
 existing `WORKSTATION_MOD_DIR` remains the artifact library. This enrollment
 permits observation/preparation only, **not serving lifecycle control**.
+
+`WORKSTATION_DEPLOYMENT_RECEIPT_FILE` is optional and deliberately separate
+from the exact-key v1 target registration, so an older service can safely ignore
+it during an atomic release transition. When present, it must name a trusted
+deployment-receipt index whose active model, Core/Ascend commits, graph mode and
+TP/device topology match the live provenance. It supports candidate artifact
+eligibility; it is not the complete dev-hub `DeploymentSpec`, rollback authority,
+or proof that a Mod is currently effective.
 
 Authenticated `POST /api/mod-runtime` accepts exactly
 `{"action":"prepare","targetId":"...","modId":"..."}`. Source pins, interpreter,

@@ -18,17 +18,18 @@ it("requires explicit storage and rejects root/symlink paths", async () => {
   await symlink(root, path.join(root, "alias")); vi.stubEnv("WORKSTATION_MOD_DIR", path.join(root, "alias")); await expect(modRoot()).rejects.toThrow();
 });
 it("does not expose receipt internals or task logs to anonymous users", async () => {
+  const bidkv = MOD_CATALOG.find(mod => mod.id === "bidkv")!;
   await mkdir(path.join(root, "bidkv/env/bin"), {recursive: true});
   await writeFile(path.join(root, "bidkv/env/bin/python"), "fixture");
-  await writeFile(path.join(root, "bidkv/receipt.json"), JSON.stringify({installed: true, enabled: true, configured: true, sha: MOD_CATALOG[0].sha, manifest: {path: "/private/host"}}));
+  await writeFile(path.join(root, "bidkv/receipt.json"), JSON.stringify({installed: true, enabled: true, configured: true, sha: bidkv.sha, manifest: {path: "/private/host"}}));
   const data = await getModCatalog(false);
-  expect(data.catalog[0].currentRuntimeState.enabled).toBe(true);
+  expect(data.catalog.find(mod => mod.id === "bidkv")?.currentRuntimeState.enabled).toBe(true);
   expect(JSON.stringify(data)).not.toContain("/private/"); expect(data.tasks).toEqual([]);
   expect(data.runtime.status).toBe("unverified");
 });
 it("fails closed on corrupt installation metadata", async () => {
   await mkdir(path.join(root, "bidkv")); await writeFile(path.join(root, "bidkv/receipt.json"), "{}");
-  const mod = (await getModCatalog(true)).catalog[0]; expect(mod.currentRuntimeState.installed).toBe(false); expect(mod.stateError).toBeTruthy();
+  const mod = (await getModCatalog(true)).catalog.find(item => item.id === "bidkv")!; expect(mod.currentRuntimeState.installed).toBe(false); expect(mod.stateError).toBeTruthy();
 });
 it("rejects all mutations before parsing without administrator credentials", async () => {
   for (const action of ["install", "configure", "enable", "disable", "uninstall", "run"]) {
@@ -42,15 +43,22 @@ it("authenticates read-only catalog and rejects invalid commands and external se
   await expect(startModAction("../../etc", "install")).rejects.toMatchObject({status: 404});
   await expect(startModAction("pegaflow", "uninstall")).rejects.toThrow("外部服务");
   await expect(startModAction("bidkv", "run")).rejects.toThrow("不会重启共享服务");
-  await expect(startModAction("bidkv", "configure", [])).rejects.toMatchObject({status: 400});
+  await expect(startModAction("bidkv", "configure", [], true)).rejects.toMatchObject({status: 400});
 });
 it("keeps running gate closed even with a valid password", async () => {
   const response = await POST(new Request("http://localhost/api/mods", {method: "POST", headers: {"x-workstation-admin-token": "test-secret"}, body: JSON.stringify({id: "bidkv", action: "run"})}));
   expect(response.status).toBe(409);
 });
+it("enforces measured-performance risk acknowledgement at the API boundary", async () => {
+  const noRisk = await POST(new Request("http://localhost/api/mods", {method: "POST", headers: {"x-workstation-admin-token": "test-secret"}, body: JSON.stringify({id: "bidkv", action: "install"})}));
+  expect(noRisk.status).toBe(409);
+  expect(await noRisk.json()).toMatchObject({error: expect.stringMatching(/显式确认风险/)});
+  const invalidRisk = await POST(new Request("http://localhost/api/mods", {method: "POST", headers: {"x-workstation-admin-token": "test-secret"}, body: JSON.stringify({id: "bidkv", action: "install", riskAcknowledged: "yes"})}));
+  expect(invalidRisk.status).toBe(400);
+});
 it("fails closed before saving enable intent when current compatibility is not proven", async () => {
-  await expect(startModAction("bidkv", "enable")).rejects.toThrow(/未核验.*启用意图未保存/);
-  const mod = (await getModCatalog(true)).catalog[0];
+  await expect(startModAction("bidkv", "enable", undefined, true)).rejects.toThrow(/未核验.*启用意图未保存/);
+  const mod = (await getModCatalog(true)).catalog.find(item => item.id === "bidkv")!;
   expect(mod.currentRuntimeCompatibility).toMatchObject({ status: "unknown", label: "未核验" });
   expect(mod.artifactQualification.status).toBe("passed");
 });
@@ -68,18 +76,17 @@ it("returns explicit current-instance compatibility from verified server provena
   });
   const response = await GET(new Request("http://localhost/api/mods"));
   const data = await response.json();
-  expect(data.catalog.map((mod: { currentRuntimeCompatibility: { status: string } }) => mod.currentRuntimeCompatibility.status)).toEqual([
-    "unknown", "unknown", "unknown", "unknown",
-  ]);
-  expect(data.catalog[0].currentRuntimeCompatibility.reason).toMatch(/运行生效/);
-  expect(data.catalog[1].currentRuntimeState.installed).toBe(false);
+  expect(data.catalog).toHaveLength(19);
+  expect(data.catalog.every((mod: { currentRuntimeCompatibility: { status: string } }) => mod.currentRuntimeCompatibility.status === "unknown")).toBe(true);
+  expect(data.catalog.find((mod: { id: string }) => mod.id === "bidkv").currentRuntimeCompatibility.reason).toMatch(/运行生效/);
+  expect(data.catalog.find((mod: { id: string }) => mod.id === "diffspec").currentRuntimeState.installed).toBe(false);
 });
 it("serializes management work and projects stale tasks as interrupted", async () => {
   await mkdir(path.join(root, "tasks"));
   const file = path.join(root, "tasks/11111111-1111-1111-1111-111111111111.json");
   const task = {id: "test", modId: "bidkv", action: "install", status: "running", createdAt: new Date().toISOString(), logs: []};
   await writeFile(file, JSON.stringify(task));
-  await expect(startModAction("bidkv", "install")).rejects.toThrow("已有 Mod 任务");
+  await expect(startModAction("bidkv", "install", undefined, true)).rejects.toThrow("已有 Mod 任务");
   await writeFile(file, JSON.stringify({...task, createdAt: "2020-01-01T00:00:00Z"}));
   expect((await getModCatalog(true)).tasks[0].status).toBe("interrupted");
 });

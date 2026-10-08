@@ -10,7 +10,6 @@ import configparser
 import email.parser
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import shutil
@@ -24,8 +23,19 @@ from mod_artifact_io import atomic_write
 from build_mod_observer import build as build_observer
 
 
-PACKAGES = {"bidkv": "bidkv", "diffspec": "vllm-diffspec", "latchmoe": "vllm-moe-offload-ascend"}
-MODULES = {"bidkv": "bidkv", "vllm-diffspec": "diffspec", "vllm-moe-offload-ascend": "vllm_moe_offload_ascend", "vllm-hust-ext": "vllm_hust_ext"}
+PACKAGES = {
+    "bidkv": "bidkv",
+    "diffspec": "vllm-diffspec",
+    "latchmoe": "vllm-moe-offload-ascend",
+    "pipeline-microbatch": "vllm-hust-pipeline-microbatch",
+}
+MODULES = {
+    "bidkv": "bidkv",
+    "vllm-diffspec": "diffspec",
+    "vllm-moe-offload-ascend": "vllm_moe_offload_ascend",
+    "vllm-hust-pipeline-microbatch": "vllm_hust_pipeline_microbatch",
+    "vllm-hust-ext": "vllm_hust_ext",
+}
 SHA = r"[a-f0-9]{40}"
 DIGEST = r"[a-f0-9]{64}"
 SUPPORT = {

@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { MOD_CATALOG, MOD_MANAGER_SHA } from "./modCatalog";
-import { assessModCompatibility, currentCompatibility } from "./modCompatibility";
+import { assessModCompatibility, assessTargetArtifactCompatibility, currentCompatibility } from "./modCompatibility";
 import { describeHostTarget } from "./hostBrokerClient";
 import { ModError, modRoot } from "./modStore";
 import { getRuntimeProvenance } from "./runtimeProvenance";
@@ -13,6 +13,18 @@ import type { ModPreparationTask, ModRuntimePayload } from "./modRuntimeTypes";
 interface TargetConfig {
   schema: "workstation.mod-runtime-config/v1";
   target: { id: string; label: string; ownership: "shared" | "dedicated"; containerName: string; pythonBin: string; upstreamUrl: string };
+}
+
+interface DeploymentProfile {
+  receiptId: string;
+  receiptSha256: string;
+  model: string;
+  coreSha: string;
+  pluginSha: string;
+  tensorParallelSize: number;
+  pipelineParallelSize: number;
+  executionMode: "graph";
+  physicalDeviceCount: number;
 }
 
 function upstreamIdentity(value: string): string {
@@ -37,6 +49,43 @@ export async function runtimeConfig(): Promise<TargetConfig | null> {
     throw new ModError("登记实例与工作站上游部署不一致。", 503);
   }
   return config;
+}
+
+async function deploymentProfile(file: string | undefined, provenance: Awaited<ReturnType<typeof getRuntimeProvenance>>): Promise<DeploymentProfile | undefined> {
+  if (!file || !provenance.components) return undefined;
+  const info = await lstat(file);
+  const processUid = process.getuid?.();
+  if (!info.isFile() || info.isSymbolicLink() || await realpath(file) !== file || info.size > 1_000_000 ||
+      (info.mode & 0o022) !== 0 || (info.uid !== 0 && info.uid !== processUid)) throw new Error("invalid deployment receipt file");
+  const value = JSON.parse(await readFile(file, "utf8")) as { receipts?: unknown[] };
+  if (!Array.isArray(value.receipts) || value.receipts.length > 1000) throw new Error("invalid deployment receipt index");
+  const active = [...value.receipts].reverse().find((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object" && (entry as Record<string, unknown>).status === "active"));
+  const acceleratorCount = active?.accelerator_count;
+  const tensorParallel = active?.tensor_parallel_size;
+  const pipelineParallel = active?.pipeline_parallel_size ?? 1;
+  const dataParallel = active?.data_parallel_size;
+  if (!active || active.schema_version !== "vllm-hust.deployment-receipt/v1" || typeof active.receipt_id !== "string" || !/^deploy-[a-f0-9]{20}$/.test(active.receipt_id) ||
+      typeof active.content_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(active.content_sha256) || typeof active.served_model !== "string" ||
+      active.engine_commit !== provenance.components.core.commit || active.plugin_commit !== provenance.components.plugin.commit ||
+      !Number.isInteger(acceleratorCount) || !Number.isInteger(tensorParallel) || !Number.isInteger(dataParallel) ||
+      !Array.isArray(active.physical_device_ids) || active.physical_device_ids.length !== acceleratorCount || active.graph_mode !== "graph" ||
+      !Number.isInteger(pipelineParallel) || (pipelineParallel as number) < 1 ||
+      (tensorParallel as number) * (pipelineParallel as number) * (dataParallel as number) !== acceleratorCount ||
+      dataParallel !== 1) throw new Error("deployment receipt does not match current runtime");
+  return { receiptId: active.receipt_id, receiptSha256: active.content_sha256, model: active.served_model,
+    coreSha: active.engine_commit as string, pluginSha: active.plugin_commit as string,
+    tensorParallelSize: tensorParallel as number, pipelineParallelSize: pipelineParallel as number, executionMode: "graph",
+    physicalDeviceCount: acceleratorCount as number };
+}
+
+async function savedConfiguration(root: string | undefined, modId: string): Promise<unknown> {
+  if (!root) return undefined;
+  try {
+    const file = path.join(root, modId, "input.json");
+    const info = await lstat(file);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 16_384) return undefined;
+    return JSON.parse(await readFile(file, "utf8"));
+  } catch { return undefined; }
 }
 
 export async function runtimeRoot(): Promise<string> {
@@ -73,9 +122,19 @@ async function taskRecords(root: string): Promise<PrivateTask[]> {
   return records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-function projectTask(task: PrivateTask): ModPreparationTask {
-  return { id: task.id, targetId: task.targetId, modId: task.modId, status: task.status, createdAt: task.createdAt, updatedAt: task.updatedAt,
-    baseImageId: task.baseImageId, imageId: task.imageId, logs: task.logs.slice(-40) };
+function projectTask(task: PrivateTask, current?: { imageId?: string; containerId?: string; startedAt?: string }): ModPreparationTask {
+  const mod = MOD_CATALOG.find(item => item.id === task.modId);
+  const reasons: string[] = [];
+  if (task.status === "prepared" && current) {
+    if (!mod?.sha || task.sourceSha !== mod.sha) reasons.push("资格源码已更新");
+    if (task.managerSha !== MOD_MANAGER_SHA) reasons.push("Extension Manager 来源锁已更新");
+    if (task.baseImageId !== current.imageId || task.expectedIdentity.imageId !== current.imageId ||
+        task.expectedIdentity.id !== current.containerId || task.expectedIdentity.startedAt !== current.startedAt) reasons.push("目标容器或基础镜像已变化");
+  }
+  const status = reasons.length ? "superseded" as const : task.status;
+  const logs = reasons.length ? [...task.logs, `只读状态投影：${reasons.join("；")}，该候选不能应用。`] : task.logs;
+  return { id: task.id, targetId: task.targetId, modId: task.modId, status, createdAt: task.createdAt, updatedAt: task.updatedAt,
+    baseImageId: task.baseImageId, imageId: task.imageId, logs: logs.slice(-40) };
 }
 
 export async function getModRuntime(administrator: boolean): Promise<ModRuntimePayload> {
@@ -85,26 +144,35 @@ export async function getModRuntime(administrator: boolean): Promise<ModRuntimeP
   if (!config) return { administrator, target: null, preparationAvailable: false, applicationAvailable: false,
     lifecycle: closedLifecycle, mods: [], message: "尚未登记推理实例。", tasks: [] };
   const [provenance, models, broker] = await Promise.all([getRuntimeProvenance(), fetchUpstreamModels(), describeHostTarget(config.target.id)]);
+  const profile = await deploymentProfile(process.env.WORKSTATION_DEPLOYMENT_RECEIPT_FILE?.trim(), provenance).catch(() => undefined);
   const verified = provenance.available && provenance.verification?.status === "verified" && provenance.container?.name === config.target.containerName;
   let root: string | undefined;
   try { root = await runtimeRoot(); await modRoot(); } catch { root = undefined; }
   const target: NonNullable<ModRuntimePayload["target"]> = { id: config.target.id, label: config.target.label, ownership: config.target.ownership, identityVerified: Boolean(verified),
     ...(verified ? { imageId: provenance.image!.id, coreSha: provenance.components!.core.commit, pluginSha: provenance.components!.plugin.commit, checkedAt: provenance.verification!.checkedAt } : {}),
-    models: models.reachable ? models.ids : [], observedMods: null };
-  const mods = MOD_CATALOG.filter(mod => mod.sha).map(mod => {
+    models: models.reachable ? models.ids : [], ...(profile ? { deploymentProfile: { receiptId: profile.receiptId, receiptSha256: profile.receiptSha256,
+      tensorParallelSize: profile.tensorParallelSize, pipelineParallelSize: profile.pipelineParallelSize, executionMode: profile.executionMode,
+      physicalDeviceCount: profile.physicalDeviceCount } } : {}), observedMods: null };
+  const mods = await Promise.all(MOD_CATALOG.filter(mod => mod.sha).map(async mod => {
     const witness = target.observedMods?.find(item => item.id === mod.id)?.runtimeEffective ?? null;
+    const targetArtifactCompatibility = assessTargetArtifactCompatibility(mod.id, provenance, { models: target.models,
+      tensorParallelSize: profile?.tensorParallelSize, pipelineParallelSize: profile?.pipelineParallelSize,
+      executionMode: profile?.executionMode, configuration: await savedConfiguration(root, mod.id) });
     return {
       id: mod.id,
       artifactQualification: mod.artifactQualification,
+      targetArtifactCompatibility,
       currentRuntimeCompatibility: currentCompatibility(assessModCompatibility(mod.id, provenance), witness).status,
     };
-  });
+  }));
   const lifecycle = { status: "unavailable" as const, brokerAvailable: broker.available, instanceRegistered: broker.registered,
     identityLive: Boolean(verified), rollbackReady: false, oneUseAuthorization: false,
     reason: !verified ? "实例身份待核验。" : !broker.registered ? "当前实例尚未纳入运行控制。" : "回滚基线尚未验收。" };
   return { administrator, target, preparationAvailable: Boolean(root && verified), applicationAvailable: false, lifecycle, mods,
     message: !verified ? "实例身份暂未核验，准备操作已暂停。" : !root ? "实例制品存储尚未就绪。" : "运行环境可准备；服务切换需通过全部运行门控。",
-    tasks: root && administrator ? (await taskRecords(root)).filter(task => task.targetId === target.id).slice(0, 30).map(projectTask) : [] };
+    tasks: root && administrator ? (await taskRecords(root)).filter(task => task.targetId === target.id).slice(0, 30).map(task => projectTask(task, verified ? {
+      imageId: provenance.image!.id, containerId: provenance.container!.id, startedAt: provenance.container!.startedAt,
+    } : undefined)) : [] };
 }
 
 export async function startRuntimePreparation(targetId: string, modId: string): Promise<ModPreparationTask> {

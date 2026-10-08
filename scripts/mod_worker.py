@@ -41,7 +41,7 @@ def safe_child(root, name):
 def execute(root, task, spec, report):
     mod = spec["mod"]
     ident = mod["id"]
-    if ident not in {"bidkv", "diffspec", "latchmoe"}:
+    if ident not in {"bidkv", "diffspec", "latchmoe", "pipeline-microbatch"}:
         raise ValueError("未审核的 Mod")
     if not re.fullmatch(r"[a-f0-9]{40}", mod["sha"]) or not re.fullmatch(r"[a-f0-9]{40}", spec["managerSha"]):
         raise ValueError("必须固定完整源码 SHA")

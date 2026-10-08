@@ -38,6 +38,22 @@ class ModWorkerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "未审核"):
             self.execute("install")
 
+    def test_pipeline_microbatch_is_a_reviewed_artifact_id(self):
+        self.spec["mod"] = {
+            "id": "pipeline-microbatch",
+            "sha": "a" * 40,
+            "repository": "https://github.com/vLLM-HUST/vllm-hust-pipeline-microbatch",
+            "bundle": "org.vllm-hust.pipeline-microbatch",
+        }
+        with (
+            patch.object(worker.os, "statvfs") as disk,
+            patch.object(worker.tempfile, "mkdtemp", side_effect=RuntimeError("accepted")),
+        ):
+            disk.return_value.f_bavail = 3 * 1024**3
+            disk.return_value.f_frsize = 1
+            with self.assertRaisesRegex(RuntimeError, "accepted"):
+                self.execute("install")
+
     def test_unpinned_source_rejected(self):
         self.spec["mod"]["sha"] = "main"
         with self.assertRaisesRegex(ValueError, "SHA"):

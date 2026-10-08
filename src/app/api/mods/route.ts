@@ -17,6 +17,11 @@ export async function POST(request: Request) {
     let body;
     try { body = JSON.parse(raw); } catch { throw new ModError("请求不是有效 JSON。", 400); }
     if (!body || typeof body.id !== "string" || typeof body.action !== "string") throw new ModError("缺少 Mod 或操作。", 400);
-    return Response.json(await startModAction(body.id, body.action as ModAction, body.configuration), { status: 202, headers });
+    const allowed = new Set(["id", "action", "configuration", "riskAcknowledged"]);
+    if (Object.keys(body).some(key => !allowed.has(key)) ||
+        (body.riskAcknowledged !== undefined && typeof body.riskAcknowledged !== "boolean")) {
+      throw new ModError("Mod 操作包含不支持的字段。", 400);
+    }
+    return Response.json(await startModAction(body.id, body.action as ModAction, body.configuration, body.riskAcknowledged === true), { status: 202, headers });
   } catch (error) { return Response.json({ error: error instanceof ModError ? error.message : "Mod 操作未完成，请检查存储或执行器配置。" }, { status: error instanceof ModError ? error.status : 503, headers }); }
 }
