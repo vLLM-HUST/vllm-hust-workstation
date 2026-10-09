@@ -51,6 +51,26 @@ function validSnapshot() {
         series: [],
       },
     ],
+    workloads: [
+      {
+        id: "interactive" as const,
+        totalRequests: 120,
+        totalSuccesses: 110,
+        totalItems: 120,
+        averageAdmissionWaitMs: 2.5,
+        windows: { "1m": window, "5m": window, "1h": window, "24h": window },
+        series: [{ time: 1_791_015_300_000, requests: 2, errors: 1, p50LatencyMs: 10 }],
+      },
+      {
+        id: "reindex" as const,
+        totalRequests: 11,
+        totalSuccesses: 5,
+        totalItems: 640,
+        averageAdmissionWaitMs: 0,
+        windows: { "1m": window, "5m": window, "1h": window, "24h": window },
+        series: [],
+      },
+    ],
   };
 }
 
@@ -81,5 +101,17 @@ describe("parseTrafficSnapshot", () => {
     const snapshot = validSnapshot();
     delete (snapshot as Partial<typeof snapshot>).models;
     expect(parseTrafficSnapshot(snapshot)?.models).toEqual([]);
+  });
+
+  it("keeps aggregate compatibility when an older snapshot has no workload split", () => {
+    const snapshot = validSnapshot();
+    delete (snapshot as Partial<typeof snapshot>).workloads;
+    expect(parseTrafficSnapshot(snapshot)?.workloads).toEqual([]);
+  });
+
+  it("rejects invalid workload counters", () => {
+    const snapshot = validSnapshot();
+    snapshot.workloads[0].totalItems = -1;
+    expect(parseTrafficSnapshot(snapshot)).toBeUndefined();
   });
 });

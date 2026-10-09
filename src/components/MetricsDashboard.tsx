@@ -346,6 +346,30 @@ export default function MetricsDashboard({
               color="var(--chart-teal)"
               label="24 小时推理趋势（15 分钟）"
             />
+            {traffic.workloads.length > 0 && (
+              <div className="grid grid-cols-2 gap-2" aria-label="在线与离线工作负载">
+                {traffic.workloads.map((workload) => {
+                  const label = workload.id === "interactive" ? "在线交互" : "离线索引";
+                  const successRate = workload.totalRequests > 0
+                    ? (workload.totalSuccesses / workload.totalRequests) * 100
+                    : 100;
+                  return (
+                    <article key={workload.id} className="app-card-flat rounded-xl p-3 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="app-text text-xs font-semibold">{label}</p>
+                        <span className={workload.id === "interactive" ? "text-cyan-300 text-[10px]" : "text-amber-300 text-[10px]"}>
+                          {workload.windows["1h"].requests}/h
+                        </span>
+                      </div>
+                      <p className="app-text text-lg font-semibold tabular-nums">{workload.totalRequests}</p>
+                      <p className="app-text-muted text-[10px] leading-4">
+                        {workload.totalItems} 项 · 成功率 {successRate.toFixed(1)}% · 准入等待 {workload.averageAdmissionWaitMs.toFixed(1)} ms
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
             <div className="space-y-2" aria-label="模型后端监控">
               {traffic.models.map((item) => {
                 const requests24h = item.windows["24h"].requests;

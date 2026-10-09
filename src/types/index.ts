@@ -181,6 +181,16 @@ export interface ModelTrafficSnapshot {
   series: TrafficSeriesPoint[];
 }
 
+export interface WorkloadTrafficSnapshot {
+  id: "interactive" | "reindex";
+  totalRequests: number;
+  totalSuccesses: number;
+  totalItems: number;
+  averageAdmissionWaitMs: number;
+  windows: TrafficSnapshot["windows"];
+  series: TrafficSeriesPoint[];
+}
+
 export interface TrafficSnapshot {
   generatedAt: number;
   retentionDays: number;
@@ -198,6 +208,7 @@ export interface TrafficSnapshot {
   };
   series: TrafficSeriesPoint[];
   models: ModelTrafficSnapshot[];
+  workloads: WorkloadTrafficSnapshot[];
 }
 
 export type ServiceProbeStatus = "checking" | "online" | "offline";

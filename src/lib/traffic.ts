@@ -4,6 +4,7 @@ import type {
   TrafficSeriesPoint,
   TrafficSnapshot,
   TrafficWindowSnapshot,
+  WorkloadTrafficSnapshot,
 } from "@/types";
 
 const DEFAULT_TRAFFIC_SNAPSHOT =
@@ -84,6 +85,38 @@ function parseModel(value: unknown): ModelTrafficSnapshot | undefined {
   } as ModelTrafficSnapshot;
 }
 
+function parseWorkload(value: unknown): WorkloadTrafficSnapshot | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Partial<WorkloadTrafficSnapshot>;
+  if (
+    (candidate.id !== "interactive" && candidate.id !== "reindex") ||
+    !nonNegativeNumber(candidate.totalRequests) ||
+    !nonNegativeNumber(candidate.totalSuccesses) ||
+    !nonNegativeNumber(candidate.totalItems) ||
+    !nonNegativeNumber(candidate.averageAdmissionWaitMs) ||
+    !candidate.windows ||
+    !Array.isArray(candidate.series)
+  ) {
+    return undefined;
+  }
+  const windows = {
+    "1m": parseWindow(candidate.windows["1m"]),
+    "5m": parseWindow(candidate.windows["5m"]),
+    "1h": parseWindow(candidate.windows["1h"]),
+    "24h": parseWindow(candidate.windows["24h"]),
+  };
+  if (!windows["1m"] || !windows["5m"] || !windows["1h"] || !windows["24h"]) {
+    return undefined;
+  }
+  const series = candidate.series.map(parseSeriesPoint);
+  if (series.some((point) => point === undefined)) return undefined;
+  return {
+    ...candidate,
+    windows: windows as TrafficSnapshot["windows"],
+    series: series as TrafficSeriesPoint[],
+  } as WorkloadTrafficSnapshot;
+}
+
 export function parseTrafficSnapshot(value: unknown): TrafficSnapshot | undefined {
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Partial<TrafficSnapshot>;
@@ -116,6 +149,10 @@ export function parseTrafficSnapshot(value: unknown): TrafficSnapshot | undefine
   if (series.some((point) => point === undefined)) return undefined;
   const models = candidate.models === undefined ? [] : candidate.models.map(parseModel);
   if (models.some((model) => model === undefined)) return undefined;
+  const workloads = candidate.workloads === undefined
+    ? []
+    : candidate.workloads.map(parseWorkload);
+  if (workloads.some((workload) => workload === undefined)) return undefined;
 
   return {
     generatedAt: candidate.generatedAt,
@@ -129,6 +166,7 @@ export function parseTrafficSnapshot(value: unknown): TrafficSnapshot | undefine
     windows: windows as TrafficSnapshot["windows"],
     series: series as TrafficSeriesPoint[],
     models: models as ModelTrafficSnapshot[],
+    workloads: workloads as WorkloadTrafficSnapshot[],
   };
 }
 
