@@ -14,6 +14,9 @@ export function resolveOutputBudget(body: Record<string, unknown>, configured = 
 }
 
 export function buildResponsesRequest(body: Record<string, unknown>, messages: unknown[]) {
+  if (typeof body.model !== "string" || !body.model.trim()) {
+    throw new Error("尚未确认在线聊天模型，请等待模型列表加载后重试");
+  }
   if (body.enable_thinking !== undefined && typeof body.enable_thinking !== "boolean") {
     throw new Error("enable_thinking 必须为布尔值");
   }

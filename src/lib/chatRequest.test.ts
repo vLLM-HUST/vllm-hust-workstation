@@ -17,7 +17,7 @@ describe("generation budget and thinking wire contract", () => {
     });
   });
   it("preserves explicit budgets and both thinking modes", () => {
-    expect(buildResponsesRequest({max_tokens:128,enable_thinking:false,
+    expect(buildResponsesRequest({model:"test",max_tokens:128,enable_thinking:false,
       chat_template_kwargs:{extra_flag:true}},[])).toMatchObject({
       max_output_tokens:128,chat_template_kwargs:{enable_thinking:false,extra_flag:true},
     });
@@ -33,5 +33,8 @@ describe("generation budget and thinking wire contract", () => {
   });
   it("rejects conflicting aliases instead of silently overriding a request", () => {
     expect(() => resolveOutputBudget({max_tokens:128,max_output_tokens:4096})).toThrow();
+  });
+  it.each([undefined,null,"", "   "])("rejects an unconfirmed model %s", model=>{
+    expect(()=>buildResponsesRequest({model},[])).toThrow("尚未确认");
   });
 });

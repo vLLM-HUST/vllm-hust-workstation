@@ -176,9 +176,11 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   // Load models list from gateway
   useEffect(() => {
-    fetch("/api/models")
-      .then((r) => r.json())
+    let cancelled = false;
+    const refresh = () => fetch("/api/models", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("model catalog unavailable"); return r.json(); })
       .then((data) => {
+        if (cancelled) return;
         const ids: string[] = (data?.data ?? []).map((m: { id: string }) => m.id);
         if (ids.length > 0) {
           setModels(ids);
@@ -188,16 +190,23 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
             }
             return ids[0];
           });
+        } else {
+          setModels([]);
+          setModel("");
         }
         setServiceStatus(Boolean(data?.engineReady && ids.length > 0) ? "online" : "offline");
         setModelsChecked(true);
         setLiveModelSwitchSupported(Boolean(data?.liveModelSwitchSupported));
       })
       .catch(() => {
+        if (cancelled) return;
         setServiceStatus("offline");
         setModelsChecked(true);
         setLiveModelSwitchSupported(false);
       });
+    void refresh();
+    const timer = window.setInterval(refresh, 15000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
   // Poll metrics
@@ -272,6 +281,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   const handleSend = useCallback(
     async (text: string) => {
+      if (!model.trim() || !models.includes(model)) return;
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
@@ -480,7 +490,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         abortRef.current = null;
       }
     },
-    [messages, model, webSearch, thinkingEnabled]
+    [messages, model, models, webSearch, thinkingEnabled]
   );
 
   const handleStop = useCallback(() => {
@@ -488,7 +498,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
   }, []);
 
   const handleClear = useCallback(() => setMessages([]), []);
-  const displayedServiceStatus: ServiceProbeStatus = provenanceChecked && modelsChecked ? serviceStatus : "checking";
+  const displayedServiceStatus: ServiceProbeStatus = provenanceChecked && modelsChecked
+    ? (model && models.includes(model) ? serviceStatus : "offline") : "checking";
   const displayedModel = displayedServiceStatus === "online" ? model : "";
 
   return (

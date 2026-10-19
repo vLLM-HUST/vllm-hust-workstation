@@ -180,11 +180,11 @@ export default function ChatPanel({
 
   const handleSend = useCallback(() => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || !model.trim() || !online) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     onSend(text);
-  }, [input, loading, onSend]);
+  }, [input, loading, onSend, model, online]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -351,7 +351,7 @@ export default function ChatPanel({
             <button
               onClick={loading ? onStop : handleSend}
               aria-label={loading ? "停止生成" : "发送消息"}
-              disabled={!loading && (!input.trim() || serviceStatus !== "online")}
+              disabled={!loading && (!input.trim() || serviceStatus !== "online" || !model.trim())}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
               style={
                 loading || (input.trim() && serviceStatus === "online")

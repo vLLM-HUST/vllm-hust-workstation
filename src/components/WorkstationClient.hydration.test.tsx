@@ -82,3 +82,29 @@ it("service controls are absent from server HTML before status and authorization
     expect(html).not.toContain(label);
   }
 });
+
+it("recovers a failed initial model lookup instead of sending an empty model", async () => {
+  vi.useFakeTimers();
+  const original = vi.mocked(fetch).getMockImplementation()!;
+  let lookups=0;
+  vi.mocked(fetch).mockImplementation((input,init)=>{
+    if (String(input).includes('/api/models')) {
+      lookups++;
+      return lookups===1 ? Promise.reject(new Error('synthetic startup race')) : Promise.resolve(response({
+        data:[{id:'verified-chat-model'}],engineReady:true,liveModelSwitchSupported:false,
+      }));
+    }
+    return original(input,init);
+  });
+  try {
+    host.innerHTML=renderToString(<WorkstationClient config={config}/>);
+    await act(async()=>{root=hydrateRoot(host,<WorkstationClient config={config}/>);});
+    await act(async()=>resolveVersions(response({available:false,source:'unavailable',vllmHust:'unavailable',vllmAscendHust:'unavailable'})));
+    expect((host.querySelector('[aria-label="发送消息"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(host.textContent).not.toContain('verified-chat-model');
+    await act(async()=>{vi.advanceTimersByTime(15000);});
+    expect(lookups).toBe(2);
+    expect(host.textContent).toContain('verified-chat-model');
+    expect(host.textContent).toContain('推理工作区已就绪');
+  } finally {vi.useRealTimers();}
+});
