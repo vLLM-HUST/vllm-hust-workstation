@@ -1,5 +1,6 @@
 import { recordApiRequest, recordUpstreamRequest } from "@/lib/metrics";
 import { fetchUpstreamEngineProbe, fetchUpstreamModels } from "@/lib/upstream";
+import { isUnifiedRouterMode } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,9 +8,18 @@ export const revalidate = 0;
 
 export async function GET() {
   const start = performance.now();
+  const unifiedRouterMode = isUnifiedRouterMode();
   const [modelsProbe, engineProbe] = await Promise.all([
     fetchUpstreamModels(),
-    fetchUpstreamEngineProbe(),
+    unifiedRouterMode
+      ? Promise.resolve({
+          reachable: false,
+          status: null,
+          durationSeconds: 0,
+          state: "unsupported" as const,
+          modelIds: [],
+        })
+      : fetchUpstreamEngineProbe(),
   ]);
 
   recordUpstreamRequest(

@@ -40,6 +40,7 @@ NPU4-7 未用于这些 Mod 的验证。
 
 - **实时流式对话** — 接入任意 `vllm-hust-gateway`（OpenAI 兼容接口）
 - **实时监控面板** — TPS、延迟、GPU 利用率、显存趋势图
+- **GenNova 推理开关** — 根据模型、硬件与负载自动匹配优化组合，并以 Frontier 实测对照展示吞吐和时延收益
 - **EvoScientist Embedded Chat** — 直接在工作站里调用 EvoScientist CLI，会话化执行自动科研任务
 - **Prometheus 监控端点** — 内置 `/metrics`，可直接接入 Prometheus 抓取
 - **白牌化** — 品牌名 / Logo / 主题色可通过 `.env` 配置

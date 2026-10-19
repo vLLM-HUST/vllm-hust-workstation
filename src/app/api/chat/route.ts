@@ -10,11 +10,12 @@ import {
 } from "@/lib/metrics";
 import { NextRequest } from "next/server";
 import type { SearchResult } from "@/types";
+import { parseChatSseLine } from "@/lib/chatStream";
 import {
-  extractChatMessage,
-  extractChatStreamDelta,
-  parseChatSseLine,
-} from "@/lib/chatStream";
+  extractResponsesStreamDelta,
+  extractResponsesText,
+  responseModel,
+} from "@/lib/responsesAdapter";
  
 
 export const runtime = "nodejs";
@@ -29,7 +30,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { messages, model, stream = true } = body;
   const doSearch = Boolean(body.web_search);
-  const enableThinking = body.enable_thinking !== false; // default true
   const encoder = new TextEncoder();
 
   let searchResults: SearchResult[] = [];
@@ -67,34 +67,39 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const upstream = `${SERVER_CONFIG.baseUrl}/v1/chat/completions`;
+  const upstream = `${SERVER_CONFIG.baseUrl}/v1/responses`;
 
   const requestStart = performance.now();
   beginChatRequest();
 
   try {
     const upstreamStart = performance.now();
+    const responseOptions = { ...body };
+    delete responseOptions.messages;
+    delete responseOptions.max_tokens;
+    delete responseOptions.web_search;
+    delete responseOptions.enable_thinking;
+    const upstreamBody = {
+      ...responseOptions,
+      model,
+      input: outboundMessages,
+      stream,
+      max_output_tokens:
+        typeof body?.max_tokens === "number" && Number.isFinite(body.max_tokens)
+          ? body.max_tokens
+          : DEFAULT_CHAT_MAX_TOKENS,
+    };
     const response = await fetch(upstream, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${getServerApiKey()}`,
       },
-      body: JSON.stringify({
-        ...body,
-        model,
-        messages: outboundMessages,
-        stream,
-        max_tokens:
-          typeof body?.max_tokens === "number" && Number.isFinite(body.max_tokens)
-            ? body.max_tokens
-            : DEFAULT_CHAT_MAX_TOKENS,
-        chat_template_kwargs: { enable_thinking: enableThinking },
-      }),
+      body: JSON.stringify(upstreamBody),
     });
     recordUpstreamRequest(
       "/api/chat",
-      "/v1/chat/completions",
+      "/v1/responses",
       response.status,
       (performance.now() - upstreamStart) / 1000
     );
@@ -127,7 +132,7 @@ export async function POST(req: NextRequest) {
     const contentType = response.headers.get("content-type") || "";
     if (!stream && contentType.includes("application/json")) {
       const payload = await response.json();
-      const generatedFields = extractChatMessage(payload);
+      const generatedFields = extractResponsesText(payload);
       const generated = [generatedFields.reasoning, generatedFields.content]
         .filter(Boolean)
         .join("\n");
@@ -140,16 +145,25 @@ export async function POST(req: NextRequest) {
       });
       recordApiRequest("/api/chat", "POST", 200, totalDurationSeconds);
 
-      if (!searchAttempted) {
-        return Response.json(payload);
-      }
-
       return Response.json({
-        ...payload,
-        search: {
-          query: searchQuery,
-          results: searchResults,
-        },
+        id: payload?.id,
+        object: "chat.completion",
+        model: payload?.model || model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content: generatedFields.content,
+              reasoning: generatedFields.reasoning,
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: payload?.usage,
+        search: searchAttempted
+          ? { query: searchQuery, results: searchResults }
+          : undefined,
       });
     }
 
@@ -162,6 +176,7 @@ export async function POST(req: NextRequest) {
     let sseBuffer = "";
     let generatedText = "";
     let generatedReasoning = "";
+    let routedModel = model;
     let finalized = false;
 
     const finalize = (status: "completed" | "failed") => {
@@ -201,6 +216,7 @@ export async function POST(req: NextRequest) {
           while (true) {
             const { done, value } = await reader.read();
             if (done) {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               finalize("completed");
               controller.close();
               return;
@@ -217,11 +233,34 @@ export async function POST(req: NextRequest) {
                 if (event.kind !== "payload") {
                   continue;
                 }
-                const delta = extractChatStreamDelta(event.payload);
+                const discoveredModel = responseModel(event.payload);
+                if (discoveredModel) routedModel = discoveredModel;
+                const delta = extractResponsesStreamDelta(event.payload);
                 generatedText += delta.content;
                 generatedReasoning += delta.reasoning;
+                if (!delta.content && !delta.reasoning) {
+                  continue;
+                }
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      id: "ws-responses-proxy",
+                      object: "chat.completion.chunk",
+                      model: routedModel,
+                      choices: [
+                        {
+                          index: 0,
+                          delta: {
+                            ...(delta.content ? { content: delta.content } : {}),
+                            ...(delta.reasoning ? { reasoning: delta.reasoning } : {}),
+                          },
+                          finish_reason: null,
+                        },
+                      ],
+                    })}\n\n`
+                  )
+                );
               }
-              controller.enqueue(value);
             }
           }
         } catch (error) {

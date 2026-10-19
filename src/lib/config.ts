@@ -2,6 +2,10 @@ import type { AppConfig } from "@/types";
 
 export const DEFAULT_MODEL_ID = "Qwen3-32B";
 
+export function isUnifiedRouterMode(): boolean {
+  return process.env.WORKSTATION_UNIFIED_ROUTER_MODE === "true";
+}
+
 export function isLocalBackendControlEnabled(): boolean {
   const explicit = process.env.WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED;
   if (explicit !== undefined) {

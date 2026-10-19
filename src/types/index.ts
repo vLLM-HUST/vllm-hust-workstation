@@ -147,6 +147,68 @@ export interface MetricsSnapshot {
   modelName: string;
   backendType: string;
   gatewayAvailable?: boolean;
+  traffic?: TrafficSnapshot;
+}
+
+export interface TrafficWindowSnapshot {
+  requests: number;
+  successes: number;
+  errors: number;
+  rateLimited: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface TrafficSeriesPoint {
+  time: number;
+  requests: number;
+  errors: number;
+  p50LatencyMs: number;
+}
+
+export interface ModelTrafficSnapshot {
+  id: string;
+  backendId: string;
+  displayName: string;
+  hardware: string;
+  activeRequests: number;
+  activeKeys: number;
+  totalRequests: number;
+  totalSuccesses: number;
+  lastRequestAt: number | null;
+  lastSuccessAt: number | null;
+  windows: TrafficSnapshot["windows"];
+  series: TrafficSeriesPoint[];
+}
+
+export interface WorkloadTrafficSnapshot {
+  id: "interactive" | "reindex";
+  totalRequests: number;
+  totalSuccesses: number;
+  totalItems: number;
+  averageAdmissionWaitMs: number;
+  windows: TrafficSnapshot["windows"];
+  series: TrafficSeriesPoint[];
+}
+
+export interface TrafficSnapshot {
+  generatedAt: number;
+  retentionDays: number;
+  activeRequests: number;
+  activeKeys: number;
+  configuredConcurrency: number;
+  engineMaxSequences: number;
+  totalRequests: number;
+  totalSuccesses: number;
+  windows: {
+    "1m": TrafficWindowSnapshot;
+    "5m": TrafficWindowSnapshot;
+    "1h": TrafficWindowSnapshot;
+    "24h": TrafficWindowSnapshot;
+  };
+  series: TrafficSeriesPoint[];
+  models: ModelTrafficSnapshot[];
+  workloads: WorkloadTrafficSnapshot[];
 }
 
 export type ServiceProbeStatus = "checking" | "online" | "offline";

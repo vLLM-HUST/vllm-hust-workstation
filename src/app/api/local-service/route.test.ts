@@ -2,11 +2,16 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const child = vi.hoisted(() => ({ spawn: vi.fn(() => ({ unref: vi.fn() })) }));
+const upstream = vi.hoisted(() => ({
+  fetchUpstreamEngineProbe: vi.fn(),
+  fetchUpstreamModels: vi.fn(),
+}));
+const evoScientist = vi.hoisted(() => ({ getEvoScientistIntegrationStatus: vi.fn() }));
 vi.mock("node:child_process", () => child);
-vi.mock("@/lib/server/evoscientist", () => ({ getEvoScientistIntegrationStatus: vi.fn() }));
-vi.mock("@/lib/upstream", () => ({ fetchUpstreamEngineProbe: vi.fn(), fetchUpstreamModels: vi.fn() }));
+vi.mock("@/lib/server/evoscientist", () => evoScientist);
+vi.mock("@/lib/upstream", () => upstream);
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 function request(action: string, token = "") {
   return new Request("http://localhost/api/local-service", {
@@ -21,6 +26,9 @@ beforeEach(() => {
   vi.stubEnv("WORKSTATION_ADMIN_TOKEN", "fixture-admin");
   vi.stubEnv("WORKSTATION_BACKEND_MODE", "local");
   vi.stubEnv("WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED", "true");
+  upstream.fetchUpstreamModels.mockResolvedValue({ reachable: true, status: 200, durationSeconds: 0.01, ids: ["model-a", "model-b"] });
+  upstream.fetchUpstreamEngineProbe.mockResolvedValue({ reachable: true, status: 200, durationSeconds: 0.01, state: "healthy", modelIds: ["engine-model"] });
+  evoScientist.getEvoScientistIntegrationStatus.mockResolvedValue({ ready: true });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -39,4 +47,15 @@ it("accepts explicit authorization but still applies target ownership gates", as
   vi.stubEnv("WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED", "false");
   expect((await POST(request("ensure-backend", "fixture-admin"))).status).toBe(403);
   expect(child.spawn).toHaveBeenCalledTimes(1);
+});
+
+it("skips engine management status probes in unified router mode", async () => {
+  vi.stubEnv("WORKSTATION_UNIFIED_ROUTER_MODE", "true");
+  vi.stubEnv("WORKSTATION_BACKEND_MODE", "external");
+  vi.stubEnv("WORKSTATION_LOCAL_BACKEND_CONTROL_ENABLED", "false");
+  const data = await (await GET()).json();
+  expect(upstream.fetchUpstreamEngineProbe).not.toHaveBeenCalled();
+  expect(data.gatewayReachable).toBe(true);
+  expect(data.inferenceReady).toBe(true);
+  expect(data.currentModel).toBe("model-a");
 });
