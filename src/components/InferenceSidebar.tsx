@@ -7,7 +7,7 @@ export interface ProcessStep {
   id: string;
   icon: string;
   label: string;
-  state: "pending" | "active" | "done" | "error";
+  state: "pending" | "active" | "done" | "error" | "cancelled";
   detail?: string;
 }
 
@@ -28,6 +28,8 @@ function statusClass(state: ProcessStep["state"]) {
       return "border-emerald-400/25 bg-emerald-400/10 text-emerald-200";
     case "error":
       return "border-red-400/25 bg-red-400/10 text-red-200";
+    case "cancelled":
+      return "border-slate-400/25 bg-slate-400/10 text-slate-200";
     default:
       return "border-white/10 bg-white/5 text-white/60";
   }

@@ -35,9 +35,9 @@ function shortDigest(value?: string): string {
   return value ? `${value.slice(0, 18)}…` : "unavailable";
 }
 
-function createSteps(params: {
+export function createSteps(params: {
   webSearch: boolean;
-  stage: "preparing" | "searching" | "generating" | "done" | "error";
+  stage: "preparing" | "searching" | "generating" | "done" | "error" | "cancelled";
   resultCount?: number;
   query?: string;
   detail?: string;
@@ -77,15 +77,19 @@ function createSteps(params: {
 
   steps.push({
     id: "generate",
-    icon: params.stage === "error" ? "❌" : params.stage === "done" ? "✅" : "✍️",
+    icon: params.stage === "cancelled" ? "⏹️" : params.stage === "error" ? "❌" : params.stage === "done" ? "✅" : "✍️",
     label:
-      params.stage === "error"
+      params.stage === "cancelled"
+        ? "已停止生成"
+        : params.stage === "error"
         ? "生成失败"
         : params.stage === "done"
           ? "生成完成"
           : "正在生成回答",
     state:
-      params.stage === "error"
+      params.stage === "cancelled"
+        ? "cancelled"
+        : params.stage === "error"
         ? "error"
         : params.stage === "done"
           ? "done"
@@ -454,7 +458,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           setProcessSteps(
             createSteps({
               webSearch,
-              stage: "error",
+              stage: "cancelled",
               resultCount,
               query: effectiveQuery,
               detail: "已停止当前生成",
@@ -470,7 +474,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           setProcessSteps(
             createSteps({
               webSearch,
-              stage: completion.status === "completed" ? "done" : "error",
+              stage: completion.status === "completed" ? "done" : completion.status === "cancelled" ? "cancelled" : "error",
               resultCount,
               query: effectiveQuery,
               detail: completion.message || `${finalContent.length} 字符 · 首个生成增量 ${ttft}ms`,
