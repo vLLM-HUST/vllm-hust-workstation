@@ -395,6 +395,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
               const delta = chatStream.push(json);
               if (delta.reasoning) {
                 setThinkText(chatStream.thinking);
+                setMessages((prev) => prev.map((message) => message.id === assistantId
+                  ? { ...message, reasoning: chatStream.thinking } : message));
                 if (firstToken) {
                   firstTokenTs = Date.now();
                   firstToken = false;

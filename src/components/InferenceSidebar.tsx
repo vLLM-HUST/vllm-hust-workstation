@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { ReasoningText } from "./ReasoningText";
 import type { SearchResult } from "@/types";
 
 export interface ProcessStep {
@@ -170,8 +171,8 @@ export default function InferenceSidebar({
                   <div className="text-xs font-semibold tracking-widest text-white/55 uppercase">
                     💭 思考过程
                   </div>
-                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-3 text-sm text-white/75 leading-6 whitespace-pre-wrap break-words max-h-[360px] overflow-y-auto">
-                    {thinkText.trim()}
+                  <div className="rounded-xl border border-white/8 bg-white/5 px-3 py-3 text-sm text-white/75 leading-6">
+                    <ReasoningText text={thinkText} />
                   </div>
                 </section>
               )}

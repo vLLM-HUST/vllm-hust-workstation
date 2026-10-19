@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { Message, ServiceProbeStatus } from "@/types";
 import clsx from "clsx";
+import { ReasoningDisclosure } from "./ReasoningText";
 
 interface ChatPanelProps {
   messages: Message[];
@@ -54,7 +55,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function MessageBubble({ msg, accentColor }: { msg: Message; accentColor: string }) {
+function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentColor: string; streaming: boolean }) {
   const isUser = msg.role === "user";
   return (
     <div
@@ -87,10 +88,7 @@ function MessageBubble({ msg, accentColor }: { msg: Message; accentColor: string
       >
         {/* Render content — basic markdown-lite: code blocks */}
         {!isUser && msg.reasoning && (
-          <details className="mb-3 text-white/60">
-            <summary className="cursor-pointer">思考过程（非最终答案）</summary>
-            <div className="whitespace-pre-wrap mt-2">{msg.reasoning}</div>
-          </details>
+          <ReasoningDisclosure text={msg.reasoning} streaming={streaming} />
         )}
         <FormattedContent content={msg.content} />
         {!isUser && msg.completionNotice && (
@@ -172,15 +170,17 @@ export default function ChatPanel({
   const checking = serviceStatus === "checking";
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (followLatest.current) bottomRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text || loading || !model.trim() || !online) return;
+    followLatest.current = true;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     onSend(text);
@@ -202,7 +202,10 @@ export default function ChatPanel({
   return (
     <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6" onScroll={event => {
+        const element = event.currentTarget;
+        followLatest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+      }}>
         <div className="mx-auto max-w-4xl space-y-5">
         {messages.length === 0 && (
           <div className="flex min-h-[calc(100vh-15rem)] items-center justify-center py-6 sm:min-h-[32rem]">
@@ -260,8 +263,9 @@ export default function ChatPanel({
             </div>
         )}
 
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg} accentColor={accentColor} />
+        {messages.map((msg, index) => (
+          <MessageBubble key={msg.id} msg={msg} accentColor={accentColor}
+            streaming={loading && msg.role === "assistant" && index === messages.length - 1} />
         ))}
 
         {/* Typing indicator */}
