@@ -86,7 +86,18 @@ function MessageBubble({ msg, accentColor }: { msg: Message; accentColor: string
         )}
       >
         {/* Render content — basic markdown-lite: code blocks */}
+        {!isUser && msg.reasoning && (
+          <details className="mb-3 text-white/60">
+            <summary className="cursor-pointer">思考过程（非最终答案）</summary>
+            <div className="whitespace-pre-wrap mt-2">{msg.reasoning}</div>
+          </details>
+        )}
         <FormattedContent content={msg.content} />
+        {!isUser && msg.completionNotice && (
+          <p role="status" className="mt-2 text-amber-300" data-completion-status={msg.completionStatus}>
+            {msg.completionNotice}
+          </p>
+        )}
 
         <div
           className={clsx(
@@ -100,7 +111,7 @@ function MessageBubble({ msg, accentColor }: { msg: Message; accentColor: string
               minute: "2-digit",
             })}
           </span>
-          {msg.tokensUsed && <span>{msg.tokensUsed} tokens</span>}
+          {msg.tokensUsed !== undefined && <span>{msg.tokensUsed} tokens（含思考，上游统计）</span>}
           {msg.latencyMs && <span>{msg.latencyMs}ms</span>}
           {!isUser && <CopyButton text={msg.content} />}
         </div>

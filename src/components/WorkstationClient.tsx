@@ -11,8 +11,7 @@ import type { AppConfig, Message, MetricsSnapshot, SearchResult, ServiceProbeSta
 import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
 import {
   ChatStreamAccumulator,
-  STOPPED_ASSISTANT_RESPONSE,
-  parseChatSseLine,
+  ChatSseDecoder,
 } from "@/lib/chatStream";
 
 const METRICS_INTERVAL = 3000;
@@ -290,7 +289,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
       let firstTokenTs = 0;
       let resultCount: number | undefined;
       let effectiveQuery = text;
-      let sseBuffer = "";
+      const sse = new ChatSseDecoder();
       let failed = false;
       let aborted = false;
 
@@ -314,7 +313,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
       abortRef.current = ctrl;
 
       try {
-        const history = [...messages, userMsg].map(({ role, content }) => ({
+        // UI notices and private reasoning are never sent back as an answer.
+        const history = [...messages, userMsg].filter(m => m.content.trim()).map(({ role, content }) => ({
           role,
           content,
         }));
@@ -354,14 +354,9 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-
-          sseBuffer += decoder.decode(value, { stream: true });
-          const lines = sseBuffer.split("\n");
-          sseBuffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const event = parseChatSseLine(line);
+          const events = sse.push(done ? decoder.decode() : decoder.decode(value, { stream: true }), done);
+          for (const event of events) {
+            if (event.kind === "done") { chatStream.markDone(); continue; }
             if (event.kind !== "payload") continue;
 
             try {
@@ -427,6 +422,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
               // Malformed SSE chunk — skip
             }
           }
+          if (done) break;
         }
       } catch (err: unknown) {
         if ((err as Error)?.name !== "AbortError") {
@@ -443,11 +439,6 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
               detail: errMsg,
             })
           );
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: errMsg } : m
-            )
-          );
         } else {
           aborted = true;
           setProcessSteps(
@@ -461,29 +452,27 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           );
         }
       } finally {
-        if (!failed) {
-          fullContent = chatStream.visibleContent(
-            aborted ? STOPPED_ASSISTANT_RESPONSE : undefined
-          );
-        }
+        fullContent = chatStream.content;
+        const completion = chatStream.completion(aborted, failed);
         const finalContent = fullContent.trim();
         const ttft = firstTokenTs ? firstTokenTs - startTs : Date.now() - startTs;
-        const words = finalContent.split(/\s+/).filter(Boolean).length;
         if (!failed && !aborted) {
           setProcessSteps(
             createSteps({
               webSearch,
-              stage: "done",
+              stage: completion.status === "completed" ? "done" : "error",
               resultCount,
               query: effectiveQuery,
-              detail: `${words} tokens · TTFT ${ttft}ms`,
+              detail: completion.message || `${finalContent.length} 字符 · 首个生成增量 ${ttft}ms`,
             })
           );
         }
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: fullContent || m.content, latencyMs: ttft, tokensUsed: words }
+              ? { ...m, content: fullContent, reasoning: chatStream.thinking,
+                  completionStatus: completion.status, completionNotice: completion.message,
+                  latencyMs: ttft, tokensUsed: chatStream.outputTokens }
               : m
           )
         );
@@ -496,7 +485,6 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
-    setLoading(false);
   }, []);
 
   const handleClear = useCallback(() => setMessages([]), []);

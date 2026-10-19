@@ -5,6 +5,9 @@ export interface Message {
   timestamp: number;
   tokensUsed?: number;
   latencyMs?: number;
+  reasoning?: string;
+  completionStatus?: import("@/lib/chatStream").ChatCompletion["status"];
+  completionNotice?: string;
 }
 
 export interface SearchResult {

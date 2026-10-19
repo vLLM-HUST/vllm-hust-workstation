@@ -3,9 +3,24 @@ import {
   extractResponsesStreamDelta,
   extractResponsesText,
   responseModel,
+  responsesTerminal,
 } from "./responsesAdapter";
 
 describe("Responses API adapter", () => {
+  it("honors incomplete inner status even when vLLM names the event completed", () => {
+    expect(responsesTerminal({type:"response.completed",response:{status:"incomplete",
+      incomplete_details:{reason:"max_output_tokens"},usage:{output_tokens:128}}},true))
+      .toMatchObject({finishReason:"length",status:"incomplete",usage:{output_tokens:128}});
+  });
+  it("never invents completion from non-stream output without a status", () => {
+    expect(responsesTerminal({output_text:"部分正文"})).toMatchObject({finishReason:"incomplete"});
+  });
+  it("retains all message output items instead of silently dropping later text", () => {
+    expect(extractResponsesText({output:[
+      {type:"message",content:[{type:"output_text",text:"第一段"}]},
+      {type:"message",content:[{type:"output_text",text:"第二段"}]},
+    ]}).content).toBe("第一段第二段");
+  });
   it("extracts answer and reasoning from a completed response", () => {
     expect(
       extractResponsesText({

@@ -5,6 +5,8 @@ import {
   extractChatMessage,
   parseChatSseLine,
   parseThinkContent,
+  ChatSseDecoder,
+  classifyCompletion,
 } from "./chatStream";
 
 const CURRENT_REASONING_ONLY_FIXTURE = [
@@ -29,16 +31,18 @@ function consumeFixture(lines: string[]): ChatStreamAccumulator {
     if (event.kind === "payload") {
       stream.push(event.payload);
     }
+    if (event.kind === "done") stream.markDone();
   }
   return stream;
 }
 
 describe("current vLLM streaming protocol", () => {
-  it("renders current delta.reasoning when the stream ends before answer content", () => {
+  it("retains reasoning separately and reports quota exhaustion without an answer", () => {
     const stream = consumeFixture(CURRENT_REASONING_ONLY_FIXTURE);
     expect(stream.content).toBe("");
     expect(stream.reasoning).toBe("我先分析问题。答案需要简明。");
-    expect(stream.visibleContent()).toBe("我先分析问题。答案需要简明。");
+    expect(stream.visibleContent()).toBe(EMPTY_ASSISTANT_RESPONSE);
+    expect(stream.completion().status).toBe("truncated");
   });
 
   it("prefers answer content after current delta.reasoning", () => {
@@ -47,6 +51,7 @@ describe("current vLLM streaming protocol", () => {
     expect(stream.visibleContent()).toBe(
       "天空呈蓝色，主要因为短波蓝光更容易被大气散射。"
     );
+    expect(stream.completion().status).toBe("completed");
   });
 
   it("retains legacy delta.reasoning_content compatibility", () => {
@@ -54,7 +59,8 @@ describe("current vLLM streaming protocol", () => {
       'data: {"choices":[{"delta":{"reasoning_content":"旧协议推理仍可见。"},"finish_reason":"length"}]}',
       "data: [DONE]",
     ]);
-    expect(stream.visibleContent()).toBe("旧协议推理仍可见。");
+    expect(stream.thinking).toBe("旧协议推理仍可见。");
+    expect(stream.visibleContent()).toBe(EMPTY_ASSISTANT_RESPONSE);
   });
 
   it("uses the current field once when both spellings are present", () => {
@@ -88,11 +94,36 @@ describe("chat text compatibility", () => {
     });
   });
 
-  it("uses inline thinking as a fallback when no answer follows", () => {
+  it("never promotes inline thinking to an answer", () => {
     const stream = consumeFixture([
       'data: {"choices":[{"delta":{"content":"<think>仍在分析"}}]}',
       "data: [DONE]",
     ]);
-    expect(stream.visibleContent()).toBe("仍在分析");
+    expect(stream.thinking).toBe("仍在分析");
+    expect(stream.visibleContent()).toBe(EMPTY_ASSISTANT_RESPONSE);
+  });
+});
+
+describe("completion evidence", () => {
+  it.each([
+    ["", "stop", true, false, false, "empty"],
+    ["部分正文", "length", true, false, false, "truncated"],
+    ["完整正文", "stop", false, false, false, "interrupted"],
+    ["正文", null, true, false, false, "interrupted"],
+    ["部分正文", null, false, true, false, "cancelled"],
+    ["部分正文", "stop", true, false, true, "failed"],
+    ["", "content_filter", true, false, false, "filtered"],
+  ])("keeps %s / %s distinct", (content, finish, done, cancelled, failed, expected) => {
+    expect(classifyCompletion(content as string, finish as string | null, done as boolean,
+      cancelled as boolean, failed as boolean).status).toBe(expected);
+  });
+
+  it("decodes chunked CRLF, multiline data and a terminal EOF tail", () => {
+    const decoder = new ChatSseDecoder();
+    expect(decoder.push('data: {"choices":\r')).toEqual([]);
+    expect(decoder.push('\ndata: []}\r\n\r\ndata: [DO')).toEqual([
+      {kind:"payload", payload:{choices:[]}},
+    ]);
+    expect(decoder.push('NE]', true)).toEqual([{kind:"done"}]);
   });
 });

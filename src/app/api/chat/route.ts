@@ -10,22 +10,23 @@ import {
 } from "@/lib/metrics";
 import { NextRequest } from "next/server";
 import type { SearchResult } from "@/types";
-import { parseChatSseLine } from "@/lib/chatStream";
+import { ChatSseDecoder, classifyCompletion } from "@/lib/chatStream";
+import { buildResponsesRequest } from "@/lib/chatRequest";
 import {
   extractResponsesStreamDelta,
   extractResponsesText,
   responseModel,
+  responsesTerminal,
+  chatUsage,
+  type ResponsesTerminal,
 } from "@/lib/responsesAdapter";
  
 
 export const runtime = "nodejs";
 
-const DEFAULT_CHAT_MAX_TOKENS = Number(process.env.WORKSTATION_DEFAULT_MAX_TOKENS || "4096");
-
-/** System prompt to keep Qwen3 thinking concise on resource-constrained NPU hardware */
 const THINKING_BUDGET_SYSTEM_PROMPT =
   process.env.WORKSTATION_SYSTEM_PROMPT ||
-  "你是一个有用的AI助手。思考时请简明扼要，将内部推理控制在200字以内，然后直接给出清晰完整的回答。";
+  "你是一个有用的AI助手。请给出清晰、准确、完整的回答。";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { messages, model, stream = true } = body;
@@ -68,27 +69,19 @@ export async function POST(req: NextRequest) {
   }
 
   const upstream = `${SERVER_CONFIG.baseUrl}/v1/responses`;
+  let upstreamBody;
+  try {
+    upstreamBody = buildResponsesRequest(body, outboundMessages);
+  } catch (error) {
+    return Response.json({ error: (error as Error).message }, { status: 400 });
+  }
+  const upstreamAbort = new AbortController();
 
   const requestStart = performance.now();
   beginChatRequest();
 
   try {
     const upstreamStart = performance.now();
-    const responseOptions = { ...body };
-    delete responseOptions.messages;
-    delete responseOptions.max_tokens;
-    delete responseOptions.web_search;
-    delete responseOptions.enable_thinking;
-    const upstreamBody = {
-      ...responseOptions,
-      model,
-      input: outboundMessages,
-      stream,
-      max_output_tokens:
-        typeof body?.max_tokens === "number" && Number.isFinite(body.max_tokens)
-          ? body.max_tokens
-          : DEFAULT_CHAT_MAX_TOKENS,
-    };
     const response = await fetch(upstream, {
       method: "POST",
       headers: {
@@ -96,6 +89,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${getServerApiKey()}`,
       },
       body: JSON.stringify(upstreamBody),
+      signal: AbortSignal.any([req.signal, upstreamAbort.signal]),
     });
     recordUpstreamRequest(
       "/api/chat",
@@ -133,6 +127,8 @@ export async function POST(req: NextRequest) {
     if (!stream && contentType.includes("application/json")) {
       const payload = await response.json();
       const generatedFields = extractResponsesText(payload);
+      const terminal = responsesTerminal(payload)!;
+      const completion = classifyCompletion(generatedFields.content, terminal.finishReason, true);
       const generated = [generatedFields.reasoning, generatedFields.content]
         .filter(Boolean)
         .join("\n");
@@ -141,9 +137,9 @@ export async function POST(req: NextRequest) {
         model,
         durationSeconds: totalDurationSeconds,
         approxTokens: estimateTokenCount(generated),
-        status: "completed",
+        status: completion.status === "completed" ? "completed" : "failed",
       });
-      recordApiRequest("/api/chat", "POST", 200, totalDurationSeconds);
+      recordApiRequest("/api/chat", "POST", completion.status === "completed" ? 200 : 502, totalDurationSeconds);
 
       return Response.json({
         id: payload?.id,
@@ -157,27 +153,36 @@ export async function POST(req: NextRequest) {
               content: generatedFields.content,
               reasoning: generatedFields.reasoning,
             },
-            finish_reason: "stop",
+            finish_reason: terminal.finishReason,
           },
         ],
-        usage: payload?.usage,
+        usage: chatUsage(payload?.usage),
+        completion,
+        ...(completion.status === "empty" || completion.status === "failed" || completion.status === "interrupted"
+          ? { error: completion.message } : {}),
         search: searchAttempted
           ? { query: searchQuery, results: searchResults }
           : undefined,
-      });
+      }, { status: ["empty", "failed", "interrupted"].includes(completion.status) ? 502 : 200 });
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    const headers = new Headers(response.headers);
+    // The body is transformed: never forward upstream length/encoding headers.
+    const headers = new Headers({ "Content-Type": "text/event-stream; charset=utf-8" });
+    response.headers.forEach((value, key) => {
+      if (key.startsWith("x-sage-")) headers.set(key, value);
+    });
     headers.set("Cache-Control", "no-cache");
     headers.set("Connection", "keep-alive");
 
-    let sseBuffer = "";
+    const sse = new ChatSseDecoder();
     let generatedText = "";
     let generatedReasoning = "";
     let routedModel = model;
     let finalized = false;
+    let terminal: ResponsesTerminal | null = null;
+    let cancelled = false;
 
     const finalize = (status: "completed" | "failed") => {
       if (finalized) {
@@ -197,13 +202,34 @@ export async function POST(req: NextRequest) {
       recordApiRequest(
         "/api/chat",
         "POST",
-        status === "completed" ? 200 : 499,
+        status === "completed" ? 200 : cancelled ? 499 : 502,
         durationSeconds
       );
     };
 
     const streamBody = new ReadableStream<Uint8Array>({
       async start(controller) {
+        const send = (payload: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        const processEvents = (text: string, eof = false) => {
+          for (const event of sse.push(text, eof)) {
+            if (event.kind !== "payload") continue;
+            const discoveredModel = responseModel(event.payload);
+            if (discoveredModel) routedModel = discoveredModel;
+            const end = responsesTerminal(event.payload, true);
+            if (end) {
+              if (terminal) throw new Error("duplicate upstream terminal event");
+              terminal = end;
+              continue;
+            }
+            const delta = extractResponsesStreamDelta(event.payload);
+            if (!delta.content && !delta.reasoning) continue;
+            if (terminal) throw new Error("text after upstream terminal event");
+            generatedText += delta.content;
+            generatedReasoning += delta.reasoning;
+            send({ id: "ws-responses-proxy", object: "chat.completion.chunk", model: routedModel,
+              choices: [{ index: 0, delta, finish_reason: null }] });
+          }
+        };
         try {
           if (searchAttempted) {
             controller.enqueue(
@@ -216,59 +242,37 @@ export async function POST(req: NextRequest) {
           while (true) {
             const { done, value } = await reader.read();
             if (done) {
+              processEvents(decoder.decode(), true);
+              const finishReason = terminal?.finishReason ?? "incomplete";
+              const completion = classifyCompletion(generatedText, finishReason, terminal !== null);
+              send({ id: "ws-responses-proxy", object: "chat.completion.chunk", model: routedModel,
+                choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+                usage: chatUsage(terminal?.usage), completion });
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              finalize("completed");
+              finalize(completion.status === "completed" ? "completed" : "failed");
               controller.close();
               return;
             }
 
             if (value) {
-              const chunk = decoder.decode(value, { stream: true });
-              sseBuffer += chunk;
-              const lines = sseBuffer.split("\n");
-              sseBuffer = lines.pop() ?? "";
-
-              for (const line of lines) {
-                const event = parseChatSseLine(line);
-                if (event.kind !== "payload") {
-                  continue;
-                }
-                const discoveredModel = responseModel(event.payload);
-                if (discoveredModel) routedModel = discoveredModel;
-                const delta = extractResponsesStreamDelta(event.payload);
-                generatedText += delta.content;
-                generatedReasoning += delta.reasoning;
-                if (!delta.content && !delta.reasoning) {
-                  continue;
-                }
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({
-                      id: "ws-responses-proxy",
-                      object: "chat.completion.chunk",
-                      model: routedModel,
-                      choices: [
-                        {
-                          index: 0,
-                          delta: {
-                            ...(delta.content ? { content: delta.content } : {}),
-                            ...(delta.reasoning ? { reasoning: delta.reasoning } : {}),
-                          },
-                          finish_reason: null,
-                        },
-                      ],
-                    })}\n\n`
-                  )
-                );
-              }
+              processEvents(decoder.decode(value, { stream: true }));
             }
           }
-        } catch (error) {
+        } catch {
           finalize("failed");
-          controller.error(error);
+          if (!cancelled) {
+            send({ choices: [{ index: 0, delta: {}, finish_reason: "error" }],
+              error: { code: "upstream_stream_error", message: "上游响应中断，生成未完成。" } });
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          }
+        } finally {
+          reader.releaseLock();
         }
       },
       async cancel(reason) {
+        cancelled = true;
+        upstreamAbort.abort();
         finalize("failed");
         await reader.cancel(reason);
       },
