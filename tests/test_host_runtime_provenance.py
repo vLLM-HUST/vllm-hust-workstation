@@ -29,7 +29,12 @@ class SourceEvidenceTests(unittest.TestCase):
             if args[1] == 'remote': return remote
             if args[1] == 'rev-parse': return 'a' * 40
             if args[1] == 'status': return dirty
-            if args[1] == 'ls-files': return 'vllm/__init__.py\0'
+            if args[1] == 'ls-files':
+                if '--ignored' in args:
+                    return '\0'.join(str(p.relative_to(self.root))
+                                     for p in self.root.joinpath('vllm').rglob('*')
+                                     if p.is_file() and p != self.py)
+                return 'vllm/__init__.py\0'
             raise AssertionError(args)
         with patch.object(observer, 'run', side_effect=git):
             return observer.source_evidence(self.root, 200)
@@ -64,6 +69,29 @@ class SourceEvidenceTests(unittest.TestCase):
         self.native.write_bytes(b'different-native-bytes')
         os.utime(self.native, (100, 100))
         self.assertNotEqual(first, self.observe()['sourceDigest'])
+
+    def test_ignored_python_build_input_participates_in_digest(self):
+        helper = self.root / 'vllm/generated_helper.py'
+        helper.write_text('value = 1')
+        os.utime(helper, (100, 100))
+        first = self.observe()['sourceDigest']
+        helper.write_text('value = 2')
+        os.utime(helper, (100, 100))
+        self.assertNotEqual(first, self.observe()['sourceDigest'])
+
+    def test_ignored_build_input_modified_after_start_rejected(self):
+        helper = self.root / 'vllm/generated_helper.py'
+        helper.write_text('value = 1')
+        os.utime(helper, (300, 300))
+        with self.assertRaisesRegex(ValueError, 'after serving'):
+            self.observe()
+
+    def test_bytecode_cache_is_not_source_identity(self):
+        first = self.observe()['sourceDigest']
+        cache = self.root / 'vllm/__pycache__/generated.cpython-312.pyc'
+        cache.parent.mkdir()
+        cache.write_bytes(b'runtime cache')
+        self.assertEqual(first, self.observe()['sourceDigest'])
 
     def test_symlink_source_rejected(self):
         self.py.unlink()

@@ -57,6 +57,14 @@ def source_evidence(root, started_at):
         raise ValueError('serving source tree has uncommitted changes')
     tracked = run('git', 'ls-files', '-z', '--', 'vllm', 'csrc', 'setup.py', 'pyproject.toml', cwd=root).split('\0')
     files = {root / name for name in tracked if name}
+    # Build-vendored Python/headers are also executable inputs, even when git
+    # ignores them. Bytecode caches are runtime outputs, not source evidence.
+    ignored = run('git', 'ls-files', '-z', '--others', '--ignored',
+                  '--exclude-standard', '--', 'vllm', cwd=root).split('\0')
+    build_inputs = {root / name for name in ignored if name
+                    and '__pycache__' not in Path(name).parts
+                    and not name.endswith(('.pyc', '.pyo'))}
+    files |= build_inputs
     # Native build outputs are often ignored by git; include their actual bytes.
     native = set(root.joinpath('vllm').rglob('*.so'))
     files |= native
@@ -76,7 +84,8 @@ def source_evidence(root, started_at):
         digest.update(str(file.relative_to(root)).encode() + b'\0' + content_hash)
     return {'repository': remote, 'commit': commit, 'commitUrl': f'{remote}/commit/{commit}',
             'sourceDigest': 'sha256:' + digest.hexdigest(), 'trackedAndNativeFiles': len(files),
-            'nativeArtifacts': len(native), 'dirty': False}
+            'nativeArtifacts': len(native), 'ignoredBuildInputs': len(build_inputs),
+            'dirty': False}
 
 
 def read_bound_routes(routes_file, expected_file, started_at):
