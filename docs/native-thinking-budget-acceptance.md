@@ -2,6 +2,87 @@
 
 ## Current scoped status — 2026-10-21 Asia/Shanghai
 
+### Engine follow-up: overlapping short cycles
+
+Qualified native runtime `f180e0a35dd70fb18d7502d63566ca31b5418269` is retained in
+canonical main `2359c56b6fdae3efcddde17d37df69dcfe8ab645`. A100-only authorized
+cutover:00:35:34–00:37:15CST, PID3559431, NRestarts0, audit
+`ws-thinking-cutover.ScDTXK`. A6000 health stayed200; gateway/Twin/WS PIDs did not
+change. Model, thinkingON,32/4/512 guard configuration, native16384 thinking and
+32768 total allowances are unchanged. No trace replay or legacy runner switch.
+
+The previous guard waited128tokens even for a two-token cycle. An owned original
+stress reproduction contained three such128token bursts. The new contiguous
+span is `max(ngram_size + p*(occurrences-1), p*occurrences)`, still requiring
+observed repeated continuations and exact uninterrupted periodicity. This
+recognizes overlapping short cycles without reverting to loose phrase counting.
+
+| Matched original context | Previous periodic | Short-cycle revision | Result |
+| --- | --- | --- | --- |
+| Explicit stress temp0.6/presence0.5/seed42 |51.438s /7610 reasoning tokens |40.389s /5902 |Natural completion, repetition24char159 ->16|
+| Website-default sampling seed0 |45.102s |44.988s |Final byte-identical,6670 reasoning tokens|
+| Website-default sampling seed1 |53.006s |52.619s |Final byte-identical,7996 reasoning tokens|
+| Website-default sampling seed42 |51.118s |50.926s |Final byte-identical,7733 reasoning tokens|
+
+Each control was cold-cache127input tokens, completed nested status, no incomplete
+details, same total allowance. Stress is explicitly **not website defaults**.
+The ordinary differences are too small for an acceleration claim. The original
+no-guard stress103.380s remains historical context, not a new repeated baseline.
+No claim that every semantic repetition or formula error is eliminated.
+
+The guard also no longer allocates/reduces a full-vocabulary finite mask at each
+step. An initial lazy sequential scan was rejected: sparse candidate rows grew
+from~43us to~307us. The accepted parallel alternative check preserved outputs in
+eight dense/sparse microbench cases, including sole-valid and last-vocab tokens:
+batch1~43us ->14–18us, batch8~70us ->16–25us. These are isolated guard microbench
+measurements, **not whole-engine speedups**. Existing test suites were extended:
+main73passed, minimal runtime54passed; applicable pre-commit/type checks passed.
+
+#### Formula root-cause evidence and remaining limit
+
+The wrong formula exists in the raw final stream before Markdown rendering:
+it lacks a sequence-length factor while defining L as layer count, and defines
+D as hidden size while multiplying by a separate head count. Changing Markdown,
+raising budgets or stopping reasoning does not repair those definitions.
+
+Independent Transformers CPU BF16/eager, same weights, CUDA hidden, four low-
+priority CPU threads: reconstructed original browser trace `4fd7005...` with6532
+context tokens; compare100 final formula/definition positions against native GPU
+teacher-forced logprobs. Top1agreement96%, emitted tokens CPUargmax83%, mean
+absolute logprob difference0.02797057, max0.3116244;375.718seconds. This supports
+a model-semantic formula/definition error on this tested path, rather than a
+renderer/SAGE rewrite or gross conditional GPU mismatch. It is **not** a proof
+that all kernels or free-generation paths are equivalent. Reconstructed streamed
+reasoning boundaries and unavailable official small-file hash verification
+remain limitations. Direct HF config/template downloads failed bounded network
+checks; only previously qualified weight/tokenizer hashes remain qualified.
+
+SAGE remains outside the raw-answer path. No answer rewriting, silent replacement,
+regeneration or blocking validation was added. Formula correctness is still an
+open quality gate; successful delivery and rendering must not be reported as a
+scientific-quality pass.
+
+Fresh public Chrome new-tab/empty-session acceptance,00:41–00:42CST, A100 alias,
+thinkingON/searchOFF, ordinary UI only: original short question completed, then
+the unchanged twelve-point/table/formula follow-up. Owned trace
+`f015e12f858ceb7baf1fd1bec0746634`:38.286s,132input/cached0,6401output/5592
+reasoning,1461final characters, nested completed and no incomplete details.
+Streaming thinking was observed separately; it collapsed after final delivery.
+The actual table/math and f180e0a runtime footer were visible in native browser
+captures. The raw formula error remains visible and unchanged: **delivery and
+rendering pass; scientific formula quality still fails**. No old a9 answer with
+a refreshed footer counted as a new answer. Browser screenshots were captured
+inline; no new screenshot file/download is claimed for this revision.
+
+Rollback after idle/drain: preserve the new95drop-in in the cutover audit,
+restore the previous a9drop-in from
+`ws-thinking-cutover.mi3s4Q/completed-periodic-a9.conf`, daemon-reload, restart
+only the A100 engine, verify health/source. Alternatively the retained90drop-in
+returns to a685 if95is removed. Do not restart A6000/gateway/Twin/WS. This
+follow-up changes no Workstation application code and needs no web redeploy.
+
+### Previous periodic revision (chronological evidence)
+
 A100 runs the opt-in native V2 periodic-suffix guard, source `a9c3f60` retained
 in canonical main `4ef3a81`. Configuration:32-token n-gram,4 observed occurrences,
 512-token window, plus an uninterrupted periodic suffix requirement. No legacy
