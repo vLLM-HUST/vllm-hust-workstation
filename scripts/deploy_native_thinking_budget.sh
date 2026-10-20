@@ -9,6 +9,7 @@ mode=${4:-thinking-budget}
 case "$mode" in
   thinking-budget) dropname=90-native-thinking.conf ;;
   reasoning-repetition) dropname=95-native-reasoning-repetition.conf ;;
+  v2-reasoning-repetition) dropname=95-native-v2-reasoning-repetition.conf ;;
   trace-replay) dropname=95-native-reasoning-diagnostic.conf ;;
   *) printf 'Unsupported native deployment mode\n' >&2; exit 2 ;;
 esac
@@ -50,6 +51,9 @@ if [[ "$mode" == reasoning-repetition ]]; then
 fi
 if [[ "$mode" == trace-replay ]]; then
   printf '%s' ' --enable-trace-replay' >> "$audit/candidate.conf"
+fi
+if [[ "$mode" == v2-reasoning-repetition ]]; then
+  printf '%s' ' --additional-config '\''{"reasoning_repetition_guard":{"ngram_size":32,"max_occurrences":3,"window_size":512}}'\''' >> "$audit/candidate.conf"
 fi
 printf '\n' >> "$audit/candidate.conf"
 install -m 600 "$audit/candidate.conf" "$dropfile"
