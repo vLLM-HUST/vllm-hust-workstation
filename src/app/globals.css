@@ -240,7 +240,7 @@ button.bg-sky-500.text-white:hover { background-color: #075985; }
 [data-theme="light"] :is(.text-violet-100, .text-violet-200, .text-violet-300) { color: #6d28d9; }
 [data-theme="light"] .text-violet-300\/80 { color: #6d28d9; }
 [data-theme="light"] .text-sky-300\/80 { color: #0369a1; }
-[data-theme="light"] :is(.text-amber-100, .text-amber-100\/85, .text-amber-200, .text-amber-300) { color: #a16207; }
+[data-theme="light"] :is(.text-amber-100, .text-amber-100\/85, .text-amber-200, .text-amber-200\/90, .text-amber-300) { color: var(--warning); }
 [data-theme="light"] :is(.text-red-100, .text-red-200, .text-red-300, .text-red-400) { color: #b91c1c; }
 [data-theme="light"] :is(.text-fuchsia-50\/85, .text-fuchsia-100\/70) { color: #a21caf; }
 [data-theme="light"] .shadow-black\/40 { --tw-shadow-color: rgba(15, 23, 42, 0.16); }

@@ -33,5 +33,6 @@ describe("shared visual language", () => {
     expect(css).toContain(".workspace-message-user { background: var(--control)");
     expect(css).toContain(".workspace-copy:focus-visible { opacity: 1");
     expect(css).toContain(".workspace-header-actions { width: 100%; justify-content: flex-end");
+    expect(css).toContain(".text-amber-200\\/90, .text-amber-300) { color: var(--warning)");
   });
 });
