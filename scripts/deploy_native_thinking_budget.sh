@@ -5,6 +5,12 @@ set -euo pipefail
 candidate=${1:?clean canonical release directory required}
 expected_commit=${2:?40-character canonical release commit required}
 expected_pid=${3:?observed original engine PID required}
+mode=${4:-thinking-budget}
+case "$mode" in
+  thinking-budget) dropname=90-native-thinking.conf ;;
+  reasoning-repetition) dropname=95-native-reasoning-repetition.conf ;;
+  *) printf 'Unsupported native deployment mode\n' >&2; exit 2 ;;
+esac
 [[ "$candidate" =~ ^/home/shuhao/vllm-hust-releases/[A-Za-z0-9._-]+$ ]]
 [[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]
 [[ "$expected_pid" =~ ^[0-9]+$ ]]
@@ -15,7 +21,7 @@ unit=vllm-hust-qwen35-engine.service
 origin=$(git -C "$candidate" config --get remote.origin.url)
 [[ "$origin" == https://github.com/vLLM-HUST/vllm-hust.git ]]
 dropdir=/home/shuhao/.config/systemd/user/vllm-hust-qwen35-engine.service.d
-dropfile="$dropdir/90-native-thinking.conf"
+dropfile="$dropdir/$dropname"
 [[ ! -e "$dropfile" ]] # Do not overwrite an existing deployment.
 audit=$(mktemp -d /home/shuhao/ws-thinking-cutover.XXXXXX)
 chmod 700 "$audit"
@@ -37,7 +43,11 @@ done
 mkdir -p "$dropdir"
 printf '[Service]\nRestart=no\nWorkingDirectory=%s\nEnvironment=PYTHONPATH=%s\nExecStart=\n' \
   "$candidate" "$candidate" > "$audit/candidate.conf"
-printf '%s\n' 'ExecStart=/home/shuhao/miniforge3/envs/vllm-hust-canonical-overlay-qwen38/bin/python -m vllm.entrypoints.cli.main serve /home/shuhao/models/Qwen--Qwen3.5-35B-A3B --host 127.0.0.1 --port 18000 --served-model-name Qwen/Qwen3.5-35B-A3B --tensor-parallel-size 2 --gpu-memory-utilization 0.88 --max-model-len 131072 --max-num-seqs 8 --dtype auto --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder --override-generation-config '\''{"thinking_token_budget":16384}'\''' >> "$audit/candidate.conf"
+printf '%s' 'ExecStart=/home/shuhao/miniforge3/envs/vllm-hust-canonical-overlay-qwen38/bin/python -m vllm.entrypoints.cli.main serve /home/shuhao/models/Qwen--Qwen3.5-35B-A3B --host 127.0.0.1 --port 18000 --served-model-name Qwen/Qwen3.5-35B-A3B --tensor-parallel-size 2 --gpu-memory-utilization 0.88 --max-model-len 131072 --max-num-seqs 8 --dtype auto --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder --override-generation-config '\''{"thinking_token_budget":16384}'\''' >> "$audit/candidate.conf"
+if [[ "$mode" == reasoning-repetition ]]; then
+  printf '%s' ' --logits-processors vllm.v1.sample.logits_processor.reasoning_repetition:ReasoningRepetitionLogitsProcessor --additional-config '\''{"reasoning_repetition_guard":{"ngram_size":32,"max_occurrences":3,"window_size":512}}'\''' >> "$audit/candidate.conf"
+fi
+printf '\n' >> "$audit/candidate.conf"
 install -m 600 "$audit/candidate.conf" "$dropfile"
 activated=0
 watch_pid=

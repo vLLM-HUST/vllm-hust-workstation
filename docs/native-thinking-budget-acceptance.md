@@ -90,6 +90,52 @@ Its1584ms UI number is not reported as full-response duration.
 
 ## Quality limits and rollback
 
+### Native repetition-path candidate, not yet production-qualified
+
+Further read-only checks found matching config, generation config, tokenizer
+config and weight-index hashes on A100/A6000. Full weight blobs were not rehashed.
+A100 is BF16/no quantization/no MTP, Triton/FLA GDN prefill, CUDA decode, and
+FlashInfer sampling disabled. Its qwen3 parser matches the official recipe.
+Native packed-recurrent kernel tests8 passed. No observed kernel defect is claimed
+from these finite checks. Identical seed42 Chat/Responses sampling emitted the
+same5720 output/4824 reasoning tokens. A6000's matched Chat replay still produced
+technical/formula errors (7205 output/6345 reasoning tokens,126.025s,stop/DONE).
+Temperature0.6 did not reliably resolve repetition/formula quality either.
+
+Tokenizing only the exact synthetic failed trace showed6,675 occurrences of one
+32-token n-gram within16,383 reasoning tokens. A new **opt-in native** processor
+suppresses repeatedly traversed n-gram continuations inside reasoning, not the
+final body. It never forces a reasoning-end token or changes any token budget.
+It derives boundaries from the configured tokenizer, preserves stop/boundary
+tokens, expires old history, and keeps a valid distribution if other constraints
+leave no alternative. This is lexical de-looping, not a scientific-fact verifier;
+legitimate repetition may trigger it and paraphrased loops may escape it.
+
+Core main implementation `9ac8c50`, qualified minimal backport `2d7e9d6`, main
+ancestry merge `5985c50`; all pushed. Main sampling/thinking suite65 passed;
+focused main/runtime guard tests14 passed each; applicable pre-commit hooks
+including mypy passed. Exact failure-path offline replay first suppresses an
+original continuation at token3,040, before the16K guard; replay cost0.0885s for
+16,383 tokens and final-body logits unchanged. This counterfactual replay is not
+live model-quality acceptance.
+
+Candidate `/home/shuhao/vllm-hust-releases/reasoning-guard-2d7e9d6` contains17
+unchanged native artifacts and all1,987 ignored build inputs. Worker import,
+actual tokenizer reasoning markers and the native custom-processor loader passed
+without loading another model instance. An incremental bundle initially failed
+on incomplete shallow-history dependencies; a full bundle fixed staging. The
+failed directory was retained in the private QA area; production was untouched.
+
+`scripts/deploy_native_thinking_budget.sh` accepts an optional fourth argument
+`reasoning-repetition`. That mode installs a separate95 drop-in, preserving the
+active90 drop-in for rollback. Its original default mode is unchanged. It retains
+idle guards, no automatic candidate retries, A6000 health checks and unchanged
+other-service PID assertions. Candidate settings are32-token n-grams, at most3
+occurrences in512 tokens; existing sampling defaults, thinking16K/total32K,
+model,TP2 and131K context are unchanged. Further inference maintenance requires
+fresh human approval. Formula correctness and original-question browser
+acceptance remain pending; no production deployment of this candidate is claimed.
+
 Delivery and rendering passed this exact test; scientific correctness did not
 fully pass. The browser answer's KV memory formula omits sequence length and
 defines head dimension ambiguously. This is preserved as a model-quality failure,

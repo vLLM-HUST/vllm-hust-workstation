@@ -12,6 +12,20 @@ observer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(observer)
 
 
+class NativeDeploymentModeTests(unittest.TestCase):
+    script = Path(__file__).parents[1] / 'scripts/deploy_native_thinking_budget.sh'
+
+    def test_native_deployment_script_parses(self):
+        subprocess.run(['bash', '-n', str(self.script)], check=True)
+
+    def test_unknown_mode_rejected_before_any_service_access(self):
+        result = subprocess.run(
+            ['bash', str(self.script), '/does-not-exist', 'a' * 40, '1', 'unknown'],
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stderr, 'Unsupported native deployment mode\n')
+
+
 class SourceEvidenceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
