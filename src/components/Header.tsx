@@ -47,7 +47,7 @@ export default function Header({
         ) : (
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ background: accentColor }}
+            style={{ background: accentColor, color: "#ffffff" }}
           >
             AI
           </div>

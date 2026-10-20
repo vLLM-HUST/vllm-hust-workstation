@@ -189,13 +189,13 @@ export default function ChatPanel({
         <div className="mx-auto max-w-4xl space-y-5">
         {messages.length === 0 && (
           <div className="flex min-h-[calc(100vh-15rem)] items-center justify-center py-6 sm:min-h-[32rem]">
-            <section className="app-card w-full max-w-2xl rounded-3xl p-5 text-left sm:p-8">
+            <section className="app-card workspace-welcome w-full max-w-2xl rounded-3xl p-5 text-left sm:p-8">
               <div className="flex items-start gap-4">
             <div
                   className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14"
               style={{ background: `${accentColor}20` }}
             >
-                  <Bot size={26} style={{ color: accentColor }} />
+                  <Bot size={26} style={{ color: "var(--focus)" }} />
             </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -271,7 +271,7 @@ export default function ChatPanel({
 
       {/* Input */}
       <div className="app-divider border-t px-3 pb-3 pt-2 sm:px-6 sm:pb-5">
-        <div className="app-control mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:gap-3 sm:px-4">
+        <div className="app-control workspace-composer mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:gap-3 sm:px-4">
           <button disabled aria-label="附件功能暂不可用" title="附件功能暂不可用" className="hidden sm:block text-white/30 transition-colors flex-shrink-0 mb-0.5">
             <Paperclip size={18} />
           </button>

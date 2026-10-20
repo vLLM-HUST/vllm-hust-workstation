@@ -18,7 +18,7 @@ export function getAppConfig(): AppConfig {
   return {
     brandName: process.env.APP_BRAND_NAME || "vLLM-HUST 工作站",
     brandLogo: process.env.APP_BRAND_LOGO || null,
-    accentColor: process.env.APP_ACCENT_COLOR || "#6366f1",
+    accentColor: process.env.APP_ACCENT_COLOR || "#0f766e",
     baseUrl: process.env.VLLM_HUST_BASE_URL || "http://localhost:8080",
     searchEnabled: process.env.SEARCH_ENABLED !== "false",
   };

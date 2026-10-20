@@ -30,15 +30,15 @@
 
 :root,
 [data-theme="dark"] {
-  --app-bg: #070b18;
-  --app-bg-soft: #0b1020;
-  --surface: #111827;
-  --surface-raised: #172033;
-  --surface-muted: #0d1425;
-  --control: #182235;
-  --control-hover: #202c42;
+  --app-bg: #141819;
+  --app-bg-soft: #181d1e;
+  --surface: #1b2123;
+  --surface-raised: #222a2c;
+  --surface-muted: #171d1f;
+  --control: #222a2c;
+  --control-hover: #2c3638;
   --control-disabled: #111827;
-  --border: #2b3850;
+  --border: #353f42;
   --border-strong: #64748b;
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -51,7 +51,7 @@
   --warning: #fcd34d;
   --danger: #fca5a5;
   --info: #7dd3fc;
-  --focus: #a5b4fc;
+  --focus: #5eead4;
   --chart-purple: #a78bfa;
   --chart-blue: #38bdf8;
   --chart-green: #34d399;
@@ -61,8 +61,8 @@
 }
 
 [data-theme="light"] {
-  --app-bg: #edf2f8;
-  --app-bg-soft: #f5f8fc;
+  --app-bg: #f5f7f6;
+  --app-bg-soft: #fafbf9;
   --surface: #ffffff;
   --surface-raised: #f8fafc;
   --surface-muted: #eef3f8;
@@ -82,7 +82,7 @@
   --warning: #a16207;
   --danger: #b91c1c;
   --info: #0369a1;
-  --focus: #4338ca;
+  --focus: #0f766e;
   --chart-purple: #6d28d9;
   --chart-blue: #0369a1;
   --chart-green: #047857;
@@ -114,13 +114,11 @@ html {
 }
 
 .app-shell {
-  background:
-    radial-gradient(circle at 18% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30rem),
-    linear-gradient(180deg, var(--app-bg-soft), var(--app-bg));
+  background: var(--app-bg);
 }
 
 .app-header {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 11%, var(--surface)) 0%, var(--surface) 72%);
+  background: var(--surface);
   border-color: var(--border);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 }
@@ -146,6 +144,29 @@ html {
   background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
 }
+
+/* A quiet reading surface, while monitoring cards retain their dense layout. */
+.workspace-welcome {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.workspace-composer {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 8px 30px -22px var(--shadow);
+}
+.workspace-composer:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 12%, transparent);
+}
+.workspace-composer textarea { color: var(--text-primary); }
+.workspace-composer textarea::placeholder { color: var(--text-muted); opacity: 1; }
+.app-header .app-control:not(select) {
+  background: transparent;
+  border-color: transparent;
+}
+.app-header .app-control:not(select):hover { background: var(--control-hover); }
 
 .app-divider { border-color: var(--border); }
 .runtime-details > div { background: var(--surface-raised); }
