@@ -1,5 +1,58 @@
 # A100 native reasoning transition: release and acceptance
 
+## Current scoped status — 2026-10-21 Asia/Shanghai
+
+A100 runs the opt-in native V2 periodic-suffix guard, source `a9c3f60` retained
+in canonical main `4ef3a81`. Configuration:32-token n-gram,4 observed occurrences,
+512-token window, plus an uninterrupted periodic suffix requirement. No legacy
+runner switch, trace replay, model replacement, thinking disablement, total
+allowance change, answer rewrite or forced transition was introduced by this
+guard. Thinking16384/total32768 remain the previous settings; severe-loop controls
+must end before that boundary to qualify. A6000 is unchanged.
+
+Matched original synthetic context, cold cache salts, same V2 runner and sampling:
+
+| Control | OFF seconds | Periodic ON seconds | Result |
+| --- | --- | --- | --- |
+| Known-loop stress, temp0.6/presence0.5/seed42 |103.380|51.438|Reasoning16383 ->7610; repeated24-char fragment6322 ->159; natural completion before boundary|
+| Default sampling, seed0 |45.080|45.102|Final body and token counts unchanged|
+| Default sampling, seed1 |52.285|53.006|Final body and token counts unchanged|
+| Default sampling, seed42 |50.601|51.118|Final body and token counts unchanged|
+
+The three default final bodies were compared byte-for-byte, not just judged by
+HTTP status. This is finite loop/non-regression qualification, not a universal
+semantic-loop or fact-correctness guarantee. Earlier frequency-only policies are
+rejected below, including their negative normal-case results.
+
+Fresh public Chrome session, first original question at23:59Oct20, original long
+follow-up00:00Oct21, A100/thinkingON/searchOFF, no modified requests or simulations:
+owned trace `4fd700530618ef6af21985e6f5e2dfb4`,38.532s,input132/cached0,
+output6401/reasoning5592,body1461characters,repeat13, nested completed and no
+incomplete details. Twelve numbered points, table, rendered math and separately
+collapsed reasoning were observed. Screenshot
+`ws-native-periodic-original-20261021.png` saved through Chrome and reopened.
+In-app browser control still timed out; it was not treated as a website defect.
+Native Chrome same-window new-tab control completed acceptance after cross-window
+focus/AX issues. No old answer with an updated source footer counted as new work.
+
+**Still failing:** the model's raw formula omits sequence length and confuses head
+count with hidden dimension. It is preserved, not corrected by the renderer or
+silently replaced by SAGE. SAGE side-channel verification has not been integrated
+into Workstation in this engine-first change; no source/formula audit success is
+claimed. This release scope is loop handling and honest raw delivery, not complete
+scientific-answer quality. Main focused regression65passed, runtime46passed;
+applicable pre-commit/type checks passed. The Workstation web app was not rebuilt
+or restarted for these engine-only changes.
+
+For rollback after an idle/drain check, recoverably move only
+`95-native-v2-reasoning-repetition.conf` from the user engine drop-in directory
+into a private audit directory, daemon-reload and restart only the A100 engine.
+The retained90 drop-in returns to qualified sourcea68500d. Old experimental95
+drop-ins were already archived; do not restore a rejected frequency-only policy.
+Do not reset source, expose environment files or touch A6000/gateway/Twin/WS.
+
+The remaining sections are chronological evidence, not the current source/config.
+
 ## Root cause and implementation
 
 The exact original two-turn Workstation request exhausted32768 output tokens in
@@ -412,3 +465,53 @@ were not independently qualified by that check.
 Increasing global presence penalty or removing it only from the final stage did
 not reliably fix formulas. No tested sampling combination was promoted as a fact
 repair. The V2 guard does not validate semantics or guarantee correct formulas.
+
+### Three-occurrence V2 control results (not the final threshold)
+
+Known-loop stress ON finished40.093s versus OFF103.380s, reasoning5737 versus
+16383tokens, largest repeated24-character fragment58 versus6322 occurrences.
+It ended before the unchanged reasoning boundary. Default-parameter controls:
+
+| Seed | OFF seconds | ON seconds | Final body comparison |
+| --- | --- | --- | --- |
+|0|45.080|58.281|Changed; formula still fails|
+|1|52.285|52.935|Byte-identical|
+|42|50.601|51.163|Byte-identical|
+
+This is not a universal latency gain: seed0 generated more reasoning. A more
+conservative four-occurrence threshold is being qualified separately, preserving
+the same binary, runner, model, thinking, sampling defaults and budgets.
+
+Fresh public Chrome original-question chain at23:18/23:19CST used coref7cea8c,
+A100 alias, thinkingON/searchOFF and no request modification. Matching owned
+trace `5dd2042c40eb152cc0fbe55690d1c79d` completed in38.565s with132 input tokens,
+cached0,6401 output/5592reasoning,1461 final characters and13 repeated fragments.
+Table and math rendered correctly, but the raw formula still omits sequence
+length and confuses head count with hidden dimension. This is a quality failure,
+not a rendering failure. No SAGE replacement or renderer correction was applied.
+Native screenshot pixels showed the actual result; a save attempt lost its
+target window, so no saved-file evidence is claimed for that attempt.
+
+### Reject frequency-only policy; qualify periodicity instead
+
+Four-occurrence frequency-only ON stress improved to36.930s/reasoning5022/repeat13,
+but defaultseed0 worsened to80.922s/reasoning12480. Seeds1/42 remained unchanged
+and took53.066/51.383s. A higher loose-count threshold is therefore not a general
+repair. Neither frequency-only threshold is accepted as the final global policy.
+
+The periodic-suffix revision requires an uninterrupted repeating suffix, not just
+shared phrasing in separate paragraphs. A deterministic negative fixture now
+requires identical logits for repeated phrases separated by different tokens.
+Both thresholds3/4, actual native/greedy sampler integration, protected markers,
+single-valid grammar rows, prompt exclusion and final logits are covered.
+Main `4ef3a81`, exact minimal runtime `a9c3f60` in main ancestry; expanded main65
+and runtime46 tests passed, applicable pre-commit/type checks passed. Live
+periodic-suffix qualification remains pending at this checkpoint.
+
+The four-occurrence frequency-only public-browser repeat at23:34/23:35 completed
+in39.508s (trace `adc686d1e1cd418d8040254a1cc17229`), same raw1461-character body,
+6401 output/5592reasoning,cached0. Native Chrome screenshot
+`ws-native-v2-four-original-20261020.png` saved and reopened to verify real table,
+math, thinking-enabled control and f7cea8c footer in a narrow docked viewport.
+The raw formula error remains visible. This is not a periodic-revision screenshot
+or a scientific-quality pass, and no SAGE rewriting was used.
