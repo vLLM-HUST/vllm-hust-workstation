@@ -111,12 +111,85 @@ establishes stable37–39-second latency. Reasoning efficiency remains unresolve
 
 Independent390×844 streaming inspection observed user-controlled upward history
 scrolling and retained latest/unread indicators until completion without a forced
-jump. Keyboard activation removed the latest control in accessibility state, but
-the visible landing position was not confirmed because Chrome control/rendering
-disagreed. Do not mark that visual landing check, remaining light/dark/recovery
-checks, or all experience acceptance complete. No further engine maintenance is
-authorized by the reviewer message; further investigation must remain read-only
-unless the human approves a new maintenance window.
+jump. After the human foregrounded Chrome, the reviewer confirmed the visible
+landing, light/dark readability, keyboard table scrolling, actual copy into an
+unsent draft, four-message JSON download and exact refresh recovery. This clears
+those previously pending checks, not the remaining layout defects below or all
+experience acceptance. No further engine maintenance is authorized by the
+reviewer message.
+
+### Follow-up: native sampling defaults and matched controls
+
+The qualified runtime has two additional parameter propagation defects:
+`ModelConfig.get_diff_sampling_param()` filters out model-level presence/frequency
+penalties, and Chat's request defaults/forwarding override model defaults with0.
+Latest main already fixes this code. The qualified-runtime backport `9544b29`
+repairs both without importing unrelated engine changes; main `71ae858` adds
+Chat/Responses parity and unset/null/explicit0/explicit-value precedence coverage.
+Main merge `a25348c` retains the backport ancestry. Runtime focused tests:20 passed;
+latest-main suite:23 passed, two unchanged pre-existing custom-tool failures.
+Applicable pre-commit hooks passed. These commits are **not yet deployed**.
+
+Official Qwen3.5 recommendations distinguish general thinking (presence1.5) from
+precise coding (presence0). The shared engine cannot blindly adopt the general
+setting for every Codex request. No production sampling change or restart was
+performed in this follow-up.
+
+Direct native Responses controls replayed the exact synthetic two-turn context,
+same weights, stream/thinking enabled,32768 total and unchanged native16384 guard.
+Only seed and explicit presence penalty varied; each used a unique cold cache
+salt, with cached_tokens0. The original question was not replaced.
+
+| Seed | Presence | Seconds | Reasoning tokens | Repeated `1+1` occurrences |
+| --- | --- | --- | --- | --- |
+|0|0|44.921|6670|4|
+|0|1.5|33.148|4642|0|
+|1|0|52.663|7996|9|
+|1|1.5|26.719|3520|0|
+|42|0|51.063|7733|1|
+|42|1.5|34.230|4824|0|
+
+All six emitted final bodies and nested completed/no-incomplete status. None hit
+the reasoning guard: this is evidence for a sampling contribution, **not proof
+that the independently observed16383-token pathological loop is eliminated**.
+Reasoning repetition metrics were retained, not raw hidden reasoning text.
+Formula/technical errors persist in these below-cap answers, including omitted
+KV factors/dtype and a dimensionally inconsistent latency expression. Those are
+generated source-text errors, not broken KaTeX or a reason to silently rewrite
+the answer in the renderer. Scientific quality remains an open release gate.
+A separate explicit GQA-formula diagnostic at the same recommended sampling
+returned the correct theoretical factorization and256MiB numerical result in
+33.172s (3708 reasoning/5436 output tokens, nested completed). Its ancillary
+claims about allocation/quantization still need qualification. This diagnostic
+does not replace or clear the failed original long-question acceptance.
+
+### Browser defects repaired in main, pending deployment/retest
+
+Workstation `362ccc3` fixes full release/log-path wrapping and minimum widths in
+the390px runtime drawer; it does not mask the problem with horizontal clipping.
+It also labels the footer duration as first output, explicitly including thought
+increments, rather than implying total response latency. Focused tests10 passed;
+Linux full suite280 passed, Python host-observer tests16 passed, lint/type checks,
+production build and standalone check passed. The isolated3006 preview passed
+positive/negative source-observer qualification, without production mutation.
+Production Workstation remains the prior immutable build until approved cutover.
+
+Twin frontend `5f683ad` gives the unified advanced workflow its computed drawing
+width, enabling real local horizontal scrolling instead of shrinking40 nodes into
+260px. Its15 JavaScript test scripts passed. Only `app.js` and `styles.css` were
+hash-guarded and atomically replaced on2026-10-20 19:38CST, preserving the existing
+backend112e924, other frontend overlays and service PID1058851. The public app.js
+hash matches the deployed main artifact. Independent Chrome retest confirmed the
+390×844 graph legibility, actual keyboard horizontal scrolling and no page-wide
+overflow on the reviewer's own old session. Screenshot:
+`twin-independent-mobile-graph-fixed-20261020.png`.
+
+The reviewer's feedback GET404 is also the API's documented no-current-feedback
+result, intentionally indistinguishable from an unavailable/foreign exchange;
+restoration catches404. `/local-code/config`403 is expected on the faculty/public
+deployment. Neither observation alone proves lost ownership, and no legacy
+records were claimed or access checks weakened. Exact-record diagnosis would
+require the reviewer's own exchange identifiers.
 
 Retain the original clean source and engine environment. To roll back, first
 obtain maintenance authority, drain A100 requests, recoverably move
