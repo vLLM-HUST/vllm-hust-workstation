@@ -168,6 +168,19 @@ html {
 }
 .app-header .app-control:not(select):hover { background: var(--control-hover); }
 
+.workspace-message { color: var(--text-primary); line-height: 1.78; }
+.workspace-message-user { background: var(--control); }
+.workspace-message-assistant { background: var(--surface); border: 1px solid var(--border); }
+.workspace-copy { color: var(--text-muted); padding: 4px; border-radius: 4px; }
+.workspace-copy:hover { color: var(--focus); background: var(--control-hover); }
+@media (hover: hover) {
+  .workspace-copy { opacity: 0; }
+  .group:hover .workspace-copy, .workspace-copy:focus-visible { opacity: 1; }
+}
+@media (max-width: 639px) {
+  .workspace-header-actions { width: 100%; justify-content: flex-end; }
+}
+
 .app-divider { border-color: var(--border); }
 .runtime-details > div { background: var(--surface-raised); }
 

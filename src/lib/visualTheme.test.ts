@@ -29,5 +29,9 @@ describe("shared visual language", () => {
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(css).toContain(".workspace-composer textarea::placeholder { color: var(--text-muted)");
     expect(css).toContain(".workspace-welcome");
+    expect(css).toContain(".workspace-message-assistant { background: var(--surface); border: 1px solid var(--border)");
+    expect(css).toContain(".workspace-message-user { background: var(--control)");
+    expect(css).toContain(".workspace-copy:focus-visible { opacity: 1");
+    expect(css).toContain(".workspace-header-actions { width: 100%; justify-content: flex-end");
   });
 });

@@ -54,7 +54,8 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className="opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/70 ml-2"
+      aria-label={copied ? "已复制回答" : "复制回答 Markdown"}
+      className="workspace-copy transition-opacity ml-2"
     >
       {copied ? <CheckCheck size={13} /> : <Copy size={13} />}
     </button>
@@ -86,10 +87,10 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
 
       <div
         className={clsx(
-          "group min-w-0 max-w-[90%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+          "workspace-message group min-w-0 max-w-[90%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
           isUser
-            ? "bg-white/10 text-white/90 rounded-tr-sm"
-            : "bg-white/5 text-white/85 rounded-tl-sm border border-white/8"
+            ? "workspace-message-user rounded-tr-sm"
+            : "workspace-message-assistant rounded-tl-sm"
         )}
       >
         {!isUser && msg.reasoning && (

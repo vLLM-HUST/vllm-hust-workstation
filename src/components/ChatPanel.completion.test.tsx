@@ -13,6 +13,13 @@ function render(message: Partial<Message>) {
 }
 
 describe("final answer presentation",()=>{
+  it("uses semantic message surfaces and a named keyboard-accessible copy action",()=>{
+    const html=render({content:"测试回答"});
+    expect(html).toContain('workspace-message-assistant');
+    expect(html).toContain('aria-label="复制回答 Markdown"');
+    expect(html).toContain('workspace-copy');
+    expect(render({role:"user",content:"测试问题"})).toContain('workspace-message-user');
+  });
   it("renders historical assistant Markdown without re-asking and leaves user text literal",()=>{
     const html=render({timestamp:1,content:'## 旧回答\n\n| 场景 | GiB |\n| --- | --- |\n| 基准 | 4 |\n\n$2^{30}$'});
     expect(html).toContain('<table>'); expect(html).toContain('class="katex"'); expect(html).toContain('<h2>旧回答');
