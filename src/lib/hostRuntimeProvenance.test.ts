@@ -8,6 +8,7 @@ const sample = {
   schema: "vllm-hust.workstation-host-observation/v1", service, pid: 1234,
   startTicks: "12345", bootId: "12345678-1234-1234-1234-123456789abc",
   model: "Qwen/Qwen3.5-35B-A3B", coveredModels: ["Qwen/Qwen3.5-35B-A3B-A100"],
+  routerService: "router.service", routerPid: 567, routeDigest: `sha256:${"c".repeat(64)}`,
   startedAt: "2026-10-13T08:00:00Z", observedAt: new Date(now).toISOString(),
   version: "0.1.dev1+g1234567.cu128", repository: "https://github.com/vLLM-HUST/vllm-hust",
   commit: "a".repeat(40), commitUrl: `https://github.com/vLLM-HUST/vllm-hust/commit/${"a".repeat(40)}`,
@@ -30,6 +31,7 @@ describe("live host source provenance boundary", () => {
     { dirty: true }, { coveredModels: [] }, { coveredModels: [3] }, { nativeArtifacts: 0 },
     { trackedAndNativeFiles: 0 }, { sourceDigest: "latest" }, { commitUrl: "https://example.org" },
     { repository: "legacy-source-rejected" }, { version: "" }, { schema: "host-source-receipt/v3" },
+    { routerService: "other;sh" }, { routerPid: 0 }, { routeDigest: "mutable" },
   ])("rejects invalid, stale, dirty or unrelated observation: %j", changes => {
     expect(parseHostObservation(JSON.stringify({ ...sample, ...changes }), service, now).available).toBe(false);
   });

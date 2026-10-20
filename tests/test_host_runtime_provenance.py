@@ -73,7 +73,7 @@ class SourceEvidenceTests(unittest.TestCase):
     def test_invalid_service_rejected_before_system_calls(self):
         with patch.object(observer, 'identity', side_effect=AssertionError('must not inspect')):
             with self.assertRaisesRegex(ValueError, 'invalid configured service'):
-                observer.observe('unit;echo secret', '/unused')
+                observer.observe('unit;echo secret', '/unused', 'router.service')
 
 
 if __name__ == '__main__': unittest.main()

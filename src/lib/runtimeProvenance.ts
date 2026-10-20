@@ -58,6 +58,9 @@ export interface HostRuntimeEvidence {
   bootId: string;
   model: string;
   coveredModels: string[];
+  routerService: string;
+  routerPid: number;
+  routeDigest: string;
   startedAt: string;
   observedAt: string;
   version: string;
@@ -77,6 +80,8 @@ export function parseHostObservation(raw: string, expectedService: string, now =
     if (host.schema !== "vllm-hust.workstation-host-observation/v1" || host.service !== expectedService ||
       !/^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(host.service) ||
       !Number.isSafeInteger(host.pid) || host.pid <= 1 || !/^\d+$/.test(host.startTicks) ||
+      !/^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(host.routerService) ||
+      !Number.isSafeInteger(host.routerPid) || host.routerPid <= 1 || !DIGEST_PATTERN.test(host.routeDigest) ||
       !/^[0-9a-f-]{36}$/.test(host.bootId) || !Number.isFinite(age) || age < -5 || age > 30 ||
       !Number.isFinite(Date.parse(host.startedAt)) || Date.parse(host.startedAt) > Date.parse(host.observedAt) ||
       !host.model || typeof host.version !== "string" || !host.version || host.dirty !== false ||
@@ -275,13 +280,14 @@ export async function getRuntimeProvenance(): Promise<RuntimeProvenance> {
   if (service) {
     // Explicit host mode never falls back to an unrelated/stale Docker receipt.
     const routes = process.env.WORKSTATION_HOST_RUNTIME_ROUTES_FILE?.trim();
-    if (!routes || !/^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(service)) return unavailable("宿主运行来源配置不完整");
-    const key = JSON.stringify([service, path.resolve(routes)]);
+    const routerService = process.env.WORKSTATION_HOST_RUNTIME_ROUTER_SERVICE?.trim();
+    if (!routes || !routerService || ![service, routerService].every(name => /^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(name))) return unavailable("宿主运行来源配置不完整");
+    const key = JSON.stringify([service, routerService, path.resolve(routes)]);
     if (hostObservationCache?.key === key && hostObservationCache.expires > Date.now()) return hostObservationCache.value;
     const value = (async () => {
       try {
         const { stdout } = await runFile("python3", [path.join(process.cwd(), "scripts/inspect_host_runtime.py"),
-          "--service", service, "--routes-file", path.resolve(routes)], { timeout: 12000, maxBuffer: 16384 });
+          "--service", service, "--routes-file", path.resolve(routes), "--router-service", routerService], { timeout: 12000, maxBuffer: 16384 });
         return parseHostObservation(stdout, service);
       } catch { return unavailable("宿主服务、源码、制品或路由实时核验失败；没有使用旧凭据兜底"); }
     })();

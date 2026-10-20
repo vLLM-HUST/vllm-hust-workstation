@@ -17,6 +17,7 @@ export default function HostRuntimeCard({ provenance, selectedModel }: { provena
     <summary className="app-text-muted cursor-pointer">核验范围与证据详情</summary>
     <dl className="app-text-secondary mt-3 space-y-2 break-all">
       <div><dt className="app-text-muted">服务 / PID</dt><dd>{host.service} / {host.pid}</dd></div>
+      <div><dt className="app-text-muted">网关 / PID / 启动配置摘要</dt><dd>{host.routerService} / {host.routerPid}<br />{host.routeDigest}</dd></div>
       <div><dt className="app-text-muted">安装包版本</dt><dd>{host.version}</dd></div>
       <div><dt className="app-text-muted">源码与原生制品摘要</dt><dd>{host.sourceDigest}</dd></div>
       <div><dt className="app-text-muted">核对文件</dt><dd>{host.trackedAndNativeFiles}（原生制品 {host.nativeArtifacts}）· 工作树干净</dd></div>

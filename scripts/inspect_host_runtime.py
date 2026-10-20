@@ -79,8 +79,8 @@ def source_evidence(root, started_at):
             'nativeArtifacts': len(native), 'dirty': False}
 
 
-def observe(service, routes_file):
-    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.@-]*\.service', service):
+def observe(service, routes_file, router_service):
+    if not all(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.@-]*\.service', name) for name in (service, router_service)):
         raise ValueError('invalid configured service')
     before = identity(service)
     proc = Path(f'/proc/{before["pid"]}')
@@ -109,19 +109,31 @@ def observe(service, routes_file):
         models = json.load(response)
     if model not in [item['id'] for item in models['data']]:
         raise ValueError('live model catalog differs from serving arguments')
-    routes = json.loads(Path(routes_file).read_text())
+    router = identity(router_service)
+    router_env = dict(p.decode().split('=', 1) for p in Path(f'/proc/{router["pid"]}/environ').read_bytes().split(b'\0') if b'=' in p)
+    routes_path = Path(routes_file).resolve(strict=True)
+    if Path(router_env.get('SAGE_ROUTER_ROUTES_CONFIG', '/nonexistent')).resolve() != routes_path:
+        raise ValueError('route file differs from running gateway configuration')
+    router_started_at = boot + int(router['startTicks']) / os.sysconf('SC_CLK_TCK')
+    route_stat = routes_path.stat()
+    if route_stat.st_mtime > router_started_at:
+        raise ValueError('route configuration changed after gateway started')
+    route_bytes = routes_path.read_bytes()
+    routes = json.loads(route_bytes)
     covered = sorted({alias for route in routes['models']
                       if route['backend_url'].rstrip('/') == f'http://127.0.0.1:{port}' and route['backend_model'] == model
                       for alias in [route['id'], *route.get('aliases', [])]})
     if not covered:
         raise ValueError('no gateway route bound to the observed model listener')
     after = identity(service)
-    if before != after:
+    if before != after or router != identity(router_service) or route_stat != routes_path.stat():
         raise ValueError('serving process changed during observation')
     # Only explicitly public evidence; no env, argv, model paths or credentials.
     return {'schema': SCHEMA, 'service': service, 'pid': before['pid'],
             'startTicks': before['startTicks'], 'bootId': before['bootId'],
             'model': model, 'coveredModels': covered,
+            'routerService': router_service, 'routerPid': router['pid'],
+            'routeDigest': 'sha256:' + hashlib.sha256(route_bytes).hexdigest(),
             'startedAt': datetime.datetime.fromtimestamp(started_at, datetime.timezone.utc).isoformat(),
             'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'version': metadata['version'], **source}
@@ -131,9 +143,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--service', required=True)
     parser.add_argument('--routes-file', required=True)
+    parser.add_argument('--router-service', required=True)
     args = parser.parse_args()
     try:
-        print(json.dumps(observe(args.service, args.routes_file)))
+        print(json.dumps(observe(args.service, args.routes_file, args.router_service)))
     except Exception as error:
         # Exception text can contain private paths; report only known validation
         # errors, never raw subprocess argv, environment or response bodies.

@@ -30,6 +30,7 @@ describe("compact runtime card", () => {
       schema: "vllm-hust.workstation-host-observation/v1", service: "qwen.service", pid: 123,
       startTicks: "12345", bootId: "12345678-1234-1234-1234-123456789abc",
       model: "backend", coveredModels: ["a100-model"], startedAt: new Date(now - 10000).toISOString(),
+      routerService: "router.service", routerPid: 456, routeDigest: `sha256:${"c".repeat(64)}`,
       observedAt: new Date(now).toISOString(), version: "actual-package-version", dirty: false,
       repository: "https://github.com/vLLM-HUST/vllm-hust", commit: sha,
       commitUrl: `https://github.com/vLLM-HUST/vllm-hust/commit/${sha}`,
