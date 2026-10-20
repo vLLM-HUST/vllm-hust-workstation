@@ -270,6 +270,64 @@ deployment. Neither observation alone proves lost ownership, and no legacy
 records were claimed or access checks weakened. Exact-record diagnosis would
 require the reviewer's own exchange identifiers.
 
+### Native repetition-guard maintenance result (2026-10-20)
+
+The human explicitly authorized continuing same-scope, reversible A100
+maintenance without repeated approval requests. This does not authorize other
+hosts, model changes or unrelated workloads. Candidate runtime `2d7e9d6` (feature
+reachable from core main `5985c50`) was staged with the byte-identical existing
+native build inputs. The committed deployment helper's `reasoning-repetition`
+mode enabled only the experimental reasoning-only 32-token continuation guard
+(three occurrences within512 tokens). Model, thinking ON,32768 total allowance,
+16384 native thinking budget and sampling defaults remained unchanged.
+
+Candidate became ready at21:17:06CST, PID2647063, NRestarts0. Router1359620,
+Twin1058851 and Workstation2436575 were unchanged; every A6000 health sample in
+the cutover watch returned200. Private audit: `ws-thinking-cutover.AuMbmx`.
+
+Exact original synthetic-context, cold-cache Responses controls completed:
+
+| Seed | Presence | Reasoning tokens | Output tokens | Terminal |
+| --- | --- | --- | --- | --- |
+|0|0|9012|9777|completed|
+|1|0|5397|6320|completed|
+|42|0|5480|6350|completed|
+
+No incomplete details were reported. The guard logged an actual repeated-path
+detection at output token1528 for seed0. This is live activation evidence, not
+proof that all semantic loops are eliminated. Seed0 used more reasoning tokens
+than its6670-token guard-OFF control; the result is mixed, not a universal gain.
+Later controls overlapped the browser QA, so elapsed times are not an isolated
+throughput comparison. No raw hidden reasoning was exported.
+
+Scientific quality **failed**: seed0 claimed cached decoding becomes constant
+time; seed1 claimed the query interacts only with the latest KV; seed42's memory
+formula multiplied hidden size by another per-head dimension. Exact-n-gram
+blocking cannot establish factual correctness, and shorter thought is not a
+quality metric. These results reject promoting this mitigation as the fix.
+
+In a separate fourth Chrome incognito window, ordinary public default controls
+sent the original one-sentence question at21:18CST and the unmodified12-point
+follow-up at21:19. A100 alias and thinking ON remained selected. Both returned
+Chinese final bodies, separate folded reasoning, a real Markdown table and
+rendered math. Exact owned trace `705e3da8825361638c9f3635e2261928` confirmed:
+HTTP200;32768 max_output_tokens; enable_thinking true; cached0;6325 output tokens,
+5438 reasoning tokens;1577 final-body characters; nested completed with no
+incomplete details; elapsed51.669s. The visible1332ms is first output, not total.
+Screenshot `ws-native-guard-original-formula-20261020.png` was downloaded through
+Chrome and reopened. Its formula is the MHA/single-sequence special case without
+stating those assumptions; rendering passed, scientific qualification did not.
+
+After three idle samples, only95-native-reasoning-repetition.conf was recoverably
+moved into the audit as `rejected-quality-candidate.conf`. The original90 override
+remained. Rollback started21:22:27CST and a68500d was healthy at21:24:07CST,
+PID2689125, NRestarts0. A6000 remained200. Public browser provenance returned to
+a68500df18; an address-bar reload preserved both turns and the rendered table/math.
+The experimental guard is **not enabled in production**. Main contains the
+opt-in implementation/tests and this negative qualification; no renderer rewrite,
+replacement question, disabled thinking or model switch was used to manufacture
+a pass. Loop elimination and original-question scientific quality remain open.
+
 Retain the original clean source and engine environment. To roll back, first
 obtain maintenance authority, drain A100 requests, recoverably move
 `~/.config/systemd/user/vllm-hust-qwen35-engine.service.d/90-native-thinking.conf`
