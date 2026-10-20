@@ -4,7 +4,8 @@ const frameAncestors = (process.env.APP_FRAME_ANCESTORS || "").trim();
 const nextConfig = {
   output: "standalone",
   outputFileTracingIncludes: {
-    "/api/mods": ["./scripts/mod_worker.py"],
+    "/api/versions": ["./scripts/inspect_host_runtime.py"],
+    "/api/mods": ["./scripts/mod_worker.py", "./scripts/inspect_host_runtime.py"],
     "/api/mod-runtime": ["./scripts/mod_runtime_worker.py", "./scripts/mod_worker.py", "./scripts/mod_artifact_io.py", "./scripts/instance_control_client.py", "./deploy/instance-control-source-lock.json", "./deps/vllm-hust-dev-hub/scripts/instance_control_entry.py", "./deps/vllm-hust-dev-hub/scripts/instance_control/*.py", "./deps/vllm-hust-dev-hub/config/instance-control-contract.json", "./scripts/inspect_mod_runtime.py", "./scripts/mod_launch_inventory.py", "./scripts/mod_compatibility.py", "./scripts/prepare_mod_image.py", "./scripts/build_mod_observer.py", "./scripts/runtime/workstation_mod_runtime/*.py"],
   },
   // Runtime state is read from explicit deployment paths, never bundled into

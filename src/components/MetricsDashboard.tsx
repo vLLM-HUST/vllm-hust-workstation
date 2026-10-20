@@ -425,7 +425,7 @@ export default function MetricsDashboard({
           </div>
         )}
 
-        <RuntimeStackCard provenance={runtimeProvenance} />
+        <RuntimeStackCard provenance={runtimeProvenance} selectedModel={model} />
       </div>
     </aside>
     </>

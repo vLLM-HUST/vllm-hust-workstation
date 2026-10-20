@@ -578,7 +578,13 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
             {hardware.memory && <span>{hardware.memory}</span>}
           </div>
         )}
-        {runtimeProvenance.available && runtimeProvenance.components && runtimeProvenance.image ? (
+        {runtimeProvenance.available && runtimeProvenance.hostEvidence ? (
+          <span className="app-text-muted" role="status">
+            {runtimeProvenance.hostEvidence.coveredModels.includes(model)
+              ? `本机运行来源已核验 · core ${shortSha(runtimeProvenance.hostEvidence.commit)} · 详情见运行状态`
+              : "当前模型的运行来源未核验；本机证据不覆盖远程后端或自动路由"}
+          </span>
+        ) : runtimeProvenance.available && runtimeProvenance.components && runtimeProvenance.image ? (
           <div className="app-text-muted flex min-w-0 items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline">运行来源</span>
             <a href={runtimeProvenance.components.core.commitUrl} target="_blank" rel="noopener noreferrer" className="app-text-secondary whitespace-nowrap hover:underline">

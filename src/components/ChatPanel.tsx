@@ -199,7 +199,7 @@ export default function ChatPanel({
                   </h1>
                   <p className="app-text-muted mt-2 text-sm leading-6">
                     {online
-                      ? "对话在本地算力上完成；模型、硬件与运行来源均可核验。"
+                      ? "推理服务在线；各后端运行来源的核验范围与限制可在运行状态中查看。"
                       : checking
                         ? "正在读取模型、服务健康与运行来源；核验完成前不作在线或离线判断。"
                         : "页面仍保留模型、硬件与运行来源证据；可在运行状态中查看探测结果。"}

@@ -17,7 +17,8 @@ export interface RuntimeComponentProvenance {
 
 export interface RuntimeProvenance {
   available: boolean;
-  source: "docker-inspect-receipt" | "unavailable";
+  source: "docker-inspect-receipt" | "host-live-observation" | "unavailable";
+  hostEvidence?: HostRuntimeEvidence;
   capturedAt?: string;
   reason?: string;
   container?: { name: string; id: string; startedAt: string };
@@ -47,6 +48,52 @@ export interface RuntimeProvenance {
     message: string;
     processSource: "not-attested";
   };
+}
+
+export interface HostRuntimeEvidence {
+  schema: "vllm-hust.workstation-host-observation/v1";
+  service: string;
+  pid: number;
+  startTicks: string;
+  bootId: string;
+  model: string;
+  coveredModels: string[];
+  startedAt: string;
+  observedAt: string;
+  version: string;
+  repository: string;
+  commit: string;
+  commitUrl: string;
+  sourceDigest: string;
+  trackedAndNativeFiles: number;
+  nativeArtifacts: number;
+  dirty: false;
+}
+
+export function parseHostObservation(raw: string, expectedService: string, now = Date.now()): RuntimeProvenance {
+  try {
+    const host = JSON.parse(raw) as HostRuntimeEvidence;
+    const age = (now - Date.parse(host.observedAt)) / 1000;
+    if (host.schema !== "vllm-hust.workstation-host-observation/v1" || host.service !== expectedService ||
+      !/^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(host.service) ||
+      !Number.isSafeInteger(host.pid) || host.pid <= 1 || !/^\d+$/.test(host.startTicks) ||
+      !/^[0-9a-f-]{36}$/.test(host.bootId) || !Number.isFinite(age) || age < -5 || age > 30 ||
+      !Number.isFinite(Date.parse(host.startedAt)) || Date.parse(host.startedAt) > Date.parse(host.observedAt) ||
+      !host.model || typeof host.version !== "string" || !host.version || host.dirty !== false ||
+      !Array.isArray(host.coveredModels) || !host.coveredModels.length ||
+      !host.coveredModels.every(model => typeof model === "string" && model.length > 0) ||
+      host.repository !== "https://github.com/vLLM-HUST/vllm-hust" || !SHA_PATTERN.test(host.commit) ||
+      host.commitUrl !== `${host.repository}/commit/${host.commit}` || !DIGEST_PATTERN.test(host.sourceDigest) ||
+      !Number.isSafeInteger(host.trackedAndNativeFiles) || host.trackedAndNativeFiles < 1 ||
+      !Number.isSafeInteger(host.nativeArtifacts) || host.nativeArtifacts < 1) {
+      return unavailable("宿主运行来源观测无效、过期或与配置不一致");
+    }
+    return { available: true, source: "host-live-observation", hostEvidence: host,
+      capturedAt: host.observedAt, vllmHust: host.commit, vllmAscendHust: "not-applicable",
+      verification: { status: "verified", checkedAt: new Date(now).toISOString(), receiptAgeSeconds: Math.round(age),
+        processSource: "not-attested",
+        message: "已核对本机服务身份、监听端口、模型路由与启动前的干净源码/原生制品；这是磁盘与服务身份核验，不是进程内存证明，也不代表其他后端或 MOD 已验证。" } };
+  } catch { return unavailable("宿主运行来源观测不是有效记录"); }
 }
 
 type Receipt = Omit<RuntimeProvenance, "available" | "source" | "reason" | "vllmHust" | "vllmAscendHust"> & {
@@ -196,6 +243,7 @@ export function verifyRuntimeProvenance(
 
 const runFile = promisify(execFile);
 let identityCache: { key: string; expires: number; value: Promise<ContainerIdentity | null> } | undefined;
+let hostObservationCache: { key: string; expires: number; value: Promise<RuntimeProvenance> } | undefined;
 
 async function inspectContainer(name: string): Promise<ContainerIdentity | null> {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(name)) return null;
@@ -223,6 +271,24 @@ export function getRuntimeProvenancePath(): string {
 }
 
 export async function getRuntimeProvenance(): Promise<RuntimeProvenance> {
+  const service = process.env.WORKSTATION_HOST_RUNTIME_SERVICE?.trim();
+  if (service) {
+    // Explicit host mode never falls back to an unrelated/stale Docker receipt.
+    const routes = process.env.WORKSTATION_HOST_RUNTIME_ROUTES_FILE?.trim();
+    if (!routes || !/^[A-Za-z0-9][A-Za-z0-9_.@-]*\.service$/.test(service)) return unavailable("宿主运行来源配置不完整");
+    const key = JSON.stringify([service, path.resolve(routes)]);
+    if (hostObservationCache?.key === key && hostObservationCache.expires > Date.now()) return hostObservationCache.value;
+    const value = (async () => {
+      try {
+        const { stdout } = await runFile("python3", [path.join(process.cwd(), "scripts/inspect_host_runtime.py"),
+          "--service", service, "--routes-file", path.resolve(routes)], { timeout: 12000, maxBuffer: 16384 });
+        return parseHostObservation(stdout, service);
+      } catch { return unavailable("宿主服务、源码、制品或路由实时核验失败；没有使用旧凭据兜底"); }
+    })();
+    // Bound fan-out from concurrent web clients; no stale-on-error reuse.
+    hostObservationCache = { key, expires: Date.now() + 5000, value };
+    return value;
+  }
   try {
     const receipt = parseRuntimeProvenance(await readFile(getRuntimeProvenancePath(), "utf8"));
     if (!receipt.available) return receipt;

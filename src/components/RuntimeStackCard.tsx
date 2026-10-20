@@ -3,6 +3,7 @@
 import React from "react";
 import { ChevronDown, ExternalLink, ShieldCheck } from "lucide-react";
 import type { RuntimeProvenance } from "@/lib/runtimeProvenance";
+import HostRuntimeCard from "./HostRuntimeCard";
 
 function displayTime(value?: string) {
   if (!value || !Number.isFinite(Date.parse(value))) return "—";
@@ -12,7 +13,10 @@ function displayTime(value?: string) {
   }).format(new Date(value));
 }
 
-export default function RuntimeStackCard({ provenance }: { provenance: RuntimeProvenance }) {
+export default function RuntimeStackCard({ provenance, selectedModel }: { provenance: RuntimeProvenance; selectedModel?: string }) {
+  if (provenance.available && provenance.verification?.status === "verified" && provenance.source === "host-live-observation") {
+    return <HostRuntimeCard provenance={provenance} selectedModel={selectedModel} />;
+  }
   const { components, image, compatibility, verification } = provenance;
   if (!provenance.available || !components || !image) {
     return <section aria-label="推理栈" className="app-card-flat rounded-xl p-4">
