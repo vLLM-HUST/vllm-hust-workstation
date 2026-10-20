@@ -1,4 +1,6 @@
 /** One budget policy for both ordinary browser requests and explicit API calls. */
+export const DEFAULT_OUTPUT_BUDGET = 32768;
+
 export function resolveOutputBudget(body: Record<string, unknown>, configured = process.env.WORKSTATION_DEFAULT_MAX_TOKENS): number {
   const first = body.max_tokens;
   const second = body.max_output_tokens;
@@ -6,7 +8,7 @@ export function resolveOutputBudget(body: Record<string, unknown>, configured = 
     throw new Error("max_tokens 与 max_output_tokens 不一致");
   }
   const explicit = first ?? second;
-  const value = explicit === undefined ? Number(configured ?? "4096") : explicit;
+  const value = explicit === undefined ? Number(configured ?? DEFAULT_OUTPUT_BUDGET) : explicit;
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
     throw new Error(explicit === undefined ? "服务生成预算配置无效" : "生成预算必须为正整数");
   }

@@ -52,14 +52,39 @@ afterEach(() => {
 });
 
 describe("Responses API chat adapter", () => {
+  it("forwards the unconfigured browser fallback and preserves a long native-thinking stream to final answer", async () => {
+    vi.stubEnv("WORKSTATION_DEFAULT_MAX_TOKENS", undefined);
+    try {
+      const reasoning = "原生思考增量。".repeat(5000);
+      const events = [
+        {type:"response.reasoning_text.delta",delta:reasoning},
+        {type:"response.output_text.delta",delta:"最终答案：4 GiB，分别翻倍均为8 GiB。"},
+        {type:"response.completed",response:{status:"completed",usage:{output_tokens:8192}}},
+      ];
+      const fetch = vi.fn().mockResolvedValue(new Response(events.map(event=>
+        'data: '+JSON.stringify(event)+'\n\n').join(''),{headers:{"Content-Type":"text/event-stream"}}));
+      vi.stubGlobal("fetch",fetch);
+      const text = await (await POST(request(true,{enable_thinking:true}))).text();
+      expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
+        max_output_tokens:32768,chat_template_kwargs:{enable_thinking:true},stream:true,
+      });
+      expect(text).toContain(reasoning);
+      expect(text).toContain('最终答案：4 GiB');
+      expect(text).toContain('"finish_reason":"stop"');
+      expect(text).toContain('"completion_tokens":8192');
+      expect(text).toContain('[DONE]');
+      expect(metrics.finishChatRequest).toHaveBeenCalledWith(expect.objectContaining({status:"completed"}));
+    } finally { vi.unstubAllEnvs(); }
+  });
+
   it("passes the real default budget and thinking flag to fetch", async () => {
-    vi.stubEnv("WORKSTATION_DEFAULT_MAX_TOKENS", "4096");
+    vi.stubEnv("WORKSTATION_DEFAULT_MAX_TOKENS", "32768");
     const fetch = vi.fn().mockResolvedValue(Response.json({status:"completed",output_text:"答案"}));
     vi.stubGlobal("fetch",fetch);
     const response = await POST(request(false,{enable_thinking:true}));
     expect(response.status).toBe(200);
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
-      max_output_tokens:4096,chat_template_kwargs:{enable_thinking:true},
+      max_output_tokens:32768,chat_template_kwargs:{enable_thinking:true},
     });
     vi.unstubAllEnvs();
   });

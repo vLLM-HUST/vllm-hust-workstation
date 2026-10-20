@@ -10,10 +10,10 @@ describe("generation budget and thinking wire contract", () => {
     const budget = template.match(/^WORKSTATION_DEFAULT_MAX_TOKENS=(\d+)$/m)![1];
     expect(resolveOutputBudget({},budget)).toBe(resolveOutputBudget({},undefined));
   });
-  it("supplies 4096 to an ordinary default browser request", () => {
-    vi.stubEnv("WORKSTATION_DEFAULT_MAX_TOKENS", "4096");
+  it("supplies 32768 to an ordinary default browser request", () => {
+    vi.stubEnv("WORKSTATION_DEFAULT_MAX_TOKENS", "32768");
     expect(buildResponsesRequest({model:"A100",enable_thinking:true}, [])).toMatchObject({
-      max_output_tokens:4096,chat_template_kwargs:{enable_thinking:true},stream:true,
+      max_output_tokens:32768,chat_template_kwargs:{enable_thinking:true},stream:true,
     });
   });
   it("preserves explicit budgets and both thinking modes", () => {
@@ -23,7 +23,11 @@ describe("generation budget and thinking wire contract", () => {
     });
     expect(resolveOutputBudget({max_output_tokens:8192},"4096")).toBe(8192);
     expect(resolveOutputBudget({},"8192")).toBe(8192);
-    expect(resolveOutputBudget({},undefined)).toBe(4096);
+    expect(resolveOutputBudget({},undefined)).toBe(32768);
+  });
+  it("does not cap explicit large budgets or silently raise an operator override", () => {
+    expect(resolveOutputBudget({max_output_tokens:65536},"32768")).toBe(65536);
+    expect(resolveOutputBudget({},"4096")).toBe(4096);
   });
   it.each([0,-1,1.5,"4096",NaN,Infinity])("rejects invalid explicit budget %s", value => {
     expect(() => resolveOutputBudget({max_tokens:value})).toThrow();
