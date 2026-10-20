@@ -139,3 +139,22 @@ disables automatic retries during candidate startup and aborts a failed startup.
 All ignored build inputs are now staged and the complete worker imports without
 loading a model. A second engine cutover requires explicit approval; this record
 does not describe the native-budget candidate as deployed or accepted.
+
+The extended collector was released separately as application `dd486bc` at
+2026-10-20 16:42 Asia/Shanghai, after Linux278 Vitest +16 Python tests,
+strict lint/type checks, production build and standalone probes passed. Positive
+candidate observation and inactive-service negative observation both passed;
+the negative preview was stopped. Only the WS app changed PID1042278 →1478667;
+engine1432060, router1359620 and Twin1058851 stayed unchanged across this cutover.
+No configuration/credential/model/output-budget env value was changed.
+
+Public `/api/versions` and a real Chrome incognito session confirmed5220 files,
+17 native artifacts, clean source7c82451c and the actual engine/router PIDs.
+Default-thinking KV-cache chat returned an independent Chinese final answer;
+refresh restored the answer and folded thinking separately. The real A6000 model
+selection retained an explicit uncovered-route warning. Rendered screenshot
+`ws-runtime-build-inputs-public-20261020.png` was saved through Chrome's native
+capture command and reopened for visual verification. The preserved preceding
+application for this follow-up is `b1aa407` (`-20261020-provenance`); the guarded
+WS-only switch retains its exact symlink target for rollback. Engine-native
+thinking-budget release remains staged, not active, pending renewed approval.
