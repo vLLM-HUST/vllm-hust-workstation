@@ -34,5 +34,8 @@ describe("shared visual language", () => {
     expect(css).toContain(".workspace-copy:focus-visible { opacity: 1");
     expect(css).toContain(".workspace-header-actions { width: 100%; justify-content: flex-end");
     expect(css).toContain(".text-amber-200\\/90, .text-amber-300) { color: var(--warning)");
+    expect(css).toContain(".workspace-model { order: -1; flex: 1; max-width: none");
+    expect(css).toContain(".answer-markdown table { min-width: 32rem");
+    expect(css).toContain(".workspace-composer textarea:focus-visible { outline: none !important");
   });
 });

@@ -161,6 +161,7 @@ html {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 12%, transparent);
 }
 .workspace-composer textarea { color: var(--text-primary); }
+.workspace-composer textarea:focus-visible { outline: none !important; }
 .workspace-composer textarea::placeholder { color: var(--text-muted); opacity: 1; }
 .app-header .app-control:not(select) {
   background: transparent;
@@ -170,7 +171,7 @@ html {
 
 .workspace-message { color: var(--text-primary); line-height: 1.78; }
 .workspace-message-user { background: var(--control); }
-.workspace-message-assistant { background: var(--surface); border: 1px solid var(--border); }
+.workspace-message-assistant { background: var(--surface); border: 1px solid var(--border); flex: 1; max-width: calc(100% - 44px); }
 .workspace-copy { color: var(--text-muted); padding: 4px; border-radius: 4px; }
 .workspace-copy:hover { color: var(--focus); background: var(--control-hover); }
 .workspace-tools summary::-webkit-details-marker { display: none; }
@@ -186,7 +187,8 @@ html {
 }
 @media (max-width: 639px) {
   .workspace-header-actions { width: 100%; justify-content: flex-end; }
-  .workspace-model { order: -1; margin-right: auto; max-width: calc(100% - 180px); }
+  .workspace-model { order: -1; flex: 1; max-width: none; }
+  .answer-markdown table { min-width: 32rem; }
 }
 
 .app-divider { border-color: var(--border); }
