@@ -9,6 +9,7 @@ mode=${4:-thinking-budget}
 case "$mode" in
   thinking-budget) dropname=90-native-thinking.conf ;;
   reasoning-repetition) dropname=95-native-reasoning-repetition.conf ;;
+  trace-replay) dropname=95-native-reasoning-diagnostic.conf ;;
   *) printf 'Unsupported native deployment mode\n' >&2; exit 2 ;;
 esac
 [[ "$candidate" =~ ^/home/shuhao/vllm-hust-releases/[A-Za-z0-9._-]+$ ]]
@@ -46,6 +47,9 @@ printf '[Service]\nRestart=no\nWorkingDirectory=%s\nEnvironment=PYTHONPATH=%s\nE
 printf '%s' 'ExecStart=/home/shuhao/miniforge3/envs/vllm-hust-canonical-overlay-qwen38/bin/python -m vllm.entrypoints.cli.main serve /home/shuhao/models/Qwen--Qwen3.5-35B-A3B --host 127.0.0.1 --port 18000 --served-model-name Qwen/Qwen3.5-35B-A3B --tensor-parallel-size 2 --gpu-memory-utilization 0.88 --max-model-len 131072 --max-num-seqs 8 --dtype auto --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder --override-generation-config '\''{"thinking_token_budget":16384}'\''' >> "$audit/candidate.conf"
 if [[ "$mode" == reasoning-repetition ]]; then
   printf '%s' ' --logits-processors vllm.v1.sample.logits_processor.reasoning_repetition:ReasoningRepetitionLogitsProcessor --additional-config '\''{"reasoning_repetition_guard":{"ngram_size":32,"max_occurrences":3,"window_size":512}}'\''' >> "$audit/candidate.conf"
+fi
+if [[ "$mode" == trace-replay ]]; then
+  printf '%s' ' --enable-trace-replay' >> "$audit/candidate.conf"
 fi
 printf '\n' >> "$audit/candidate.conf"
 install -m 600 "$audit/candidate.conf" "$dropfile"
