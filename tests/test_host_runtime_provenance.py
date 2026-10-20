@@ -75,5 +75,21 @@ class SourceEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'invalid configured service'):
                 observer.observe('unit;echo secret', '/unused', 'router.service')
 
+    def test_routes_bound_to_running_gateway_configuration(self):
+        routes = self.root / 'routes.json'
+        routes.write_text('{"models": []}')
+        os.utime(routes, (100, 100))
+        _, _, _, value = observer.read_bound_routes(routes, routes, 200)
+        self.assertEqual(value, {'models': []})
+        with self.assertRaisesRegex(ValueError, 'differs from running gateway'):
+            observer.read_bound_routes(routes, self.root / 'different.json', 200)
+
+    def test_route_disk_change_after_gateway_start_rejected(self):
+        routes = self.root / 'routes.json'
+        routes.write_text('{"models": []}')
+        os.utime(routes, (300, 300))
+        with self.assertRaisesRegex(ValueError, 'after gateway started'):
+            observer.read_bound_routes(routes, routes, 200)
+
 
 if __name__ == '__main__': unittest.main()

@@ -79,6 +79,17 @@ def source_evidence(root, started_at):
             'nativeArtifacts': len(native), 'dirty': False}
 
 
+def read_bound_routes(routes_file, expected_file, started_at):
+    routes_path = Path(routes_file).resolve(strict=True)
+    if Path(expected_file).resolve() != routes_path:
+        raise ValueError('route file differs from running gateway configuration')
+    route_stat = routes_path.stat()
+    if route_stat.st_mtime > started_at:
+        raise ValueError('route configuration changed after gateway started')
+    route_bytes = routes_path.read_bytes()
+    return routes_path, route_stat, route_bytes, json.loads(route_bytes)
+
+
 def observe(service, routes_file, router_service):
     if not all(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.@-]*\.service', name) for name in (service, router_service)):
         raise ValueError('invalid configured service')
@@ -111,22 +122,19 @@ def observe(service, routes_file, router_service):
         raise ValueError('live model catalog differs from serving arguments')
     router = identity(router_service)
     router_env = dict(p.decode().split('=', 1) for p in Path(f'/proc/{router["pid"]}/environ').read_bytes().split(b'\0') if b'=' in p)
-    routes_path = Path(routes_file).resolve(strict=True)
-    if Path(router_env.get('SAGE_ROUTER_ROUTES_CONFIG', '/nonexistent')).resolve() != routes_path:
-        raise ValueError('route file differs from running gateway configuration')
     router_started_at = boot + int(router['startTicks']) / os.sysconf('SC_CLK_TCK')
-    route_stat = routes_path.stat()
-    if route_stat.st_mtime > router_started_at:
-        raise ValueError('route configuration changed after gateway started')
-    route_bytes = routes_path.read_bytes()
-    routes = json.loads(route_bytes)
+    routes_path, route_stat, route_bytes, routes = read_bound_routes(
+        routes_file, router_env.get('SAGE_ROUTER_ROUTES_CONFIG', '/nonexistent'), router_started_at)
     covered = sorted({alias for route in routes['models']
                       if route['backend_url'].rstrip('/') == f'http://127.0.0.1:{port}' and route['backend_model'] == model
                       for alias in [route['id'], *route.get('aliases', [])]})
     if not covered:
         raise ValueError('no gateway route bound to the observed model listener')
     after = identity(service)
-    if before != after or router != identity(router_service) or route_stat != routes_path.stat():
+    route_after = routes_path.stat()
+    if before != after or router != identity(router_service) or (
+            route_stat.st_mtime_ns, route_stat.st_size, route_stat.st_ino) != (
+            route_after.st_mtime_ns, route_after.st_size, route_after.st_ino):
         raise ValueError('serving process changed during observation')
     # Only explicitly public evidence; no env, argv, model paths or credentials.
     return {'schema': SCHEMA, 'service': service, 'pid': before['pid'],
