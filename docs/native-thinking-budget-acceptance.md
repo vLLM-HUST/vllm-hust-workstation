@@ -371,3 +371,44 @@ The original unit then uses `/home/shuhao/vllm-hust-canonical-overlay` at7c82451
 Do not reset source, modify credentials, restart the gateway or touch A6000.
 Rollback to the original engine was exercised after the first failure; a further
 post-success rollback was not run merely to generate a second interruption.
+
+## Engine-first qualification update, 2026-10-20 late evening
+
+This section supersedes earlier candidate/authority statements, not historical
+observations. The human authorized continuing reversible A100 maintenance and
+required SAGE verification to remain a separate side channel: no rewriting or
+replacement of raw model output, no model/thinking/budget change.
+
+The old custom repetition processor changed Model Runner V2 to V1. Its ON/OFF
+results therefore cannot establish the isolated effect of repetition masking.
+The new native V2 implementation is main `a4c2404`, with exact qualified runtime
+backport `f7cea8c` retained in main ancestry. It uses only additional configuration,
+not the legacy custom-processor flag. Runtime trace replay is OFF. Main GPU and
+loader regression:53 passed; minimal runtime GPU regression:34 passed. Applicable
+pre-commit/type checks passed. Workstation cutover helper main `cfa9673`,18 tests.
+These are implementation checks, not yet model-quality acceptance.
+
+The original two-turn synthetic question with unchanged request sampling defaults,
+seeds0/1/42 and cold cache salts completed in45.080/52.285/50.601seconds, reasoning
+6670/7996/7733tokens, largest repeated24-character fragment10/15/9 times. This batch
+did not reproduce severe looping and cannot prove a guard works. A separate
+known-loop stress control retains the original question and explicitly fixes
+temperature0.6/presence0.5/seed42. OFF reproduced103.380seconds, reasoning16383tokens
+and largest24-character repeat6322 times. These are stress parameters, not a claim
+that the website defaults use them. Matched ON and fresh-browser qualification
+remain pending at this checkpoint.
+
+Further numerical qualification replayed8192 tokens from only the owned original
+failure trace through sequential decode and teacher-forced prefill. Top1 agreement
+was99.4751%, mean absolute logprob difference0.00701934; the final193 positions
+agreed100%, with mean difference0.0000111014. In that tail, the original repeated
+token had geometric mean probability0.9999698. This supports model-distribution
+collapse on the tested path, not a universal proof of kernel correctness. Actual
+fused CUDA GDN head-ratio tests22 passed. All14 A100/A6000 weight shard hashes and
+tokenizer.json matched the official checkpoint revision
+`59d61f3ce65a6d9863b86d2e96597125219dc754`; official small-config/template hashes
+were not independently qualified by that check.
+
+Increasing global presence penalty or removing it only from the final stage did
+not reliably fix formulas. No tested sampling combination was promoted as a fact
+repair. The V2 guard does not validate semantics or guarantee correct formulas.

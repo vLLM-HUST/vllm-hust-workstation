@@ -53,7 +53,7 @@ if [[ "$mode" == trace-replay ]]; then
   printf '%s' ' --enable-trace-replay' >> "$audit/candidate.conf"
 fi
 if [[ "$mode" == v2-reasoning-repetition ]]; then
-  printf '%s' ' --additional-config '\''{"reasoning_repetition_guard":{"ngram_size":32,"max_occurrences":3,"window_size":512}}'\''' >> "$audit/candidate.conf"
+  printf '%s' ' --additional-config '\''{"reasoning_repetition_guard":{"ngram_size":32,"max_occurrences":4,"window_size":512}}'\''' >> "$audit/candidate.conf"
 fi
 printf '\n' >> "$audit/candidate.conf"
 install -m 600 "$audit/candidate.conf" "$dropfile"
