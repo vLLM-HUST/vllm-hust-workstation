@@ -183,7 +183,7 @@ export default function MetricsDashboard({
         hidden={!open}
         aria-hidden={!open}
         className={clsx(
-        "app-surface app-border fixed inset-y-0 right-0 z-50 w-[min(26rem,calc(100vw-1rem))] flex-col overflow-y-auto border-l shadow-2xl",
+        "app-surface app-border fixed inset-y-0 right-0 z-50 min-w-0 max-w-full w-[min(26rem,calc(100vw-1rem))] flex-col overflow-y-auto border-l shadow-2xl [overflow-wrap:anywhere]",
         open ? "flex" : "hidden"
       )}>
       <div className="app-surface app-divider sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3">
@@ -194,7 +194,7 @@ export default function MetricsDashboard({
         <button type="button" onClick={onClose} className="app-control inline-flex h-9 w-9 items-center justify-center rounded-lg border" aria-label="关闭运行状态"><X size={16} /></button>
       </div>
 
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <div className="flex min-w-0 max-w-full flex-col gap-3 px-4 py-4">
         <LocalServiceCard />
 
         <div className="app-card rounded-xl p-4 space-y-3">

@@ -133,22 +133,22 @@ export default function LocalServiceCard() {
         : "text-amber-200";
 
   return (
-    <div className="app-card space-y-3 rounded-xl p-4">
+    <div className="app-card min-w-0 max-w-full space-y-3 rounded-xl p-4 [overflow-wrap:anywhere]">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="app-text-muted text-[11px] font-medium uppercase tracking-wider">
             推理服务
           </p>
           <p className={`text-sm mt-1 ${statusTone}`}>{statusText}</p>
         </div>
-        <div className="p-2 rounded-lg bg-cyan-400/10 text-cyan-200">
+        <div className="shrink-0 p-2 rounded-lg bg-cyan-400/10 text-cyan-200">
           <Wrench size={16} />
         </div>
       </div>
 
       <div className="app-text-muted space-y-1 text-xs">
         <p>目标：{status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
-        <p className="truncate" title={status?.currentModel || undefined}>模型：{status ? status.currentModel ?? status.desiredModel ?? "未探测到" : "正在核验"}</p>
+        <p title={status?.currentModel || undefined}>模型：{status ? status.currentModel ?? status.desiredModel ?? "未探测到" : "正在核验"}</p>
       </div>
 
       <details className="app-card-flat rounded-xl p-3 text-xs leading-5">
@@ -239,7 +239,7 @@ export default function LocalServiceCard() {
       )}
 
       {status?.isLocalTarget === true ? (
-        <p className="text-[11px] text-white/30 leading-5">
+        <p className="app-text-muted min-w-0 max-w-full text-[11px] leading-5 [overflow-wrap:anywhere]">
           后端日志: {status?.backendLogFile ?? "加载中"}
         </p>
       ) : null}

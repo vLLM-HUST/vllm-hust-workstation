@@ -118,7 +118,7 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
             })}
           </span>
           {msg.tokensUsed !== undefined && <span>{msg.tokensUsed} tokens（含思考，上游统计）</span>}
-          {msg.latencyMs && <span>{msg.latencyMs}ms</span>}
+          {msg.latencyMs && <span title="从发送请求到首个思考或正文增量，不是完整回答耗时">首次输出 {msg.latencyMs}ms</span>}
           {!isUser && <CopyButton text={msg.content} />}
         </div>
       </div>

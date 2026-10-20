@@ -13,6 +13,11 @@ function render(message: Partial<Message>) {
 }
 
 describe("final answer presentation",()=>{
+  it("labels stored latency as first output, never total answer time",()=>{
+    const html=render({content:"旧回答",latencyMs:1833});
+    expect(html).toContain('首次输出 1833ms');
+    expect(html).toContain('不是完整回答耗时');
+  });
   it("uses semantic message surfaces and a named keyboard-accessible copy action",()=>{
     const html=render({content:"测试回答"});
     expect(html).toContain('workspace-message-assistant');
