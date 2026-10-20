@@ -96,6 +96,28 @@ defines head dimension ambiguously. This is preserved as a model-quality failure
 not corrected in the renderer, silently replaced or relabelled as accepted.
 These finite checks do not guarantee final-answer completeness for every prompt.
 
+### Independent repeat: the loop is bounded, not eliminated
+
+A subsequent independent public-browser original-question repeat at17:26CST
+took105.409 seconds, not the39.183-second observation above. Read-only inspection
+of only that exact synthetic trace confirmed the same A100 alias, thinking ON,
+32768 total allowance, system/user/assistant/user roles, HTTP200 and nested
+`completed` with no incomplete details. It emitted1725 final-body characters and
+17362 output tokens, of which16383 were reasoning tokens. The independent
+browser reviewer observed repetitive arithmetic in the thinking display until
+near the native limit. This is evidence that the boundary preserves a final
+answer after pathological thinking, not that it eliminates reasoning loops or
+establishes stable37–39-second latency. Reasoning efficiency remains unresolved.
+
+Independent390×844 streaming inspection observed user-controlled upward history
+scrolling and retained latest/unread indicators until completion without a forced
+jump. Keyboard activation removed the latest control in accessibility state, but
+the visible landing position was not confirmed because Chrome control/rendering
+disagreed. Do not mark that visual landing check, remaining light/dark/recovery
+checks, or all experience acceptance complete. No further engine maintenance is
+authorized by the reviewer message; further investigation must remain read-only
+unless the human approves a new maintenance window.
+
 Retain the original clean source and engine environment. To roll back, first
 obtain maintenance authority, drain A100 requests, recoverably move
 `~/.config/systemd/user/vllm-hust-qwen35-engine.service.d/90-native-thinking.conf`
