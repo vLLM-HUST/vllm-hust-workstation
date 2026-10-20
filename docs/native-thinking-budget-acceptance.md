@@ -328,6 +328,15 @@ opt-in implementation/tests and this negative qualification; no renderer rewrite
 replacement question, disabled thinking or model switch was used to manufacture
 a pass. Loop elimination and original-question scientific quality remain open.
 
+Read-only follow-up hashed all14 safetensors shards (about72GB) on A100 and
+A6000 at low CPU/I/O priority. Every per-file SHA256 matched across the two
+deployments, as did their recorded model revision
+`59d61f3ce65a6d9863b86d2e96597125219dc754`. This excludes a host-specific weight
+file difference, **not** shared corruption or numerical implementation errors.
+Independent official upstream blob-hash validation was unavailable: A100 direct
+DNS failed, Mac direct HTTPS timed out, and the web reader could not open the
+metadata/raw-pointer endpoints. No service proxy or routing was changed.
+
 Retain the original clean source and engine environment. To roll back, first
 obtain maintenance authority, drain A100 requests, recoverably move
 `~/.config/systemd/user/vllm-hust-qwen35-engine.service.d/90-native-thinking.conf`
