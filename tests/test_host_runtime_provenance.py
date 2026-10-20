@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -90,6 +91,43 @@ class SourceEvidenceTests(unittest.TestCase):
         os.utime(routes, (300, 300))
         with self.assertRaisesRegex(ValueError, 'after gateway started'):
             observer.read_bound_routes(routes, routes, 200)
+
+
+class DeployPreflightTests(unittest.TestCase):
+    def preflight(self, changes=None):
+        source = (Path(__file__).parents[1] / 'scripts/deploy_workstation.sh').read_text()
+        function = source.split('capture_runtime_provenance() {', 1)[1].split('\n}\n', 1)[0]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            python = root / 'python3'
+            trace = root / 'args'
+            python.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$PREFLIGHT_TRACE"\n')
+            python.chmod(0o700)
+            env = {'PATH': f'{root}:/usr/bin:/bin', 'SCRIPT_DIR': '/trusted/scripts',
+                   'PREFLIGHT_TRACE': str(trace), 'WORKSTATION_HOST_RUNTIME_SERVICE': 'engine.service',
+                   'WORKSTATION_HOST_RUNTIME_ROUTER_SERVICE': 'router.service',
+                   'WORKSTATION_HOST_RUNTIME_ROUTES_FILE': '/trusted/routes.json'}
+            env.update(changes or {})
+            result = subprocess.run(['bash', '-c', 'set -eu\ncapture_runtime_provenance() {' + function + '\n}\ncapture_runtime_provenance'],
+                                    env=env, text=True, capture_output=True)
+            return result, trace.read_text() if trace.exists() else ''
+
+    def test_host_deploy_preflights_live_observer_not_old_receipt(self):
+        result, args = self.preflight()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(args.splitlines(), ['/trusted/scripts/inspect_host_runtime.py',
+            '--service', 'engine.service', '--router-service', 'router.service',
+            '--routes-file', '/trusted/routes.json'])
+
+    def test_ambiguous_host_container_config_rejected(self):
+        result, args = self.preflight({'WORKSTATION_RUNTIME_CONTAINER': 'old-container'})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(args, '')
+
+    def test_missing_router_config_rejected(self):
+        result, args = self.preflight({'WORKSTATION_HOST_RUNTIME_ROUTER_SERVICE': ''})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(args, '')
 
 
 if __name__ == '__main__': unittest.main()

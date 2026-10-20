@@ -161,6 +161,18 @@ build_app() {
 }
 
 capture_runtime_provenance() {
+  if [[ -n "${WORKSTATION_HOST_RUNTIME_SERVICE:-}" ]]; then
+    if [[ -n "${WORKSTATION_RUNTIME_CONTAINER:-}" ]]; then
+      echo "[deploy] choose host observation or Docker receipt, not both" >&2
+      return 1
+    fi
+    python3 "$SCRIPT_DIR/inspect_host_runtime.py" \
+      --service "$WORKSTATION_HOST_RUNTIME_SERVICE" \
+      --router-service "${WORKSTATION_HOST_RUNTIME_ROUTER_SERVICE:?Set host runtime router service}" \
+      --routes-file "${WORKSTATION_HOST_RUNTIME_ROUTES_FILE:?Set host runtime routes file}" >/dev/null
+    echo "[deploy] live host runtime source and gateway binding verified" >&2
+    return 0
+  fi
   local receipt_file
   receipt_file="${WORKSTATION_RUNTIME_PROVENANCE_FILE:-$(deploy_home)/runtime-provenance.json}"
 
