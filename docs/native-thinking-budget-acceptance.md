@@ -337,6 +337,32 @@ Independent official upstream blob-hash validation was unavailable: A100 direct
 DNS failed, Mac direct HTTPS timed out, and the web reader could not open the
 metadata/raw-pointer endpoints. No service proxy or routing was changed.
 
+An additional isolated Transformers5.18.0 CPU BF16/eager teacher-forced reference
+used the same local weights and tokenizer, offline mode, CUDA hidden, four CPU
+threads, nice19/idle I/O priority and a900s deadline. No missing/unexpected model
+keys were reported. Reference convolution and GDN used PyTorch implementations,
+not the live CUDA/FLA kernels. No service/environment installation was changed.
+Initial diagnostic setup errors (the tokenizer's new return_dict default and
+absent accelerate for device_map) were repaired in the isolated diagnostic by
+requesting token IDs explicitly and using ordinary default CPU placement; no
+production package was installed or modified.
+
+On the exact127-token original synthetic prompt,126 teacher-forced positions had
+mean absolute log-probability error0.07451, maximum0.99723 and top1 agreement96.83%
+between CPU and native prefill. On that prompt plus the first3000 reasoning tokens
+from the owned original failing trace, native generated32 tokens with seed42 and
+the existing sampling. CPU teacher-forced comparison of those32 **decode**
+positions gave mean absolute log-probability error0.01947, maximum0.10233, top1
+agreement90.625%, in168.687 CPU-reference seconds. No raw reasoning/token IDs were
+exported. Both services remained healthy and the CPU process exited normally.
+
+These are finite numerical diagnostics, not an accuracy tolerance qualification
+or proof that all long recurrent states are correct. They do not show a gross
+kernel probability divergence at the sampled original-loop-prefix positions.
+Together with matched Chat/Responses and cross-host evidence, they narrow the
+investigation; they do not justify blaming the renderer, declaring all engine
+kernels correct, or claiming that formula hallucinations have been fixed.
+
 Retain the original clean source and engine environment. To roll back, first
 obtain maintenance authority, drain A100 requests, recoverably move
 `~/.config/systemd/user/vllm-hust-qwen35-engine.service.d/90-native-thinking.conf`
