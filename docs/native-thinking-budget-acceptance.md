@@ -45,6 +45,17 @@ it lacks a sequence-length factor while defining L as layer count, and defines
 D as hidden size while multiplying by a separate head count. Changing Markdown,
 raising budgets or stopping reasoning does not repair those definitions.
 
+For ordinary dense full-attention KV payload with fixed sequence length T, the
+storage accounting is `B * L * T * H_kv * (d_k + d_v) * element_bytes`; equal K/V
+head dimensions reduce this to `2 * B * L * T * H_kv * d_head * element_bytes`.
+The qualified runtime's `AttentionSpec.state_content_size_bytes` computes
+`(head_size + head_size_v) * dtype_bytes`, and `unpadded_page_size_bytes` multiplies
+by stored-state and KV-head counts. Thus the explanatory formula error does not
+demonstrate the same error in actual cache allocation. This logical payload
+expression excludes padding, prefix sharing, sharding and hybrid recurrent-state
+layers; it is not a total-memory formula for Qwen3.5's entire hybrid architecture.
+No runtime answer/template special case was added from this diagnostic.
+
 Independent Transformers CPU BF16/eager, same weights, CUDA hidden, four low-
 priority CPU threads: reconstructed original browser trace `4fd7005...` with6532
 context tokens; compare100 final formula/definition positions against native GPU
@@ -56,6 +67,21 @@ that all kernels or free-generation paths are equivalent. Reconstructed streamed
 reasoning boundaries and unavailable official small-file hash verification
 remain limitations. Direct HF config/template downloads failed bounded network
 checks; only previously qualified weight/tokenizer hashes remain qualified.
+
+A stronger follow-up did not teacher-force the formula: reconstruct the same
+6455-token original context **up to before** `Memory`, then independently perform
+greedy CPU eager sequential decode and native GPU decode. The first40formula
+tokens were byte/token-identical, starting
+`Memory ≈ Batch × Layers × 2 × Heads × Dim ×` (with LaTeX text macros).
+CPU430.125seconds, same model and independently computed recurrent cache, no
+loading mismatch or CUDA model. This supports contextual model derivation and
+symbol-definition inconsistency rather than a GPU-only formula alteration on
+this path. It does not cover a complete generated formula/definitions or prove
+every possible inference path. The40token bound is a formula-only diagnostic,
+**not** a production budget change or a replacement for original-question full
+answer acceptance. No hidden thoughts/token IDs were exported. The complete
+raw browser answer still fails scientific formula correctness; no fixed answer
+was inserted, spliced or regenerated into the session.
 
 SAGE remains outside the raw-answer path. No answer rewriting, silent replacement,
 regeneration or blocking validation was added. Formula correctness is still an
@@ -71,8 +97,12 @@ Streaming thinking was observed separately; it collapsed after final delivery.
 The actual table/math and f180e0a runtime footer were visible in native browser
 captures. The raw formula error remains visible and unchanged: **delivery and
 rendering pass; scientific formula quality still fails**. No old a9 answer with
-a refreshed footer counted as a new answer. Browser screenshots were captured
-inline; no new screenshot file/download is claimed for this revision.
+a refreshed footer counted as a new answer. Full-width browser screenshots were
+captured inline. A native Chrome screenshot was also downloaded as
+`ws-native-shortcycle-original-20261021.png` (266KB) and reopened: table, math and
+f180e0a footer verified. That saved image uses the narrower docked-DevTools
+viewport, with legitimate horizontal table/formula overflow; it does not show
+all table columns simultaneously.
 
 Rollback after idle/drain: preserve the new95drop-in in the cutover audit,
 restore the previous a9drop-in from
