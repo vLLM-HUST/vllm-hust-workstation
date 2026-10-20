@@ -1,5 +1,7 @@
 "use client";
 
+import { useChatSession } from "./useChatSession";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
@@ -103,8 +105,8 @@ export function createSteps(params: {
 export default function WorkstationClient({ config }: { config: AppConfig }) {
   const { brandName, brandLogo, accentColor, searchEnabled } = config;
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const { messages, setMessages, notice: sessionNotice } = useChatSession(loading);
   const [models, setModels] = useState<string[]>([]);
   const [model, setModel] = useState("");
   const [serviceStatus, setServiceStatus] = useState<ServiceProbeStatus>("checking");
@@ -496,14 +498,14 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         abortRef.current = null;
       }
     },
-    [messages, model, models, webSearch, thinkingEnabled]
+    [messages, model, models, webSearch, thinkingEnabled, setMessages]
   );
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
   }, []);
 
-  const handleClear = useCallback(() => setMessages([]), []);
+  const handleClear = useCallback(() => setMessages([]), [setMessages]);
   const displayedServiceStatus: ServiceProbeStatus = provenanceChecked && modelsChecked
     ? (model && models.includes(model) ? serviceStatus : "offline") : "checking";
   const displayedModel = displayedServiceStatus === "online" ? model : "";
@@ -535,6 +537,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           thinkText={thinkText}
         />
         <ChatPanel
+          sessionNotice={sessionNotice}
+          onImportMessages={imported => setMessages(previous => [...previous, ...imported])}
           messages={messages}
           loading={loading}
           accentColor={accentColor}

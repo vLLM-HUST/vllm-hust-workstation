@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 import { getAppConfig } from "@/lib/config";
 
 const inter = Inter({ subsets: ["latin"] });

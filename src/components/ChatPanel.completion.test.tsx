@@ -13,6 +13,12 @@ function render(message: Partial<Message>) {
 }
 
 describe("final answer presentation",()=>{
+  it("renders historical assistant Markdown without re-asking and leaves user text literal",()=>{
+    const html=render({timestamp:1,content:'## 旧回答\n\n| 场景 | GiB |\n| --- | --- |\n| 基准 | 4 |\n\n$2^{30}$'});
+    expect(html).toContain('<table>'); expect(html).toContain('class="katex"'); expect(html).toContain('<h2>旧回答');
+    const user=render({role:'user',content:'**原始输入** $x$'});
+    expect(user).not.toContain('<strong>原始输入'); expect(user).not.toContain('class="katex"');
+  });
   it("keeps thinking collapsed outside the final answer, without fake token counts",()=>{
     const html=render({reasoning:"这里是思考",content:"这是最终答案",completionStatus:"completed"});
     expect(html).toContain('<details');

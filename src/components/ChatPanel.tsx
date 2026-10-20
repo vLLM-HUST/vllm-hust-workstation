@@ -14,12 +14,18 @@ import {
   Lightbulb,
   Gauge,
   Telescope,
+  Download,
+  Upload,
 } from "lucide-react";
 import type { Message, ServiceProbeStatus } from "@/types";
 import clsx from "clsx";
 import { ReasoningDisclosure } from "./ReasoningText";
+import AnswerMarkdown from "./AnswerMarkdown";
+import { decodeChatSession, encodeChatSession } from "@/lib/chatSession";
 
 interface ChatPanelProps {
+  sessionNotice?: string;
+  onImportMessages?: (messages: Message[]) => void;
   messages: Message[];
   loading: boolean;
   accentColor: string;
@@ -80,17 +86,17 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
 
       <div
         className={clsx(
-          "group max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+          "group min-w-0 max-w-[90%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
           isUser
             ? "bg-white/10 text-white/90 rounded-tr-sm"
             : "bg-white/5 text-white/85 rounded-tl-sm border border-white/8"
         )}
       >
-        {/* Render content — basic markdown-lite: code blocks */}
         {!isUser && msg.reasoning && (
           <ReasoningDisclosure text={msg.reasoning} streaming={streaming} />
         )}
-        <FormattedContent content={msg.content} />
+        {isUser ? <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+          : <AnswerMarkdown content={msg.content} streaming={streaming} />}
         {!isUser && msg.completionNotice && (
           <p role="status" className="mt-2 text-amber-300" data-completion-status={msg.completionStatus}>
             {msg.completionNotice}
@@ -118,37 +124,9 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
   );
 }
 
-// Minimal content formatter: handles ```code``` blocks + inline `code`
-function FormattedContent({ content }: { content: string }) {
-  const parts = content.split(/(```[\s\S]*?```|`[^`]+`)/g);
-  return (
-    <div className="whitespace-pre-wrap break-words">
-      {parts.map((part, i) => {
-        if (part.startsWith("```")) {
-          const code = part.slice(3, -3).replace(/^\w+\n/, "");
-          return (
-            <pre
-              key={i}
-              className="my-2 p-3 bg-black/30 rounded-lg text-xs font-mono overflow-x-auto text-emerald-300"
-            >
-              {code}
-            </pre>
-          );
-        }
-        if (part.startsWith("`") && part.endsWith("`")) {
-          return (
-            <code key={i} className="px-1.5 py-0.5 bg-black/30 rounded text-xs font-mono text-amber-300">
-              {part.slice(1, -1)}
-            </code>
-          );
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </div>
-  );
-}
-
 export default function ChatPanel({
+  sessionNotice,
+  onImportMessages,
   messages,
   loading,
   accentColor,
@@ -169,6 +147,8 @@ export default function ChatPanel({
   const online = serviceStatus === "online";
   const checking = serviceStatus === "checking";
   const [input, setInput] = useState("");
+  const [importError, setImportError] = useState("");
+  const importRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const followLatest = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -344,6 +324,30 @@ export default function ChatPanel({
               </button>
             )}
             {messages.length > 0 && (
+              <button type="button" title="导出对话（本机 JSON）" aria-label="导出对话（本机 JSON）" className="app-text-muted"
+                onClick={() => {
+                  const url = URL.createObjectURL(new Blob([encodeChatSession(messages, loading)], { type: "application/json" }));
+                  const link = document.createElement("a"); link.href = url;
+                  link.download = `workstation-session-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+                  link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+                }}><Download size={16} /></button>
+            )}
+            {onImportMessages && <>
+              <button type="button" title="导入旧会话（只在本机渲染，不请求模型）" aria-label="导入旧会话" disabled={loading}
+                className="app-text-muted" onClick={() => importRef.current?.click()}><Upload size={16} /></button>
+              <input ref={importRef} type="file" accept=".json,application/json" hidden onChange={async event => {
+                const file = event.target.files?.[0]; event.target.value = "";
+                if (!file) return;
+                try {
+                  if (file.size > 10 * 1024 * 1024) throw new Error("会话超过10 MiB，未导入或截断；请保留原文件");
+                  const restored = decodeChatSession(await file.text());
+                  const batchId = crypto.randomUUID();
+                  onImportMessages(restored.messages.map((message, i) => ({...message, id:`import-${batchId}-${i}`})));
+                  setImportError("");
+                } catch (error) { setImportError((error as Error).message); }
+              }} />
+            </>}
+            {messages.length > 0 && (
               <button
                 onClick={onClear}
                 className="text-white/25 hover:text-white/60 transition-colors"
@@ -371,6 +375,7 @@ export default function ChatPanel({
             </button>
           </div>
         </div>
+        {(sessionNotice || importError) && <p role="status" className="app-text-muted mt-2 text-xs">{importError || sessionNotice}</p>}
         <div className="app-text-muted mx-auto mt-2 flex max-w-4xl items-center justify-center gap-3 text-xs">
           <p className="hidden sm:block">本地算力推理 · 请求经工作站转发</p>
           {searchEnabled && webSearch && <span className="text-sky-300/80">🌐 联网搜索已开启</span>}
