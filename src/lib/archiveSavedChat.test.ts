@@ -14,5 +14,8 @@ it("archives legacy DOM without joining the minute and token count or executing 
     const record=JSON.parse(readFileSync(destination,'utf8')).messages[0];
     expect(record.tokensUsed).toBe(4803); expect(record.reasoning).toBe('原思考');
     expect(record.content).toBe('## 旧标题\n\n$$x^2$$'); expect(record.completionStatus).toBeUndefined();
+    writeFileSync(source,'<div class="animate-slide-up"><div class="whitespace-pre-wrap"><pre>print(4)</pre></div><span>09:43</span></div>');
+    expect(()=>execFileSync(process.execPath,['scripts/archive_saved_chat.mjs',source,join(dir,'refused.json'),'2026-10-20'],{stdio:'pipe'}))
+      .toThrow(/Legacy code delimiters/);
   } finally { rmSync(dir,{recursive:true,force:true}); }
 });

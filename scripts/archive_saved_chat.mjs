@@ -10,6 +10,7 @@ const doc = new JSDOM(readFileSync(source,"utf8")).window.document;
 const messages = [...doc.querySelectorAll('.animate-slide-up')].map((element,index) => {
   const body = [...element.querySelectorAll('.whitespace-pre-wrap')].find(item => !item.hasAttribute('data-reasoning-text'));
   if (!body) throw new Error("Not the supported legacy plain-text formatter; refusing lossy conversion");
+  if (body.querySelector('pre, code')) throw new Error("Legacy code delimiters/language were not retained in DOM; use raw export/probe instead of lossy conversion");
   const role = element.classList.contains('flex-row-reverse') ? 'user' : 'assistant';
   const time = [...element.querySelectorAll('span')].map(item=>item.textContent).find(text=>/^\d\d:\d\d$/.test(text));
   if (!time) throw new Error("Missing visible message time");
