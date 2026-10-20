@@ -157,4 +157,6 @@ selection retained an explicit uncovered-route warning. Rendered screenshot
 capture command and reopened for visual verification. The preserved preceding
 application for this follow-up is `b1aa407` (`-20261020-provenance`); the guarded
 WS-only switch retains its exact symlink target for rollback. Engine-native
-thinking-budget release remains staged, not active, pending renewed approval.
+thinking-budget release was staged at that point, pending renewed approval.
+The subsequently authorized successful A100 cutover and its scoped acceptance
+are recorded in [native thinking-budget acceptance](native-thinking-budget-acceptance.md).
