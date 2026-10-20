@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -169,40 +168,30 @@ export default function MetricsDashboard({
   const successRate = traffic && traffic.windows["24h"].requests > 0
     ? (traffic.windows["24h"].successes / traffic.windows["24h"].requests) * 100
     : 100;
-  const [desktopRail, setDesktopRail] = useState(false);
-  const dialogRef = useDialogFocus<HTMLElement>(open && !desktopRail, onClose);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1280px)");
-    const update = () => setDesktopRail(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  const panelInteractive = desktopRail || open;
+  const dialogRef = useDialogFocus<HTMLElement>(open, onClose);
 
   return (
     <>
-      {open ? <button type="button" aria-label="关闭运行状态" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm xl:hidden" /> : null}
+      {open ? <button type="button" aria-label="关闭运行状态遮罩" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm" /> : null}
       <aside
         ref={dialogRef}
-        role={open && !desktopRail ? "dialog" : undefined}
-        aria-modal={open && !desktopRail ? true : undefined}
+        id="metrics-panel"
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? true : undefined}
         aria-label="运行状态"
         tabIndex={-1}
-        aria-hidden={!panelInteractive}
-        inert={panelInteractive ? undefined : true}
+        hidden={!open}
+        aria-hidden={!open}
         className={clsx(
-        "app-surface app-border fixed inset-y-0 right-0 z-50 flex w-[min(23rem,calc(100vw-1rem))] flex-col overflow-y-auto border-l shadow-2xl transition-transform xl:static xl:z-auto xl:w-[22rem] xl:min-w-[320px] xl:translate-x-0 xl:shadow-none",
-        open ? "translate-x-0" : "translate-x-full xl:translate-x-0"
+        "app-surface app-border fixed inset-y-0 right-0 z-50 w-[min(26rem,calc(100vw-1rem))] flex-col overflow-y-auto border-l shadow-2xl",
+        open ? "flex" : "hidden"
       )}>
       <div className="app-surface app-divider sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3">
         <div>
           <h2 className="app-text text-sm font-semibold">运行状态</h2>
           <p className="app-text-muted mt-0.5 text-[11px]">服务、模型与性能证据</p>
         </div>
-        <button type="button" onClick={onClose} className="app-control inline-flex h-9 w-9 items-center justify-center rounded-lg border xl:hidden" aria-label="关闭运行状态"><X size={16} /></button>
+        <button type="button" onClick={onClose} className="app-control inline-flex h-9 w-9 items-center justify-center rounded-lg border" aria-label="关闭运行状态"><X size={16} /></button>
       </div>
 
       <div className="flex flex-col gap-3 px-4 py-4">

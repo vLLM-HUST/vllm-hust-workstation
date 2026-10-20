@@ -173,12 +173,20 @@ html {
 .workspace-message-assistant { background: var(--surface); border: 1px solid var(--border); }
 .workspace-copy { color: var(--text-muted); padding: 4px; border-radius: 4px; }
 .workspace-copy:hover { color: var(--focus); background: var(--control-hover); }
+.workspace-tools summary::-webkit-details-marker { display: none; }
+.workspace-tools-popover :is(button, a) {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px;
+  border-radius: 8px; color: var(--text-secondary); font-size: 12px; text-align: left;
+}
+.workspace-tools-popover :is(button, a):hover { background: var(--control-hover); color: var(--text-primary); }
+.workspace-header { position: relative; z-index: 20; }
 @media (hover: hover) {
   .workspace-copy { opacity: 0; }
   .group:hover .workspace-copy, .workspace-copy:focus-visible { opacity: 1; }
 }
 @media (max-width: 639px) {
   .workspace-header-actions { width: 100%; justify-content: flex-end; }
+  .workspace-model { order: -1; margin-right: auto; max-width: calc(100% - 180px); }
 }
 
 .app-divider { border-color: var(--border); }

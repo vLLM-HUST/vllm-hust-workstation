@@ -1,9 +1,8 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useCallback, useState } from "react";
 import {
   Send,
-  Paperclip,
   Bot,
   User,
   Square,
@@ -13,7 +12,8 @@ import {
   Globe,
   Lightbulb,
   Gauge,
-  Telescope,
+  MoreHorizontal,
+  ArrowDown,
   Download,
   Upload,
 } from "lucide-react";
@@ -22,6 +22,7 @@ import clsx from "clsx";
 import { ReasoningDisclosure } from "./ReasoningText";
 import AnswerMarkdown from "./AnswerMarkdown";
 import { decodeChatSession, encodeChatSession } from "@/lib/chatSession";
+import { useChatFollow } from "./useChatFollow";
 
 interface ChatPanelProps {
   sessionNotice?: string;
@@ -139,7 +140,6 @@ export default function ChatPanel({
   onClear,
   onToggleWebSearch,
   onToggleThinking,
-  onOpenInference,
   onOpenMetrics,
   serviceStatus,
   model,
@@ -150,18 +150,12 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [importError, setImportError] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const followLatest = useRef(true);
+  const follow = useChatFollow(messages, messages.length === 0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (followLatest.current) bottomRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text || loading || !model.trim() || !online) return;
-    followLatest.current = true;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     onSend(text);
@@ -181,13 +175,10 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
+    <div className="relative min-w-0 flex-1 flex flex-col overflow-hidden">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6" onScroll={event => {
-        const element = event.currentTarget;
-        followLatest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
-      }}>
-        <div className="mx-auto max-w-4xl space-y-5">
+      <div ref={follow.viewport} role="region" aria-label="对话记录" className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6" onScroll={follow.onScroll}>
+        <div ref={follow.content} className="mx-auto max-w-4xl space-y-5">
         {messages.length === 0 && (
           <div className="flex min-h-[calc(100vh-15rem)] items-center justify-center py-6 sm:min-h-[32rem]">
             <section className="app-card workspace-welcome w-full max-w-2xl rounded-3xl p-5 text-left sm:p-8">
@@ -237,7 +228,7 @@ export default function ChatPanel({
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={onOpenMetrics} className="app-text-secondary mt-4 inline-flex items-center gap-2 text-xs font-medium hover:underline xl:hidden">
+              <button type="button" onClick={onOpenMetrics} className="app-text-secondary mt-4 inline-flex items-center gap-2 text-xs font-medium hover:underline">
                 <Gauge size={14} /> 查看模型、监控与运行来源
               </button>
             </section>
@@ -266,16 +257,16 @@ export default function ChatPanel({
           </div>
         )}
 
-        <div ref={bottomRef} />
         </div>
       </div>
 
       {/* Input */}
       <div className="app-divider border-t px-3 pb-3 pt-2 sm:px-6 sm:pb-5">
-        <div className="app-control workspace-composer mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:gap-3 sm:px-4">
-          <button disabled aria-label="附件功能暂不可用" title="附件功能暂不可用" className="hidden sm:block text-white/30 transition-colors flex-shrink-0 mb-0.5">
-            <Paperclip size={18} />
-          </button>
+        {follow.away && <div className="mx-auto mb-2 flex max-w-4xl justify-center">
+          <button type="button" onClick={follow.latest} className="app-control inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs shadow-sm"><ArrowDown size={13} />{follow.unread ? "有新内容 · 回到最新" : "回到最新"}</button>
+          <span role="status" className="sr-only">{follow.unread ? "有新回答内容，可点击回到最新" : ""}</span>
+        </div>}
+        <div className="app-control workspace-composer mx-auto flex max-w-4xl flex-wrap items-end gap-2 rounded-2xl border px-3 py-3 transition-colors sm:flex-nowrap sm:gap-3 sm:px-4">
           <textarea
             ref={textareaRef}
             value={input}
@@ -283,19 +274,11 @@ export default function ChatPanel({
             onKeyDown={handleKeyDown}
             placeholder="输入消息…"
             rows={1}
-            className="flex-1 bg-transparent text-white/90 text-sm placeholder-white/25 resize-none focus:outline-none leading-relaxed"
+            aria-label="输入消息"
+            className="min-w-0 basis-full flex-1 bg-transparent text-white/90 text-sm placeholder-white/25 resize-none focus:outline-none leading-relaxed sm:basis-auto"
             style={{ minHeight: "24px", maxHeight: "180px" }}
           />
-          <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
-            <button
-              type="button"
-              onClick={onOpenInference}
-              className="app-control flex h-8 w-8 items-center justify-center rounded-xl border md:hidden"
-              title="查看推理过程"
-              aria-label="查看推理过程"
-            >
-              <Telescope size={14} />
-            </button>
+          <div className="ml-auto flex items-center gap-2 flex-shrink-0 mb-0.5">
             <button
               type="button"
               onClick={onToggleThinking}
@@ -306,6 +289,7 @@ export default function ChatPanel({
                   : "text-white/30 border-white/10 hover:text-white/60 hover:border-white/20"
               )}
               title={thinkingEnabled ? "深度思考：已开启" : "深度思考：已关闭"}
+              aria-pressed={thinkingEnabled}
             >
               <Lightbulb size={14} />
             </button>
@@ -320,10 +304,16 @@ export default function ChatPanel({
                     : "text-white/30 border-white/10 hover:text-white/60 hover:border-white/20"
                 )}
                 title={webSearch ? "联网搜索：已开启" : "联网搜索：已关闭"}
+                aria-pressed={webSearch}
               >
                 <Globe size={14} />
               </button>
             )}
+            <details className="workspace-tools relative" onKeyDown={event => {
+              if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); }
+            }}>
+              <summary className="app-text-muted flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg" aria-label="会话操作" title="会话操作"><MoreHorizontal size={16} /></summary>
+              <div className="workspace-tools-popover app-surface app-border absolute bottom-full right-0 z-20 mb-2 w-52 rounded-xl border p-1.5 shadow-xl">
             {messages.length > 0 && (
               <button type="button" title="导出对话（本机 JSON）" aria-label="导出对话（本机 JSON）" className="app-text-muted"
                 onClick={() => {
@@ -331,11 +321,11 @@ export default function ChatPanel({
                   const link = document.createElement("a"); link.href = url;
                   link.download = `workstation-session-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
                   link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-                }}><Download size={16} /></button>
+                }}><Download size={16} />导出会话 JSON</button>
             )}
             {onImportMessages && <>
               <button type="button" title="导入旧会话（只在本机渲染，不请求模型）" aria-label="导入旧会话" disabled={loading}
-                className="app-text-muted" onClick={() => importRef.current?.click()}><Upload size={16} /></button>
+                className="app-text-muted" onClick={() => importRef.current?.click()}><Upload size={16} />导入旧会话</button>
               <input ref={importRef} type="file" accept=".json,application/json" hidden onChange={async event => {
                 const file = event.target.files?.[0]; event.target.value = "";
                 if (!file) return;
@@ -354,9 +344,11 @@ export default function ChatPanel({
                 className="text-white/25 hover:text-white/60 transition-colors"
                 title="清空对话"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={16} />清空对话
               </button>
             )}
+              </div>
+            </details>
             <button
               onClick={loading ? onStop : handleSend}
               aria-label={loading ? "停止生成" : "发送消息"}

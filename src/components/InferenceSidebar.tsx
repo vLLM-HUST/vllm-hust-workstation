@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { ReasoningText } from "./ReasoningText";
+import { useDialogFocus } from "./useDialogFocus";
 import type { SearchResult } from "@/types";
 
 export interface ProcessStep {
@@ -45,29 +46,18 @@ export default function InferenceSidebar({
   thinkText,
 }: InferenceSidebarProps) {
   const hasContent = processSteps.length > 0 || searchResults.length > 0 || Boolean(thinkText.trim());
+  const dialogRef = useDialogFocus<HTMLElement>(open, onToggle);
+  if (!open) return null;
 
   return (
-    <aside
+    <>
+    <button type="button" aria-label="关闭推理过程遮罩" onClick={onToggle} className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm" />
+    <aside ref={dialogRef} id="inference-panel" role="dialog" aria-modal="true" aria-label="推理过程" tabIndex={-1}
       className={clsx(
-        "app-surface app-border flex-shrink-0 overflow-hidden border-r transition-all duration-300 ease-out",
-        open
-          ? "w-80 min-w-[320px] max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,calc(100vw-2.5rem))] max-md:min-w-0 max-md:shadow-2xl"
-          : "w-12 max-md:w-0 max-md:border-r-0"
+        "app-surface app-border fixed inset-y-0 right-0 z-50 w-[min(26rem,calc(100vw-1rem))] overflow-hidden border-l shadow-2xl"
       )}
     >
       <div className="h-full flex">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="app-border app-text-muted flex w-12 flex-col items-center justify-center gap-2 border-r transition-colors hover:bg-white/5 hover:text-white max-md:hidden"
-          title={open ? "收起推理面板" : "展开推理面板"}
-        >
-          <span className="text-base">🔭</span>
-          <span className="text-[11px] tracking-widest [writing-mode:vertical-rl]">
-            推理
-          </span>
-        </button>
-
         {open && (
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="app-divider flex items-center justify-between border-b px-4 py-4">
@@ -79,7 +69,7 @@ export default function InferenceSidebar({
                 type="button"
                 onClick={onToggle}
                 className="app-text-muted transition-colors hover:text-white"
-                title="收起"
+                title="收起" aria-label="关闭推理过程"
               >
                 ✕
               </button>
@@ -181,5 +171,6 @@ export default function InferenceSidebar({
         )}
       </div>
     </aside>
+    </>
   );
 }

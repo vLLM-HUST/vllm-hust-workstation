@@ -41,6 +41,8 @@ it("publishes reasoning to the assistant message before EOF and retains final se
       controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"最终答案"}}]}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'));
       controller.close(); await sending;
     });
+    expect(host.querySelector('[aria-label="推理过程"]')).toBeNull();
+    expect(host.querySelector('[aria-label="运行状态"]')?.hasAttribute('hidden')).toBe(true);
     expect(captured.props!.loading).toBe(false);
     expect(captured.props!.messages.at(-1)).toMatchObject({reasoning:"实时思考片段",content:"最终答案",completionStatus:"completed"});
   } finally {

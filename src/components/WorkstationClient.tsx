@@ -313,7 +313,6 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         ...prev,
         { id: assistantId, role: "assistant", content: "", timestamp: Date.now() },
       ]);
-      setPanelOpen(true);
       setSearchResults([]);
       setSearchQuery(text);
       setThinkText("");
@@ -522,7 +521,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         onModelChange={setModel}
         onOpenModelHub={() => setModelHubOpen(true)}
         onOpenAgentLab={() => setAgentLabOpen(true)}
-        onOpenMetrics={() => setMetricsOpen(true)}
+        onOpenMetrics={() => { setPanelOpen(false); setMetricsOpen(true); }}
+        onOpenInference={() => { setMetricsOpen(false); setPanelOpen(true); }}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         serviceStatus={displayedServiceStatus}
@@ -550,8 +550,8 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
           onClear={handleClear}
           onToggleWebSearch={handleToggleWebSearch}
           onToggleThinking={handleToggleThinking}
-          onOpenInference={() => setPanelOpen(true)}
-          onOpenMetrics={() => setMetricsOpen(true)}
+          onOpenInference={() => { setMetricsOpen(false); setPanelOpen(true); }}
+          onOpenMetrics={() => { setPanelOpen(false); setMetricsOpen(true); }}
           serviceStatus={displayedServiceStatus}
           model={displayedModel}
           hardware={hardware}
