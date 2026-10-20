@@ -172,7 +172,40 @@ increments, rather than implying total response latency. Focused tests10 passed;
 Linux full suite280 passed, Python host-observer tests16 passed, lint/type checks,
 production build and standalone check passed. The isolated3006 preview passed
 positive/negative source-observer qualification, without production mutation.
-Production Workstation remains the prior immutable build until approved cutover.
+The human subsequently approved a Workstation-app-only restart. After fresh
+positive/negative preview qualification and active-chat drain, code362ccc3 was
+published at2026-10-20 20:26:16CST. App PID changed1478667→2436575; engine1581154,
+router1359620 and Twin1058851 stayed unchanged. Stable environment values matched;
+only systemd invocation variables differed. Runtime immutable directory suffix:
+`362ccc3e18ce987884c9d063d5219335450dfd9b-20261020-loop-ui`. The prior immutable
+dd486bc build remains available for an authorized app-only symlink rollback.
+
+Public discovery/source API checks passed. The browser-tab control bridge timed
+out for both IAB and named Chrome tab creation; native Chrome control worked.
+A separate fresh incognito window preserved the independent reviewer's windows.
+Default A100/thinking ON one-sentence KV question returned a Chinese final body,
+separate folded reasoning,1513 upstream total tokens and explicit `首次输出827ms`
+label. This is not full-response latency or a scientific-correctness claim.
+Native DevTools390×844 light-mode inspection showed the entire long release/log
+path wrapping inside the runtime card, without a horizontal drawer scrollbar.
+`ws-release-mobile-drawer-fixed-20261020.png` was downloaded and reopened to check
+the actual page pixels. Dark-mode answer and first-output label were readable.
+The original complex follow-up was sent at20:34CST and returned12 points, rendered
+table/math and a separate folded reasoning section. Its exact synthetic trace
+`ed93ec53999f54551e084877cb4e5356` confirmed32.136s,32768 total allowance,
+thinking true, cached0,5207 output/4538 reasoning tokens and nested completed with
+no incomplete details. The visible1549ms label is first output, not32.136s total.
+`ws-release-dark-final-20261020.png` was downloaded and reopened. Address-bar
+reload restored both questions and complete answers with table/math/usage.
+The formula remains an underspecified asymptotic growth expression and other
+technical claims remain inaccurate; this is delivery/UI acceptance only, not
+clearance of the outstanding scientific-quality/loop-elimination gates.
+
+During inspection Chrome logged transient ERR_SSL_PROTOCOL_ERROR for three
+polling requests (local-service/versions/metrics). A subsequent versions poll
+restored verified provenance; separate public curl also succeeded. This observed
+transport fault is retained rather than attributed to the layout patch, hidden,
+or presented as proof of a restarted inference engine.
 
 Twin frontend `5f683ad` gives the unified advanced workflow its computed drawing
 width, enabling real local horizontal scrolling instead of shrinking40 nodes into
