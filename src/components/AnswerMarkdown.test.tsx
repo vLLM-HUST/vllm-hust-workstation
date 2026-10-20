@@ -23,6 +23,12 @@ describe("safe answer Markdown for both legacy and streaming text", () => {
     const html = render(source); expect(html).not.toContain('class="katex"');
     expect(html).toContain('&lt;script&gt;'); expect(html).toContain('class="language-python"');
   });
+  it("resumes math parsing after a Windows CRLF code fence", () => {
+    const source = '```text\r\n\\(literal\\)\r\n```\r\n\r\n\\(x^2\\)';
+    const html = render(source);
+    expect(html).toContain('\\(literal\\)'); expect(html).toContain('class="katex"');
+    expect(normalizeMathDelimiters(source)).toContain('$x^2$');
+  });
   it("preserves escaped currency, escaped delimiters and complete long URLs", () => {
     const url = 'https://example.org/wiki?topic=kv-cache&length=131072#measurements';
     const html = render('价格 \\$20\n\n[完整来源]('+url+')\n\n\\\\(literal\\\\)');

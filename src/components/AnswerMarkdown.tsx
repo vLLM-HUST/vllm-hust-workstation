@@ -14,7 +14,7 @@ export function normalizeMathDelimiters(source: string): string {
     const fence = lineStart ? /^ {0,3}(`{3,}|~{3,})[^\n]*(?:\n|$)/.exec(source.slice(i)) : null;
     if (fence) {
       const marker = fence[1][0];
-      const end = new RegExp(`^ {0,3}${marker}{${fence[1].length},}[ \\t]*$`, "m");
+      const end = new RegExp(`^ {0,3}${marker}{${fence[1].length},}[ \\t\\r]*$`, "m");
       const rest = source.slice(i + fence[0].length);
       const match = end.exec(rest);
       const size = match ? fence[0].length + match.index + match[0].length : source.length - i;
