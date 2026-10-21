@@ -28,6 +28,7 @@ import { useChatFollow } from "./useChatFollow";
 interface ChatPanelProps {
   sessionNotice?: string;
   onImportMessages?: (messages: Message[]) => void;
+  onAuditMessage?: (id: string) => void;
   messages: Message[];
   loading: boolean;
   accentColor: string;
@@ -64,7 +65,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentColor: string; streaming: boolean }) {
+function MessageBubble({ msg, accentColor, streaming, onAuditMessage }: { msg: Message; accentColor: string; streaming: boolean; onAuditMessage?: (id: string) => void }) {
   const isUser = msg.role === "user";
   return (
     <div
@@ -106,6 +107,12 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
           </p>
         )}
         {!isUser && !streaming && msg.content.trim() && <AnswerAdvisory advisory={msg.advisory} />}
+        {!isUser && !streaming && msg.content.trim() && onAuditMessage
+          && (!msg.completionStatus || msg.completionStatus === "completed") && <button
+            className="mt-2 text-xs opacity-70 hover:opacity-100 disabled:opacity-40"
+            disabled={msg.advisory?.status === "pending"}
+            onClick={() => onAuditMessage(msg.id)}
+          >{msg.advisory ? "重新核验" : "核验此回答"}</button>}
 
         <div
           className={clsx(
@@ -131,6 +138,7 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
 export default function ChatPanel({
   sessionNotice,
   onImportMessages,
+  onAuditMessage,
   messages,
   loading,
   accentColor,
@@ -239,6 +247,7 @@ export default function ChatPanel({
 
         {messages.map((msg, index) => (
           <MessageBubble key={msg.id} msg={msg} accentColor={accentColor}
+            onAuditMessage={onAuditMessage}
             streaming={loading && msg.role === "assistant" && index === messages.length - 1} />
         ))}
 

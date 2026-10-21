@@ -9,10 +9,16 @@ function render(message: Partial<Message>) {
     timestamp:0,...message}]} loading={false} accentColor="#6366f1" webSearch={false}
     searchEnabled={true} thinkingEnabled={true} onSend={()=>{}} onStop={()=>{}} onClear={()=>{}}
     onToggleWebSearch={()=>{}} onToggleThinking={()=>{}} onOpenInference={()=>{}} onOpenMetrics={()=>{}}
-    serviceStatus="online" model="test" hardware={{npu:"A100",cpu:"",memory:""}} />);
+    onAuditMessage={()=>{}} serviceStatus="online" model="test" hardware={{npu:"A100",cpu:"",memory:""}} />);
 }
 
 describe("final answer presentation",()=>{
+  it("offers independent manual auditing for historical complete answers, never truncated ones",()=>{
+    expect(render({content:"历史回答"})).toContain("核验此回答");
+    const pending=render({content:"完成正文",advisory:{status:"pending"}});
+    expect(pending).toContain('disabled=""'); expect(pending).toContain("重新核验");
+    expect(render({content:"部分正文",completionStatus:"truncated"})).not.toContain("核验此回答");
+  });
   it("separates advisory errors from original answer completion and copies",()=>{
     const html=render({content:"原始正文",completionStatus:"completed",advisory:{status:"unavailable",message:"旁路失败，不代表答案正确"}});
     expect(html).toContain("原始正文");expect(html).toContain("旁路失败");

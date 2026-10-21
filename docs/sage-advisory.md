@@ -35,3 +35,8 @@ default proxy is `http://127.0.0.1:55109/audit`; optional
 Do not expose the sidecar publicly. Rollback the web release symlink and restart
 only Workstation; stopping the sidecar leaves raw chat functional and marks
 advisories unavailable. Never restart a shared inference engine for this feature.
+Historical answers can be checked with “核验此回答” or “重新核验”. This uses the
+nearest preceding user question and the unchanged final text, never generation,
+reasoning, or an `/api/chat` call. Restored/imported advisory metadata is ignored;
+users can request a fresh report without re-asking their original question.
+

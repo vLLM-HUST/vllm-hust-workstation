@@ -6,6 +6,7 @@ import WorkstationClient from "./WorkstationClient";
 
 const captured = vi.hoisted(() => ({ props: null as null | {
   messages: Message[]; loading: boolean; onSend: (text: string) => Promise<void>;
+  onImportMessages: (messages: Message[]) => void; onAuditMessage: (id: string) => void;
 } }));
 vi.mock("./ChatPanel", () => ({default: (props: NonNullable<typeof captured.props>) => {
   captured.props = props; return null;
@@ -55,6 +56,20 @@ it.each([["stop","completed",true], ["length","truncated",false], ["cancelled","
     } else expect(advisoryCall).toBeUndefined();
     const chatCall = calls.find(call => call[0] === "/api/chat");
     expect(JSON.stringify(chatCall)).not.toContain("实时思考片段");
+    if (shouldAudit) {
+      const chatCount = calls.filter(call => call[0] === "/api/chat").length;
+      await act(async () => captured.props!.onImportMessages([
+        {id:"old-question",role:"user",content:"原来的追问",timestamp:1},
+        {id:"old-answer",role:"assistant",content:"历史原始 $x$",reasoning:"绝不发送的旧思考",timestamp:2},
+      ]));
+      await act(async () => captured.props!.onAuditMessage("old-answer"));
+      const currentCalls = vi.mocked(fetch).mock.calls;
+      expect(currentCalls.filter(call => call[0] === "/api/chat")).toHaveLength(chatCount);
+      expect(JSON.parse(currentCalls.filter(call => call[0] === "/api/advisory").at(-1)![1]!.body as string))
+        .toEqual({question:"原来的追问",answer:"历史原始 $x$"});
+      expect(captured.props!.messages.at(-1)).toMatchObject({content:"历史原始 $x$",advisory:{status:"pending"}});
+      expect(captured.props!.loading).toBe(false);
+    }
   } finally {
     await act(async () => root.unmount()); host.remove();
     vi.unstubAllGlobals(); vi.restoreAllMocks();

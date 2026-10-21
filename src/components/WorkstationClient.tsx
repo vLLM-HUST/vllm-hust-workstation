@@ -286,6 +286,26 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
     });
   }, []);
 
+  const auditMessage = useCallback((id: string, question: string, snapshot: string) => {
+    setMessages(prev => prev.map(message => message.id === id && message.content === snapshot
+      ? { ...message, advisory: { status: "pending" } } : message));
+    // Independent from generation: no model call, rewriting or completion gate.
+    void requestAnswerAdvisory(question, snapshot).then(advisory => {
+      setMessages(prev => prev.map(message => message.id === id && message.content === snapshot
+        ? { ...message, advisory } : message));
+    });
+  }, [setMessages]);
+
+  const handleAuditMessage = useCallback((id: string) => {
+    const index = messages.findIndex(message => message.id === id);
+    const message = messages[index];
+    if (!message || message.role !== "assistant" || !message.content.trim()
+      || message.advisory?.status === "pending" || (loading && index === messages.length - 1)
+      || (message.completionStatus && message.completionStatus !== "completed")) return;
+    const question = messages.slice(0, index).findLast(previous => previous.role === "user");
+    if (question) auditMessage(id, question.content, message.content);
+  }, [messages, loading, auditMessage]);
+
   const handleSend = useCallback(
     async (text: string) => {
       if (!model.trim() || !models.includes(model)) return;
@@ -497,19 +517,11 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         setLoading(false);
         abortRef.current = null;
         if (completion.status === "completed" && fullContent.trim()) {
-          const snapshot = fullContent;
-          setMessages(prev => prev.map(message => message.id === assistantId
-            ? { ...message, advisory: { status: "pending" } } : message));
-          // Deliberately not awaited: original answer, completion and next turn
-          // must remain available even if the advisory never resolves.
-          void requestAnswerAdvisory(text, snapshot).then(advisory => {
-            setMessages(prev => prev.map(message => message.id === assistantId && message.content === snapshot
-              ? { ...message, advisory } : message));
-          });
+          auditMessage(assistantId, text, fullContent);
         }
       }
     },
-    [messages, model, models, webSearch, thinkingEnabled, setMessages]
+    [messages, model, models, webSearch, thinkingEnabled, setMessages, auditMessage]
   );
 
   const handleStop = useCallback(() => {
@@ -551,6 +563,7 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         <ChatPanel
           sessionNotice={sessionNotice}
           onImportMessages={imported => setMessages(previous => [...previous, ...imported])}
+          onAuditMessage={handleAuditMessage}
           messages={messages}
           loading={loading}
           accentColor={accentColor}
