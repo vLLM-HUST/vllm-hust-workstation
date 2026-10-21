@@ -8,6 +8,7 @@ export interface Message {
   reasoning?: string;
   completionStatus?: import("@/lib/chatStream").ChatCompletion["status"];
   completionNotice?: string;
+  advisory?: import("@/lib/answerAdvisory").AnswerAdvisory;
 }
 
 export interface SearchResult {

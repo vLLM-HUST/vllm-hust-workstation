@@ -13,6 +13,12 @@ function render(message: Partial<Message>) {
 }
 
 describe("final answer presentation",()=>{
+  it("separates advisory errors from original answer completion and copies",()=>{
+    const html=render({content:"原始正文",completionStatus:"completed",advisory:{status:"unavailable",message:"旁路失败，不代表答案正确"}});
+    expect(html).toContain("原始正文");expect(html).toContain("旁路失败");
+    expect(html).not.toContain('data-completion-status="failed"');
+    expect(render({content:"旧回答"})).toContain("尚无旁路核验记录");
+  });
   it("labels stored latency as first output, never total answer time",()=>{
     const html=render({content:"旧回答",latencyMs:1833});
     expect(html).toContain('首次输出 1833ms');

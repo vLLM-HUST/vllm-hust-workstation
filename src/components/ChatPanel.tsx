@@ -21,6 +21,7 @@ import type { Message, ServiceProbeStatus } from "@/types";
 import clsx from "clsx";
 import { ReasoningDisclosure } from "./ReasoningText";
 import AnswerMarkdown from "./AnswerMarkdown";
+import AnswerAdvisory from "./AnswerAdvisory";
 import { decodeChatSession, encodeChatSession } from "@/lib/chatSession";
 import { useChatFollow } from "./useChatFollow";
 
@@ -104,6 +105,7 @@ function MessageBubble({ msg, accentColor, streaming }: { msg: Message; accentCo
             {msg.completionNotice}
           </p>
         )}
+        {!isUser && !streaming && msg.content.trim() && <AnswerAdvisory advisory={msg.advisory} />}
 
         <div
           className={clsx(

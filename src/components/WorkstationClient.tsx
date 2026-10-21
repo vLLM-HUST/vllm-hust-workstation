@@ -3,6 +3,7 @@
 import { useChatSession } from "./useChatSession";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { requestAnswerAdvisory } from "@/lib/answerAdvisory";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
 import MetricsDashboard from "@/components/MetricsDashboard";
@@ -495,6 +496,17 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
         );
         setLoading(false);
         abortRef.current = null;
+        if (completion.status === "completed" && fullContent.trim()) {
+          const snapshot = fullContent;
+          setMessages(prev => prev.map(message => message.id === assistantId
+            ? { ...message, advisory: { status: "pending" } } : message));
+          // Deliberately not awaited: original answer, completion and next turn
+          // must remain available even if the advisory never resolves.
+          void requestAnswerAdvisory(text, snapshot).then(advisory => {
+            setMessages(prev => prev.map(message => message.id === assistantId && message.content === snapshot
+              ? { ...message, advisory } : message));
+          });
+        }
       }
     },
     [messages, model, models, webSearch, thinkingEnabled, setMessages]

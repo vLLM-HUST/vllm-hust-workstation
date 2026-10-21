@@ -18,4 +18,9 @@ describe("lossless local-only chat recovery", () => {
   it("ignores unknown fields instead of granting imported markup or credentials special behavior", () => {
     expect(decodeChatSession(JSON.stringify({version:1,messages:[{...message,html:'<script>',token:'ignored'}]})).messages).toEqual([message]);
   });
+  it("never treats imported or interrupted advisory metadata as a trusted live SAGE result", () => {
+    const restored=decodeChatSession(JSON.stringify({version:1,messages:[{...message,advisory:{status:"ready",report:{status:"correct"}}}]}));
+    expect(restored.messages[0]).not.toHaveProperty("advisory");
+    expect(restored.messages[0].content).toBe(message.content);
+  });
 });
