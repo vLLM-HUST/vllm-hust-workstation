@@ -111,6 +111,7 @@ export default function Header({
             <button type="button" onClick={() => { closeTools(); onOpenModelHub(); }}><PackageOpen size={15} />模型库</button>
             <button type="button" onClick={() => { closeTools(); onOpenAgentLab(); }}><Bot size={15} />EvoScientist 任务与日志</button>
             <Link href="/mods" onClick={closeTools}><Puzzle size={15} />Mod 中心</Link>
+            <Link href="/research" onClick={closeTools}><Telescope size={15} />研究模式 · 原始 prompt</Link>
             <Link href="/switch" onClick={closeTools}><Zap size={15} />GenNova 推理开关</Link>
           </nav>
         </details>
