@@ -24,6 +24,13 @@ it("requires scoped credentials, keeps them out of storage and exposes raw reque
     expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer fixture-research-key");
     expect(host.querySelector('[aria-label="原始 prompt"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="原始输入格式"]')).not.toBeNull();
+    const stops=host.querySelector<HTMLInputElement>('[aria-label="停止序列"]')!;
+    expect(stops.value).toBe("[]");
+    await act(async()=>set(stops,'["END","\\n"]'));
+    expect(host.textContent).toContain('"stop": [');
+    expect(host.textContent).toContain('"END"');
+    await act(async()=>set(stops,'[null]'));
+    expect(host.textContent).toContain('不是有效 JSON 参数');
     expect(host.textContent).toContain("不能把 HTTP TTFT 当作 GPU 内核耗时");
     expect(JSON.stringify(localStorage)).not.toContain("fixture-research-key");
     expect(JSON.stringify(sessionStorage)).not.toContain("fixture-research-key");
