@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { getModCatalog, modRoot, startModAction } from "./modStore";
@@ -9,7 +9,7 @@ import { GET, POST } from "@/app/api/mods/route";
 import { getRuntimeProvenance } from "./runtimeProvenance";
 vi.mock("./runtimeProvenance", () => ({ getRuntimeProvenance: vi.fn() }));
 let root: string;
-beforeEach(async () => { root = await mkdtemp(path.join(os.tmpdir(), "mod-unit-")); vi.stubEnv("WORKSTATION_MOD_DIR", root); vi.stubEnv("WORKSTATION_ADMIN_TOKEN", "test-secret"); vi.mocked(getRuntimeProvenance).mockResolvedValue({ available: false, source: "unavailable", vllmHust: "unavailable", vllmAscendHust: "unavailable" }); });
+beforeEach(async () => { root = await realpath(await mkdtemp(path.join(os.tmpdir(), "mod-unit-"))); vi.stubEnv("WORKSTATION_MOD_DIR", root); vi.stubEnv("WORKSTATION_ADMIN_TOKEN", "test-secret"); vi.mocked(getRuntimeProvenance).mockResolvedValue({ available: false, source: "unavailable", vllmHust: "unavailable", vllmAscendHust: "unavailable" }); });
 afterEach(async () => { vi.unstubAllEnvs(); await rm(root, {recursive: true, force: true}); });
 it("requires explicit storage and rejects root/symlink paths", async () => {
   vi.stubEnv("WORKSTATION_MOD_DIR", ""); await expect(modRoot()).rejects.toThrow();

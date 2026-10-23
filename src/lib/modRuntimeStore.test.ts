@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { getModRuntime, runtimeConfig, startRuntimePreparation } from "./modRuntimeStore";
@@ -19,7 +19,7 @@ const request = (body: unknown, token = "test-admin") => new Request("http://loc
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  root = await mkdtemp(path.join(os.tmpdir(), "mod-runtime-test-"));
+  root = await realpath(await mkdtemp(path.join(os.tmpdir(), "mod-runtime-test-")));
   await mkdir(path.join(root, "library"), { mode: 0o700 });
   await mkdir(path.join(root, "runtime"), { mode: 0o700 });
   configuration = { schema: "workstation.mod-runtime-config/v1", target: { id: "current", label: "工作站实例", ownership: "shared", containerName: "actual-container", pythonBin: "/runtime/bin/python", upstreamUrl: "http://127.0.0.1:18001" } };
