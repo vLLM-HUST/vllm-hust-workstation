@@ -77,8 +77,18 @@ outside source control and should contain only authorized benchmark material.
 - Both current engine instances were observed APC-on and speculation-disabled.
   The A6000 capture is checked against live API process start and served model;
   a restart invalidates it rather than retaining a stale enabled state.
-- **Still required before release:** authenticated real-browser execution and
-  real APC/SuffixDecoding ON/OFF trials on assigned exclusive compute. All
-  inspected A100/A6000 cards had existing workloads. A safe occupied-GPU refusal
-  and unit tests do not replace positive GPU qualification. No production
-  research-mode cutover or performance improvement is claimed by this document.
+- Authenticated browser checks on both physical targets covered real raw text
+  and token-ID input, native metrics/configuration, normal stop, length and
+  explicit local stop. They are separate from mocked unit tests.
+- Release also requires the full mirrored eight-phase APC/Suffix factorial on
+  explicitly leased GPUs. A configured switch or a safe occupied-GPU refusal is
+  not execution evidence. Actual streamed token-ID and text hashes must agree;
+  APC reuse and real speculative draft/accept counters must be observed.
+- Qwen GDN numerical paths and hybrid cache geometry must be held fixed across
+  groups. A native fused-CUDA versus standard-recurrence near-tie divergence is
+  retained as negative evidence, not silently relabelled a speedup. Do not bypass
+  unsupported batch-invariant capability checks. See the control-plane guide for
+  the pinned runtime, common-path controls, current qualification and limits.
+- This guide does not by itself claim production cutover, universal determinism,
+  model accuracy equivalence or a performance improvement. Those require matching
+  deployed versions and the retained real-experiment/browser records.
