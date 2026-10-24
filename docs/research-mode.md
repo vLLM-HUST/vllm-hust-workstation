@@ -92,3 +92,14 @@ outside source control and should contain only authorized benchmark material.
 - This guide does not by itself claim production cutover, universal determinism,
   model accuracy equivalence or a performance improvement. Those require matching
   deployed versions and the retained real-experiment/browser records.
+
+## Timing boundaries
+
+The receipt panel separates engine-native scheduled-to-last-token time, initial
+queue time, research-service-to-engine HTTP time and browser-to-stream-end time.
+Native timings come from engine per-request metrics, never latency subtraction;
+they include internal scheduling/CPU/distributed waits, not just GPU kernels.
+Missing/invalid or incomplete native samples are not displayed as successful
+inference latency. Browser stream time excludes the subsequent receipt fetch,
+which is reported separately. Public browser time includes WS and the public
+network path; HTTP timing does not isolate Cloudflare or gateway overhead.
