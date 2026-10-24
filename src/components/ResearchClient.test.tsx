@@ -25,7 +25,7 @@ it("shows native clocks separately and never substitutes transport timing", asyn
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 it("requires scoped credentials, keeps them out of storage and exposes raw request controls", async () => {
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
-  const fetch=vi.fn().mockResolvedValue(new Response(JSON.stringify({targets:[{id:"physical",model:"physical-model",engine_model:"actual-model",shared:true}]}),{status:200}));
+  const fetch=vi.fn().mockResolvedValue(new Response(JSON.stringify({targets:[{id:"physical",model:"physical-model",engine_model:"actual-model",shared:true}, {id:"other",model:"other-model",engine_model:"actual-model",shared:true}]}),{status:200}));
   vi.stubGlobal("fetch",fetch);
   const host=document.createElement("div"); document.body.append(host);
   const root=createRoot(host);
@@ -77,6 +77,11 @@ it("requires scoped credentials, keeps them out of storage and exposes raw reque
     expect(JSON.stringify(localStorage)).not.toContain("fixture-research-key");
     expect(JSON.stringify(sessionStorage)).not.toContain("fixture-research-key");
     expect(host.textContent).not.toContain("fixture-research-key");
+    const selector=host.querySelector<HTMLSelectElement>('[aria-label="固定研究后端"]')!;
+    await act(async()=>{ selector.value="other-model"; selector.dispatchEvent(new Event("change",{bubbles:true})); });
+    expect(host.querySelector('[aria-label="分层计时"]')).toBeNull();
+    expect(host.textContent).not.toContain('"browser_total_ms": 100');
+    expect(host.textContent).toContain("未沿用上一后端计时");
     const logout=[...host.querySelectorAll("button")].find(button=>button.textContent==="退出研究权限")!;
     await act(async()=>logout.click());
     expect(host.querySelector('[aria-label="原始 prompt"]')).toBeNull();
