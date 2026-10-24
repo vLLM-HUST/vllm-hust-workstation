@@ -97,7 +97,7 @@ export default function ResearchClient() {
       }
       const observed = await (await request(`receipts/${trace}`)).json();
       setReceipt({ ...observed, browser_total_ms: performance.now()-started, browser_first_text_ms: firstText,
-        browser_scope: "包含 Cloudflare、WS 中继、网络、排队和推理；不是纯引擎计时" });
+        browser_scope: "浏览器路径包含 WS 中继、网络、排队和推理；公网访问时还包含 Cloudflare；不是纯引擎计时" });
       setStatus(observed.state === "completed" && done ? "原始流正常结束；不代表内容已被事实核验。" :
         observed.state === "length" ? "生成额度耗尽，原始输出可能不完整；未标记成功。" : "流未正常完成，请查看实际回执。");
     } catch (error) {
@@ -131,7 +131,7 @@ export default function ResearchClient() {
         <button className={box} disabled={busy || !prompt || !model} onClick={() => void run()}>发送原始 prompt</button>{busy && abort.current && <button className={`${box} ml-2`} onClick={() => abort.current?.abort()}>停止读取</button>}
       </section>
       <section className="space-y-2"><h2 className="font-semibold">原始输出</h2><pre aria-label="原始模型输出" className="app-surface app-border min-h-24 overflow-auto whitespace-pre-wrap rounded-lg border p-3">{output || "尚未生成"}</pre></section>
-      <details open={Boolean(receipt)}><summary>计时与完成回执</summary><p className="app-text-muted">浏览器计时包含公网链路；研究服务计时为固定引擎 HTTP 路径。纯直连请在引擎主机使用 control-plane 的 research_benchmark CLI，绕过 Cloudflare、WS 和路由；仍不能把 HTTP TTFT 当作 GPU 内核耗时。</p><pre className="overflow-auto text-xs">{JSON.stringify(receipt, null, 2)}</pre></details>
+      <details open={Boolean(receipt)}><summary>计时与完成回执</summary><p className="app-text-muted">浏览器计时包含 WS 与网络；公网访问时还包含 Cloudflare。研究服务计时为固定引擎 HTTP 路径。纯直连请在引擎主机使用 control-plane 的 research_benchmark CLI，绕过 Cloudflare、WS 和路由；仍不能把 HTTP TTFT 当作 GPU 内核耗时。</p><pre className="overflow-auto text-xs">{JSON.stringify(receipt, null, 2)}</pre></details>
       <details><summary>实际引擎配置（未知不等于关闭）</summary><pre className="overflow-auto text-xs">{JSON.stringify(engine, null, 2)}</pre></details>
       <details><summary>引擎 Prometheus 指标（聚合值，不是网关指标）</summary><pre className="max-h-80 overflow-auto text-xs">{metrics || "尚未读取"}</pre></details>
       <section className="space-y-2"><h2 className="font-semibold">APC／SuffixDecoding 对照</h2><p className="app-text-muted">不会对共享引擎切开关或清缓存。实验由独占 GPU 租约和本机受控 runner 执行，覆盖镜像顺序、冷／热边界、配置证据、投机指标和原始输出一致性；资源未分配时明确拒绝。</p><button className={box} disabled={busy} onClick={() => void createPlan()}>查看四组受控实验计划</button>{plan && <pre className="overflow-auto text-xs">{JSON.stringify(plan, null, 2)}</pre>}</section>

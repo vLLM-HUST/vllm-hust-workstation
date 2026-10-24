@@ -47,6 +47,7 @@ it("requires scoped credentials, keeps them out of storage and exposes raw reque
     expect(sent.messages).toBeUndefined();
     expect(host.textContent).toContain("原始流正常结束");
     expect(host.textContent).toContain("不能把 HTTP TTFT 当作 GPU 内核耗时");
+    expect(host.textContent).toContain("公网访问时还包含 Cloudflare");
     expect(JSON.stringify(localStorage)).not.toContain("fixture-research-key");
     expect(JSON.stringify(sessionStorage)).not.toContain("fixture-research-key");
     expect(host.textContent).not.toContain("fixture-research-key");
