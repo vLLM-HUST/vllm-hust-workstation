@@ -14,6 +14,7 @@ export default function ResearchClient() {
   const [prompt, setPrompt] = useState("");
   const [budget, setBudget] = useState(1024);
   const [seed, setSeed] = useState(42);
+  const [stopJson, setStopJson] = useState("[]");
   const [special, setSpecial] = useState(false);
   const [output, setOutput] = useState("");
   const [receipt, setReceipt] = useState<Json | null>(null);
@@ -51,8 +52,13 @@ export default function ResearchClient() {
     finally { setBusy(false); }
   }
   function payload(): Json {
+    const stop: unknown = JSON.parse(stopJson);
+    if (!Array.isArray(stop) || stop.length > 16 || stop.some(value => typeof value !== "string" || !value)) {
+      throw new Error("停止序列必须是至多 16 个非空字符串的 JSON 数组。");
+    }
     return { model, prompt: kind === "ids" ? JSON.parse(prompt) : prompt, max_tokens: budget,
-      temperature: 0, seed, add_special_tokens: special, stream: true, stream_options: { include_usage: true } };
+      temperature: 0, seed, add_special_tokens: special, stream: true, stream_options: { include_usage: true },
+      ...(stop.length ? { stop } : {}) };
   }
   async function run() {
     setBusy(true); setOutput(""); setReceipt(null);
@@ -108,7 +114,7 @@ export default function ResearchClient() {
   return <main className="app-text mx-auto max-w-5xl space-y-5 px-4 py-6">
     <header className="flex items-center justify-between"><h1 className="text-xl font-semibold">研究模式</h1><Link href="/" className={box}>返回聊天</Link></header>
     <p className="app-text-muted">原始 Completions · 固定物理后端 · 引擎指标 · 受控实验。此页面不添加 chat template、系统提示词、搜索或 SAGE 答案改写。</p>
-    {!token ? <section className="flex flex-wrap gap-2"><input type="password" autoComplete="off" aria-label="研究凭据" className={box} value={inputKey} onChange={event => setInputKey(event.target.value)} placeholder="个人研究凭据" /><button className={box} disabled={busy || !inputKey} onClick={() => void login()}>验证研究权限</button></section> :
+    {!token ? <section className="space-y-2"><p className="app-text-muted">研究权限与管理页面登录分开验证。请在这里填写已获授权的研究凭据；首次部署由所有者使用现有管理员凭据验收，普通聊天密钥不会自动获得研究权限。</p><div className="flex flex-wrap gap-2"><input type="password" autoComplete="off" aria-label="研究凭据" className={box} value={inputKey} onChange={event => setInputKey(event.target.value)} placeholder="个人研究凭据" /><button className={box} disabled={busy || !inputKey} onClick={() => void login()}>验证研究权限</button></div></section> :
       <section className="flex flex-wrap gap-2"><select aria-label="固定研究后端" className={box} disabled={busy} value={model} onChange={event => { setModel(event.target.value); setEngine(null); setMetrics(""); setPlan(null); }}>
         {targets.map(target => <option key={target.id} value={target.model}>{target.model} · {target.shared ? "共享只读配置" : "隔离实验"}</option>)}</select>
         <button className={box} disabled={busy} onClick={() => void observe()}>读取引擎状态与指标</button><button className={box} disabled={busy} onClick={() => { setToken(""); setTargets([]); setEngine(null); setMetrics(""); setReceipt(null); setOutput(""); }}>退出研究权限</button></section>}
@@ -120,7 +126,8 @@ export default function ResearchClient() {
           <label>seed <input aria-label="随机种子" type="number" className={`${box} w-24`} disabled={busy} value={seed} onChange={event => setSeed(Number(event.target.value))} /></label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={special} disabled={busy} onChange={event => setSpecial(event.target.checked)} />添加 BOS 等特殊 token（不是聊天模板）</label></div>
         <textarea className={`${box} min-h-40 w-full font-mono`} aria-label="原始 prompt" value={prompt} disabled={busy} onChange={event => setPrompt(event.target.value)} placeholder="逐字发送原始文本，或切换为 token ID 数组；不会包装成 messages。" />
-        <details><summary>实际请求参数</summary><pre className="overflow-auto text-xs">{(() => { try { return JSON.stringify(payload(), null, 2); } catch { return "Token IDs 还不是有效 JSON"; } })()}</pre></details>
+        <label className="block space-y-1"><span>停止序列（JSON 数组；空数组表示不添加）</span><input aria-label="停止序列" className={`${box} w-full font-mono`} disabled={busy} value={stopJson} onChange={event => setStopJson(event.target.value)} placeholder={'["\\n"]'} /></label>
+        <details><summary>实际请求参数</summary><pre className="overflow-auto text-xs">{(() => { try { return JSON.stringify(payload(), null, 2); } catch { return "Token IDs 或停止序列不是有效 JSON 参数"; } })()}</pre></details>
         <button className={box} disabled={busy || !prompt || !model} onClick={() => void run()}>发送原始 prompt</button>{busy && abort.current && <button className={`${box} ml-2`} onClick={() => abort.current?.abort()}>停止读取</button>}
       </section>
       <section className="space-y-2"><h2 className="font-semibold">原始输出</h2><pre aria-label="原始模型输出" className="app-surface app-border min-h-24 overflow-auto whitespace-pre-wrap rounded-lg border p-3">{output || "尚未生成"}</pre></section>
