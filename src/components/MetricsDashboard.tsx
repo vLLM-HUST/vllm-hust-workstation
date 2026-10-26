@@ -420,10 +420,12 @@ export default function MetricsDashboard({
                 {s.modelName}
               </span>
             </div>
+            <HardwareDetails key={`backend-${open}`} label="后端硬件">
             <div className="flex justify-between">
               <span className="text-white/40">后端</span>
               <span className="text-emerald-400 font-medium">{s.backendType}</span>
             </div>
+            </HardwareDetails>
             <div className="flex justify-between">
               <span className="text-white/40">状态</span>
               <span className={online ? "text-emerald-400 font-medium" : checking ? "text-amber-300 font-medium" : "text-red-300 font-medium"}>{online ? "服务在线" : checking ? "正在核验" : "服务离线"}</span>
