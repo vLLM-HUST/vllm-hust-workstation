@@ -39,7 +39,7 @@ beforeEach(() => {
     const url = String(input);
     if (url.includes("/api/versions")) return versions;
     if (url.includes("/api/models")) return models;
-    if (url.includes("/api/hardware")) return Promise.resolve(response({}));
+    if (url.includes("/api/hardware")) return Promise.resolve(response({npu:"fixture-GPU",cpu:"fixture-CPU",memory:"fixture-RAM"}));
     if (url.includes("/api/metrics")) return new Promise(() => {});
     if (url.includes("/api/local-service")) return new Promise(() => {});
     return Promise.reject(new Error("unexpected request"));
@@ -63,6 +63,7 @@ it("SSR and pre-probe hydration show neither stale model nor an offline verdict"
   expect(host.textContent).toContain("正在核验推理服务");
   expect(host.textContent).not.toContain("GLM-4-32B");
   expect(host.textContent).not.toContain("推理服务暂时离线");
+  for (const value of ["fixture-GPU", "fixture-CPU", "fixture-RAM"]) expect(host.textContent).not.toContain(value);
 
   await act(async () => {
     resolveModels(response({ data: [{ id: "Qwen3.8-27B" }], upstreamAvailable: true, engineReady: true, liveModelSwitchSupported: false }));

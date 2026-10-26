@@ -1,4 +1,5 @@
 "use client";
+import HardwareDetails from "./HardwareDetails";
 
 import { useRef, useCallback, useState } from "react";
 import {
@@ -220,11 +221,13 @@ export default function ChatPanel({
               <div className="app-surface-muted app-border mt-5 rounded-2xl border p-4">
                 <p className="app-text-muted text-[11px] font-semibold uppercase tracking-wider">当前模型</p>
                 <p className="app-text-secondary mt-1 truncate font-mono text-sm" title={model || undefined}>{model || "正在读取实际运行模型…"}</p>
+                <HardwareDetails>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[hardware.npu, hardware.cpu, hardware.memory].filter(Boolean).map((item) => (
                     <span key={item} className="app-control rounded-full border px-2.5 py-1 text-[11px]">{item}</span>
                   ))}
                 </div>
+                </HardwareDetails>
               </div>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">

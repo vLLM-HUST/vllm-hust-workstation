@@ -1,4 +1,5 @@
 "use client";
+import HardwareDetails from "./HardwareDetails";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -118,7 +119,8 @@ export default function InferenceSwitchDashboard() {
             <div className="relative">
               <p className="app-text-muted text-xs font-medium uppercase tracking-[.18em]">当前场景</p>
               <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">{SWITCH_EVIDENCE.title}</h1>
-              <p className="app-text-secondary mt-3 text-sm">{SWITCH_EVIDENCE.hardware} · {SWITCH_EVIDENCE.measuredSeconds / 60} 分钟真实负载对照</p>
+              <p className="app-text-secondary mt-3 text-sm">{SWITCH_EVIDENCE.measuredSeconds / 60} 分钟真实负载对照</p>
+              <HardwareDetails><p>{SWITCH_EVIDENCE.hardware}</p></HardwareDetails>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <button type="button" role="switch" aria-checked={autoEnabled} onClick={() => { setAutoEnabled(value => !value); setPhase(autoEnabled ? "observing" : "enabled"); }} className={`inline-flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition ${autoEnabled ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200" : "app-control"}`}>
                   <span className={`relative h-5 w-9 rounded-full ${autoEnabled ? "bg-emerald-400" : "bg-slate-600"}`}><i className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${autoEnabled ? "left-[18px]" : "left-0.5"}`} /></span>

@@ -9,12 +9,12 @@ export default function HostRuntimeCard({ provenance, selectedModel }: { provena
   return <section aria-label="宿主运行来源" className="app-card-flat rounded-xl p-4 text-xs">
     <h3 className="app-text text-sm font-semibold">运行来源 · 本机服务与磁盘制品已核验</h3>
     {!covered && <p className="mt-2 text-amber-300" role="status">当前选择的模型不在这份本机证据覆盖范围内；不能据此核验远程后端或自动路由。</p>}
-    <p className="app-text-secondary mt-2 break-all">覆盖模型：{host.coveredModels.join("、")}</p>
     <a className="app-text-secondary mt-2 inline-block underline" href={host.commitUrl} target="_blank" rel="noopener noreferrer">vLLM-HUST · {host.commit.slice(0, 8)}</a>
     <details className="mt-3" onKeyDownCapture={event => {
       if (event.key === "Escape") { event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); }
     }}>
     <summary className="app-text-muted cursor-pointer">核验范围与证据详情</summary>
+    <p className="app-text-secondary mt-2 break-all">覆盖模型：{host.coveredModels.join("、")}</p>
     <dl className="app-text-secondary mt-3 space-y-2 break-all">
       <div><dt className="app-text-muted">服务 / PID</dt><dd>{host.service} / {host.pid}</dd></div>
       <div><dt className="app-text-muted">网关 / PID / 启动配置摘要</dt><dd>{host.routerService} / {host.routerPid}<br />{host.routeDigest}</dd></div>

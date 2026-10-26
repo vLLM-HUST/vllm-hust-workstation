@@ -1,4 +1,5 @@
 "use client";
+import HardwareDetails from "./HardwareDetails";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Download, LoaderCircle, X } from "lucide-react";
@@ -153,8 +154,10 @@ export default function ModelHubModal({
           </form>}
           {isAdmin && <div className="app-text-secondary space-y-1 break-all">
             <p>{payload?.storage.message}</p>
+            <HardwareDetails label="存储信息">
             {payload?.storage.path && <p>模型存储：{payload.storage.path}</p>}
             {payload?.storage.freeBytes !== undefined && <p>可用空间：{(payload.storage.freeBytes / 1024 ** 3).toFixed(1)} GiB</p>}
+            </HardwareDetails>
           </div>}
           <p className="app-text-muted text-xs">权重下载由管理员管理；模型上线、切换和回滚由平台运维执行。</p>
         </div>
@@ -214,8 +217,10 @@ export default function ModelHubModal({
                       <p className="text-white/40 text-xs mt-2">{item.repoId}</p>
                     </div>
                     <div className="shrink-0 text-xs text-white/45 space-y-1 sm:text-right">
+                      <HardwareDetails label="资源需求">
                       <div>权重约 {item.sizeGb} GB</div>
                       <div>建议显存 {item.vramGb} GB</div>
+                      </HardwareDetails>
                     </div>
                   </div>
 

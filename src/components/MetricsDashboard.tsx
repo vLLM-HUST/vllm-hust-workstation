@@ -1,4 +1,5 @@
 "use client";
+import HardwareDetails from "./HardwareDetails";
 
 import {
   AreaChart,
@@ -273,11 +274,13 @@ export default function MetricsDashboard({
 
         {/* Only display device memory when a real capacity was reported. */}
         {s && s.gpuMemTotalGb > 0 && (
+          <HardwareDetails key={`memory-${open}`} label="硬件指标">
           <GpuBar
             used={s.gpuMemUsedGb}
             total={s.gpuMemTotalGb}
             color={accentColor}
           />
+          </HardwareDetails>
         )}
 
         <div className="grid grid-cols-2 gap-2">
@@ -360,7 +363,7 @@ export default function MetricsDashboard({
               </div>
             )}
             <div className="space-y-2" aria-label="模型后端监控">
-              {traffic.models.map((item) => {
+              {traffic.models.map((item, index) => {
                 const requests24h = item.windows["24h"].requests;
                 const modelSuccessRate = requests24h > 0
                   ? (item.windows["24h"].successes / requests24h) * 100
@@ -369,8 +372,11 @@ export default function MetricsDashboard({
                   <article key={item.backendId} className="app-card-flat rounded-xl p-3 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="app-text truncate text-sm font-semibold" title={item.id}>{item.displayName}</p>
+                        <p className="app-text truncate text-sm font-semibold">模型后端 {index + 1}</p>
+                        <HardwareDetails key={`${item.backendId}-${open}`}>
+                        <p className="app-text-muted mt-0.5 text-[11px]">{item.displayName}</p>
                         <p className="app-text-muted mt-0.5 text-[11px]">{item.hardware}</p>
+                        </HardwareDetails>
                       </div>
                       <span className={item.activeRequests > 0 ? "text-cyan-300 text-[11px]" : "text-emerald-300 text-[11px]"}>
                         {item.activeRequests > 0 ? `${item.activeRequests} 个处理中` : "空闲"}
@@ -414,10 +420,12 @@ export default function MetricsDashboard({
                 {s.modelName}
               </span>
             </div>
+            <HardwareDetails key={`backend-${open}`} label="后端硬件">
             <div className="flex justify-between">
               <span className="text-white/40">后端</span>
               <span className="text-emerald-400 font-medium">{s.backendType}</span>
             </div>
+            </HardwareDetails>
             <div className="flex justify-between">
               <span className="text-white/40">状态</span>
               <span className={online ? "text-emerald-400 font-medium" : checking ? "text-amber-300 font-medium" : "text-red-300 font-medium"}>{online ? "服务在线" : checking ? "正在核验" : "服务离线"}</span>
