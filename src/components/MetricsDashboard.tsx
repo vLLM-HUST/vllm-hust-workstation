@@ -1,5 +1,6 @@
 "use client";
 import HardwareDetails from "./HardwareDetails";
+import { modelChoiceLabel, modelSummaryLabel } from "@/lib/modelDisplay";
 
 import {
   AreaChart,
@@ -226,7 +227,7 @@ export default function MetricsDashboard({
           >
             {models.map((item) => (
               <option key={item} value={item} className="bg-slate-900">
-                {item}
+                {modelChoiceLabel(item, models)}
               </option>
             ))}
           </select> : <p className="app-control rounded-lg border px-3 py-2 text-sm">正在读取实际运行模型…</p>}
@@ -416,8 +417,8 @@ export default function MetricsDashboard({
           <div className="app-card-flat rounded-xl p-4 text-xs space-y-2">
             <div className="flex justify-between gap-3">
               <span className="text-white/40">模型</span>
-              <span className="text-white/80 min-w-0 max-w-[75%] break-all text-right font-mono" title={s.modelName}>
-                {s.modelName}
+              <span className="text-white/80 min-w-0 max-w-[75%] break-all text-right font-mono" title={modelSummaryLabel(s.modelName)}>
+                {modelSummaryLabel(s.modelName)}
               </span>
             </div>
             <HardwareDetails key={`backend-${open}`} label="后端硬件">

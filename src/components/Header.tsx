@@ -1,4 +1,5 @@
 "use client";
+import { modelChoiceLabel } from "@/lib/modelDisplay";
 
 import { useEffect, useRef } from "react";
 import { ChevronDown, PackageOpen, Bot, Gauge, Moon, Sun, Puzzle, Zap, MoreHorizontal, Telescope } from "lucide-react";
@@ -134,7 +135,7 @@ export default function Header({
           >
             {models.map((m) => (
               <option key={m} value={m} className="app-surface-raised">
-                {m}
+                {modelChoiceLabel(m, models)}
               </option>
             ))}
           </select>

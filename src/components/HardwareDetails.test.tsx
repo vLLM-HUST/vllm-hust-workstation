@@ -33,9 +33,10 @@ it("welcome leaves the actual model readable without exposing CPU, device or RAM
   const html = renderToStaticMarkup(<ChatPanel messages={[]} loading={false} accentColor="#6366f1"
     webSearch={false} searchEnabled={true} thinkingEnabled={true} onSend={()=>{}} onStop={()=>{}}
     onClear={()=>{}} onToggleWebSearch={()=>{}} onToggleThinking={()=>{}} onOpenInference={()=>{}}
-    onOpenMetrics={()=>{}} onAuditMessage={()=>{}} serviceStatus="online" model="public-model"
+    onOpenMetrics={()=>{}} onAuditMessage={()=>{}} serviceStatus="online" model="public-model-A100"
     hardware={{npu:"GPU-private",cpu:"CPU-private",memory:"RAM-private"}} />);
   expect(html).toContain("public-model"); expect(html).toContain("硬件信息");
+  expect(html).not.toContain("A100");
   for (const value of ["GPU-private","CPU-private","RAM-private"]) expect(html).not.toContain(value);
 });
 
