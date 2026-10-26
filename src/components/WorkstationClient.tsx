@@ -1,4 +1,5 @@
 "use client";
+import HardwareDetails from "./HardwareDetails";
 
 import { useChatSession } from "./useChatSession";
 
@@ -597,11 +598,13 @@ export default function WorkstationClient({ config }: { config: AppConfig }) {
       </main>
       <footer className="app-surface app-border relative flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t px-3 py-2 text-[11px] sm:text-xs">
         {(hardware.npu || hardware.cpu || hardware.memory) && (
-          <div className="app-text-muted hidden items-center gap-3 font-mono sm:flex">
+          <HardwareDetails>
+          <div className="app-text-muted flex flex-wrap items-center gap-3 font-mono">
             {hardware.npu && <span>{hardware.npu}</span>}
             {hardware.cpu && <span>{hardware.cpu}</span>}
             {hardware.memory && <span>{hardware.memory}</span>}
           </div>
+          </HardwareDetails>
         )}
         {runtimeProvenance.available && runtimeProvenance.hostEvidence ? (
           <span className="app-text-muted" role="status">

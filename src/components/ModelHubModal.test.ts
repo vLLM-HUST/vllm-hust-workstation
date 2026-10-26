@@ -66,6 +66,9 @@ it("rejects invalid login, keeps token masked and clears it on close", async () 
   expect(host.querySelector("input")?.type).toBe("password");
   expect(host.textContent).not.toContain("/private/");
   await render(false); await render(); await login();
+  expect(host.textContent).not.toContain("/private/test/models");
+  const storage = [...host.querySelectorAll("details")].find(node => node.querySelector("summary")?.textContent === "存储信息")!;
+  await act(async () => { storage.open = true; storage.dispatchEvent(new Event("toggle")); });
   expect(host.textContent).toContain("/private/test/models");
   expect(host.querySelector("input")).toBeNull();
   await render(false); await render();
