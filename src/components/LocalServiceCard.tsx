@@ -1,4 +1,5 @@
 "use client";
+import { modelDisplayName } from "@/lib/modelDisplay";
 
 import { useCallback, useEffect, useState } from "react";
 import { Play, RotateCcw, Square, Wrench } from "lucide-react";
@@ -148,7 +149,7 @@ export default function LocalServiceCard() {
 
       <div className="app-text-muted space-y-1 text-xs">
         <p>目标：{status?.isLocalTarget === false ? "平台内部服务" : status?.baseUrl ?? "加载中"}</p>
-        <p title={status?.currentModel || undefined}>模型：{status ? status.currentModel ?? status.desiredModel ?? "未探测到" : "正在核验"}</p>
+        <p>模型：{status ? modelDisplayName(status.currentModel ?? status.desiredModel ?? "未探测到") : "正在核验"}</p>
       </div>
 
       <details className="app-card-flat rounded-xl p-3 text-xs leading-5">
@@ -157,7 +158,7 @@ export default function LocalServiceCard() {
         </summary>
         <div className="app-text-muted mt-2 space-y-1">
           <p>后端绑定：{status?.isLocalTarget === false ? "平台共享推理服务" : evoStatus?.baseUrl ?? "加载中"}</p>
-          <p>模型：{evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测"}</p>
+          <p>模型：{modelDisplayName(evoStatus?.resolvedModel ?? evoStatus?.configuredModel ?? "待探测")}</p>
           <p>启动：{evoStatus?.commandMode === "binary" ? "EvoSci 可执行文件" : evoStatus?.commandMode === "python-module" ? "Python 模块回退" : "未找到可用命令"}</p>
           <p>搜索：{evoStatus?.searchEnabled ? "已启用" : "已关闭"}</p>
         </div>
